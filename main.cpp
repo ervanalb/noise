@@ -86,9 +86,9 @@ int main()
 
 	OperatorBlock mid2freqb(&mid2freq);
 
-	HoldBlock hb(0.3*sample_rate);
+	HoldBlock hb(0.1*sample_rate);
 
-	LowPassBlock lb(0.999);
+	LowPassBlock lb(1-0.00001);
 
 	ToneGenBlock tg(&saw);
 
