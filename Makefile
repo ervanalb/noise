@@ -1,4 +1,4 @@
-OBJS = Generator.o Block.o main.o UnitImpulseBlock.o LowPassBlock.o ToneGenBlock.o ConstantBlock.o write_file.o OperatorBlock.o
+OBJS = Generator.o Block.o main.o UnitImpulseBlock.o LowPassBlock.o ToneGenBlock.o ConstantBlock.o write_file.o OperatorBlock.o FIRBlock.o
 CC = g++
 DEBUG = -g
 CFLAGS = -Wall -c $(DEBUG)
@@ -29,10 +29,13 @@ ConstantBlock.o : ConstantBlock.cpp LowPassBlock.h Block.h Generator.h
 OperatorBlock.o : OperatorBlock.cpp OperatorBlock.h Block.h Generator.h
 	$(CC) $(CFLAGS) OperatorBlock.cpp
 
+FIRBlock.o : FIRBlock.cpp FIRBlock.h Block.h Generator.h
+	$(CC) $(CFLAGS) FIRBlock.cpp
+
 write_file.o : write_file.cpp write_file.h
 	$(CC) $(CFLAGS) write_file.cpp
 
-main.o : main.cpp UnitImpulseBlock.h LowPassBlock.h ToneGenBlock.h Generator.h ConstantBlock.h write_file.h OperatorBlock.h
+main.o : main.cpp UnitImpulseBlock.h LowPassBlock.h ToneGenBlock.h Generator.h ConstantBlock.h write_file.h OperatorBlock.h FIRBlock.h
 	$(CC) $(CFLAGS) main.cpp
 
 clean:

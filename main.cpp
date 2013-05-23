@@ -1,6 +1,9 @@
 #include "ToneGenBlock.h"
 #include "ConstantBlock.h"
 #include "OperatorBlock.h"
+#include "LowPassBlock.h"
+#include "FIRBlock.h"
+#include "UnitImpulseBlock.h"
 #include "write_file.h"
 
 #include <iostream>
@@ -16,6 +19,7 @@ float saw(float t);
 void mix(Generator* input,Generator* output);
 float mixer_result;
 
+
 int main()
 {
 	int sample_rate=48000;
@@ -26,15 +30,32 @@ int main()
 	c.push_back(&freq);
 	c.push_back(&freq2);
 
+	std::vector<float> ir_vec;
+	for(int i=0;i<=10;i++)
+	{
+		ir_vec.push_back(i/100.0);
+	}
+	for(int i=9;i>=0;i--)
+	{
+		ir_vec.push_back(i/100.0);
+	}
+
 	ConstantBlock cb(c);
 	ToneGenBlock tg(&saw);
+	//UnitImpulseBlock tg;
+
+
+	FIRBlock lp(ir_vec);
+	//LowPassBlock lp(0.9);
 	OperatorBlock mixer(&mix);
 
 	tg.inputs.push_back(cb.outputs[0]);
-	mixer.inputs.push_back(tg.outputs[0]);
+	lp.inputs.push_back(tg.outputs[0]);
+	mixer.inputs.push_back(lp.outputs[0]);
 
 	cb.start();
 	tg.start();
+	lp.start();
 	mixer.start();
 
 	Generator* g=mixer.outputs[0];
