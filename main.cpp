@@ -1,6 +1,7 @@
 #include "ToneGenBlock.h"
 #include "ConstantBlock.h"
 #include "OperatorBlock.h"
+#include "PortaudioBlock.h"
 #include "write_file.h"
 
 #include <iostream>
@@ -39,7 +40,7 @@ int main()
 
 	Generator* g=mixer.outputs[0];
 
-	writeWav(g,"out.wav",1,sample_rate,sample_rate*3);
+	//writeWav(g,"out.wav",1,sample_rate,sample_rate*3);
 
 	for(int i=0;i<10;i++)
 	{
@@ -47,6 +48,11 @@ int main()
 		vectorPrinter(*g);
 		cout << endl;
 	}
+
+    PortaudioBlock pa = PortaudioBlock(sample_rate);
+
+    pa.inputs.push_back(mixer.outputs[0]);
+    pa.start();
 
 	return 0;
 }
