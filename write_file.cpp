@@ -12,8 +12,18 @@ int writeWav(Generator *g,const char* filename,int channels,int sampleRate,int s
 	{
 		for(int j=0;j<channels;j++)
 		{
+			float* f;
+			float f2=0;
 			g->get();
-	    		outfile.write((float*)(g->at(j)),1);
+			f=(float*)(g->at(j));
+			if(f==0)
+			{
+				outfile.write(&f2,1);
+			}
+			else
+			{
+				outfile.write(f,1);
+			}
 		}
 	}
 	return 0;

@@ -87,6 +87,7 @@ void PortaudioBlock::start()
     
     printf("PortAudio: output SR = %d, BufSize = %d\n", this->sample_rate, FRAMES_PER_BUFFER);
     
+    printf("devices: %u\n", Pa_GetDeviceCount());
     
     err = Pa_Initialize();
     if( err != paNoError ) goto error;
@@ -130,7 +131,7 @@ void PortaudioBlock::start()
 
     Pa_Terminate();
     printf("Test finished.\n");
-    
+
 error:
     Pa_Terminate();
     fprintf( stderr, "An error occured while using the portaudio stream\n" );

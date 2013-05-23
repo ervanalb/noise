@@ -4,6 +4,8 @@
 #include "LowPassBlock.h"
 #include "FIRBlock.h"
 #include "UnitImpulseBlock.h"
+#include "SequenceBlock.h"
+#include "HoldBlock.h"
 #include "PortaudioBlock.h"
 #include "write_file.h"
 
@@ -18,18 +20,14 @@ float sine(float t);
 float saw(float t);
 
 void mix(Generator* input,Generator* output);
+void mid2freq(Generator* input,Generator* output);
 float mixer_result;
+std::vector<float> mid2freq_result;
 
+int sample_rate=48000;
 
 int main()
 {
-	int sample_rate=48000;
-
-	float freq=440.0/sample_rate;
-	float freq2=550.0/sample_rate;
-	std::vector<void*> c;
-	c.push_back(&freq);
-	c.push_back(&freq2);
 
 	std::vector<float> ir_vec;
 	for(int i=0;i<=10;i++)
@@ -41,9 +39,50 @@ int main()
 		ir_vec.push_back(i/100.0);
 	}
 
-	ConstantBlock cb(c);
-	ToneGenBlock tg(&saw);
-	//UnitImpulseBlock tg;
+	std::vector<int> notes;
+	notes.push_back(65);
+	notes.push_back(75);
+	notes.push_back(-1);
+	notes.push_back(72);
+	notes.push_back(67);
+	notes.push_back(67);
+	notes.push_back(68);
+	notes.push_back(-1);
+	notes.push_back(65);
+	notes.push_back(70);
+	notes.push_back(72);
+	notes.push_back(70);
+	notes.push_back(65);
+
+	notes.push_back(65);
+	notes.push_back(-1);
+	notes.push_back(-1);
+
+	notes.push_back(65);
+	notes.push_back(75);
+	notes.push_back(-1);
+	notes.push_back(72);
+	notes.push_back(67);
+	notes.push_back(67);
+	notes.push_back(68);
+	notes.push_back(65);
+	notes.push_back(72);
+	notes.push_back(75);
+	notes.push_back(-1);
+	notes.push_back(72);
+	notes.push_back(77);
+
+	int d=-1;
+
+	std::vector<std::vector<void*> > seq(notes.size());
+	for(unsigned i=0;i<notes.size();i++)
+	{
+		seq[i].push_back(&(notes[i]));
+	}
+	std::vector<void*> def;
+	def.push_back(&d);
+
+	SequenceBlock sb(seq,def);
 
     /*
        { "Blocks":
@@ -68,23 +107,31 @@ int main()
             
        */
 
+	OperatorBlock mid2freqb(&mid2freq);
+	HoldBlock hb(0.3*sample_rate);
 
-	FIRBlock lp(ir_vec);
-	//LowPassBlock lp(0.9);
-	OperatorBlock mixer(&mix);
+	LowPassBlock lb(0.999);
 
-	tg.inputs.push_back(cb.outputs[0]);
-	lp.inputs.push_back(tg.outputs[0]);
-	mixer.inputs.push_back(lp.outputs[0]);
+	ToneGenBlock tg(&saw);
 
-	cb.start();
+	//FIRBlock fb(ir_vec);
+
+	mid2freqb.inputs.push_back(sb.outputs[0]);
+	hb.inputs.push_back(mid2freqb.outputs[0]);
+	lb.inputs.push_back(hb.outputs[0]);
+	tg.inputs.push_back(lb.outputs[0]);
+	//fb.inputs.push_back(tg.outputs[0]);
+
+	sb.start();
+	mid2freqb.start();
+	hb.start();
+	lb.start();
 	tg.start();
-	lp.start();
-	mixer.start();
+	//fb.start();
 
-	Generator* g=mixer.outputs[0];
+	Generator* g=tg.outputs[0];
 
-	//writeWav(g,"out.wav",1,sample_rate,sample_rate*3);
+	writeWav(g,"out.wav",1,sample_rate,sample_rate*15);
 
 	for(int i=0;i<10;i++)
 	{
@@ -93,10 +140,12 @@ int main()
 		cout << endl;
 	}
 
+/*
     PortaudioBlock pa = PortaudioBlock(sample_rate);
 
     pa.inputs.push_back(mixer.outputs[0]);
     pa.start();
+*/
 
 	return 0;
 }
@@ -158,5 +207,29 @@ void mix(Generator* input,Generator* output)
 
 	mixer_result=acc/n;
 	(*output)[0]=&mixer_result;
+}
+
+void mid2freq(Generator* input,Generator* output)
+{
+	unsigned len=input->size();
+	if(output->size() != len)
+	{
+		output->resize(len);
+		mid2freq_result.resize(len);
+	}
+
+	for(unsigned i=0;i<len;i++)
+	{
+		int val = *((int*)(input->at(i)));
+		if(val==-1) // Null
+		{
+			(*output)[i]=0;
+		}
+		else
+		{
+			mid2freq_result[i]=440*pow(2,((val-69)/12.0))/sample_rate;
+			(*output)[i]=&(mid2freq_result[i]);
+		}
+	}
 }
 
