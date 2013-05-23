@@ -84,10 +84,31 @@ int main()
 
 	SequenceBlock sb(seq,def);
 
+    /*
+       { "Blocks":
+            { "cb":
+                { "type": "ConstantBlock",
+                  "inputs" : [],
+                  "args" : [[440, 550]] },
+              "tg":
+                { "type": "ToneGenBlock",
+                  "inputs" : [["cb", 0]],
+                  "args" : ["saw"] },
+              "lp":
+                { "type": "LowPassBlock",
+                  "inputs" : [["tg", 0]],
+                  "args" : [0.9] },
+              "mixer":
+                { "type": "OperatorBlock",
+                  "inputs" : [["lg", 0]],
+                  "args" : ["mix"] }
+            }
+        }
+            
+       */
+
 	OperatorBlock mid2freqb(&mid2freq);
-
-	HoldBlock hb(0.1*sample_rate);
-
+	HoldBlock hb(0.3*sample_rate);
 	LowPassBlock lb(1-0.00001);
 
 	ToneGenBlock tg(&saw);
