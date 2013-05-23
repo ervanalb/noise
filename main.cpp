@@ -45,6 +45,29 @@ int main()
 	ToneGenBlock tg(&saw);
 	//UnitImpulseBlock tg;
 
+    /*
+       { "Blocks":
+            { "cb":
+                { "type": "ConstantBlock",
+                  "inputs" : [],
+                  "args" : [[440, 550]] },
+              "tg":
+                { "type": "ToneGenBlock",
+                  "inputs" : [["cb", 0]],
+                  "args" : ["saw"] },
+              "lp":
+                { "type": "LowPassBlock",
+                  "inputs" : [["tg", 0]],
+                  "args" : [0.9] },
+              "mixer":
+                { "type": "OperatorBlock",
+                  "inputs" : [["lg", 0]],
+                  "args" : ["mix"] }
+            }
+        }
+            
+       */
+
 
 	FIRBlock lp(ir_vec);
 	//LowPassBlock lp(0.9);
