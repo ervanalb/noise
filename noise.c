@@ -16,11 +16,12 @@ int main()
 	node_t wave;
 	pull_fn_t ui_pulls[1] = {&constant_frequency};
 
-	wave.state = wave_new();
+    wave_new(&wave);
 	wave.input_pull = ui_pulls;
 	wave.input=0;
 
-	double* output=(double*)wave_pull(&wave);
+	double* output;
+    wave_pull(&wave, (void **) &output);
 
 	int i;
 	for(i=0;i<global_chunk_size;i++)
@@ -28,7 +29,7 @@ int main()
 		printf("%lf\n",output[i]);
 	}
 
-	wave_del(wave.state);
+	wave_del(&wave);
 
 	return 0;
 }

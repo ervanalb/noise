@@ -5,6 +5,6 @@ typedef struct {
 	double* chunk;
 } wave_state_t;
 
-void* wave_new();
-void wave_del(void* state);
-void* wave_pull(node_t* node);
+int wave_new(node_t * node);
+int wave_del(node_t * node);
+int wave_pull(node_t*, void **);
