@@ -6,27 +6,43 @@
 #include "globals.h"
 #include "error.h"
 
-int 
-wave_new(node_t * node)
+int wave_state_alloc(state_t* state)
 {
-	wave_state_t* state = malloc(sizeof(wave_state_t));
-	if(!state) return raise_error(ERR_MALLOC, node, "malloc failed");
+	wave_state_t* wave_state;
 
-	state->t = 0;
-	state->chunk = malloc(sizeof(double)*global_chunk_size);
-	if(!state->chunk) return raise_error(ERR_MALLOC, node, "malloc failed");
+	wave_state = malloc(sizeof(wave_state_t));
 
-	node->state = state;
+	if(!wave_state) return raise_error(ERR_MALLOC, node, "malloc failed");
 
-	return 0;
+	wave_state->t = 0;
+	wave_state->chunk = malloc(sizeof(double)*global_chunk_size);
+	if(!wave_state->chunk) return raise_error(ERR_MALLOC, node, "malloc failed");
+
+	*state = wave_state;
+}
+
+void wave_state_free(state_t state)
+{
+	free(((wave_state_t*)state)->chunk);
+	free(*state);
+}
+
+int wave_state_copy(state_t dest, state_t source)
+{
+	(wave_state_t*)dest->t = (wave_state_t*)source->t;
+	memcpy((wave_state_t*)dest->chunk = (wave_state_t*)source->chunk,sizeof(double)*global_chunk_size);
 }
 
 int 
+wave_new(node_t * node, args_t args)
+{
+	return wave_state_alloc(&node->state);
+}
+
+void
 wave_del(node_t * node)
 {
-	free(((wave_state_t*)node->state)->chunk);
-	free(node->state);
-	return 0;
+	wave_state_free(node->state);
 }
 
 static double 
@@ -36,7 +52,7 @@ f(double t)
 }
 
 int 
-wave_pull(node_t * node, void ** output)
+wave_pull(node_t * node, output_t* output)
 {
 	double* freq=node->input_pull[0](&(node->input[0]));
 

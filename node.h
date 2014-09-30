@@ -1,15 +1,20 @@
 #ifndef __NODE_H
 #define __NODE_H
 
+typedef void* args_t;
+typedef void* state_t;
+typedef void* output_t;
+
 struct _node_t;
 
-typedef void* (*pull_fn_t)(struct _node_t* node);
+typedef output_t (*pull_fn_t)(struct _node_t* node);
 
 typedef struct _node_t
 {
 	struct _node_t* input;
 	pull_fn_t* input_pull;
-	void* state;
+	state_t state;
 } node_t;
+
 
 #endif
