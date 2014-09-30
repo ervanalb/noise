@@ -15,10 +15,10 @@ void* constant_frequency(node_t* node)
 }
 
 int handle_error(){
-    fputs("Error caught!\n", stderr);
-    fputs(global_error.message, stderr);
-    fputc('\n', stderr);
-    return global_error.code;
+	fputs("Error caught!\n", stderr);
+	fputs(global_error.message, stderr);
+	fputc('\n', stderr);
+	return global_error.code;
 }
 
 int main()
@@ -26,7 +26,7 @@ int main()
 	node_t wave;
 	pull_fn_t ui_pulls[1] = {&constant_frequency};
 
-    if(wave_new(&wave)) return handle_error();
+	if(wave_new(&wave)) return handle_error();
 	wave.input_pull = ui_pulls;
 	wave.input=0;
 
