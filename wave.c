@@ -9,13 +9,11 @@
 int wave_new(node_t * node)
 {
 	wave_state_t* state = malloc(sizeof(wave_state_t));
-    if(!state)
-        return raise_error(ERR_MALLOC, node, "malloc failed");
+    if(!state) return raise_error(ERR_MALLOC, node, "malloc failed");
 
 	state->t = 0;
 	state->chunk = malloc(sizeof(double)*global_chunk_size);
-    if(!state->chunk)
-        return raise_error(ERR_MALLOC, node, "malloc failed");
+    if(!state->chunk) return raise_error(ERR_MALLOC, node, "malloc failed");
 
     node->state = state;
 
