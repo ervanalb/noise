@@ -14,7 +14,7 @@ typedef struct {
     char message[128];
 } error_t; 
 
-int raise_error(errorcode_t code, node_t * node, char * message);
+int raise_error(errorcode_t code, node_t * node, const char * message, ...);
 
 extern error_t global_error;
 
