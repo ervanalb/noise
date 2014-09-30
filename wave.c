@@ -45,7 +45,7 @@ int wave_pull(node_t * node, void ** output)
 	for(i=0;i<global_chunk_size;i++)
 	{
 		state->chunk[i] = f(state->t);
-		state->t += global_frame_rate / (*freq);
+		state->t += *freq/global_frame_rate;
 	}
 
 	*output = ((void *) (state->chunk));

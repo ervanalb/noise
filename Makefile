@@ -5,13 +5,13 @@ OUTPUT = noise
 
 CC = gcc
 
-INC =
-LIB = 
+INC = -I
+LIB = -L/usr/local/lib
 
 # Assembler, compiler, and linker flags
 override CFLAGS += $(INC) -O0 -g -Wall
 override LFLAGS += $(LIB) $(CFLAGS)
-LIBS = -lm
+LIBS = -lm -lportaudio
 
 # Targets
 all: main

@@ -1,6 +1,7 @@
 #include "globals.h"
 #include "node.h"
 #include "wave.h"
+#include "soundcard.h"
 
 double global_frame_rate = 48000;
 int global_chunk_size = 128;
@@ -20,16 +21,18 @@ int main()
 	wave.input_pull = ui_pulls;
 	wave.input=0;
 
-	double* output;
-    wave_pull(&wave, (void **) &output);
+	soundcard_init();
 
-	int i;
-	for(i=0;i<global_chunk_size;i++)
+	double* output;
+
+	for(;;)
 	{
-		printf("%lf\n",output[i]);
+		wave_pull(&wave, (void **) &output);
+		soundcard_write(output);
 	}
 
 	wave_del(&wave);
+	soundcard_deinit();
 
 	return 0;
 }
