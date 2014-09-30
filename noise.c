@@ -24,7 +24,7 @@ int handle_error(){
 int main()
 {
 	node_t wave;
-	pull_fn_t ui_pulls[1] = {&constant_frequency};
+	pull_fn_pt ui_pulls[1] = {&constant_frequency};
 
 	if(wave_new(&wave)) return handle_error();
 	wave.input_pull = ui_pulls;
