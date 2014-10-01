@@ -1,50 +1,44 @@
 #include "accumulator.h"
-#include <math.h>
 #include <stdlib.h>
-#include <stdio.h>
 #include "node.h"
 #include "globals.h"
-#include "error.h"
 
-int 
-accumulator_new(node_t * node)
+error_t accumulator_state_alloc(type_info_pt type_info, state_pt* state)
 {
-	accumulator_state_t* state = malloc(sizeof(accumulator_state_t));
-	if(!state) return raise_error(ERR_MALLOC, node, "malloc failed");
+	accumulator_state_t* accumulator_state;
 
-	state->t = 0;
+	accumulator_state = malloc(sizeof(accumulator_state_t));
 
-	node->state = state;
+	*state = accumulator_state;
 
-	return 0;
+	if(!accumulator_state) return raise_error(ERR_MALLOC,"");
+
+	accumulator_state->t = 0;
+
+	return SUCCESS;
 }
 
-int 
-accumulator_del(node_t * node)
+void accumulator_state_free(type_info_pt type_info, state_pt state)
 {
-	free(node->state);
-	return 0;
+	free(state);
 }
 
-int 
-accumulator_pull(node_t * node, void ** output)
+error_t accumulator_state_copy(type_info_pt type_info, state_pt dest, state_pt source)
 {
-	double* dt=node->input_pull[0](&(node->input[0]));
-	int* reset=node->input_pull[1](&(node->input[1]));
+	((accumulator_state_t*)dest)->t = ((accumulator_state_t*)source)->t;
+	return SUCCESS;
+}
 
-	accumulator_state_t* state = (accumulator_state_t*)(node->state);
+error_t accumulator_pull(node_t * node, output_pt * output)
+{
+	accumulator_state_t* accumulator_state = node->state;
 
-	if(*reset)
-	{
-		state->t = 0;
-	}
-	else
-	{
-		state->t += *dt;
-	}
+	double* dt=pull(node,0);
 
-	*output = ((void *) &(state->t));
+	accumulator_state->t += *dt;
 
-	return 0;
+	*output = &(accumulator_state->t);
+
+	return SUCCESS;
 }
 

@@ -3,7 +3,7 @@
 #include "node.h"
 #include "wave.h"
 #include "soundcard.h"
-#include "error.h"
+//#include "error.h"
 
 double global_frame_rate = 48000;
 int global_chunk_size = 128;
@@ -14,21 +14,24 @@ void* constant_frequency(node_t* node)
 	return &freq;
 }
 
+/*
 int handle_error(){
 	fputs("Error caught!\n", stderr);
 	fputs(global_error.message, stderr);
 	fputc('\n', stderr);
 	return global_error.code;
 }
+*/
 
 int main()
 {
-	node_t wave;
+	node_t n;
+	n.type_info=0; // No type info
 	pull_fn_pt ui_pulls[1] = {&constant_frequency};
 
-	if(wave_new(&wave)) return handle_error();
-	wave.input_pull = ui_pulls;
-	wave.input=0;
+	wave_state_alloc(n.type_info,&n.state);
+	n.input_pull = ui_pulls;
+	n.input_node=0; // no input nodes
 
 	soundcard_init();
 
@@ -36,11 +39,11 @@ int main()
 
 	for(;;)
 	{
-		if(wave_pull(&wave, (void **) &output)) return handle_error();
+		wave_pull(&n, (output_pt*)(&output));
 		soundcard_write(output);
 	}
 
-	if(wave_del(&wave)) return handle_error();
+	wave_state_free(n.type_info,&n.state);
 	soundcard_deinit();
 
 	return 0;

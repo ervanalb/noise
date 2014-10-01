@@ -2,18 +2,15 @@
 
 typedef struct
 {
-	alloc_fn_pt alloc_fn;
-	copy_fn_pt copy_fn;
-	free_fn_pt free_fn;
-	state_pt memory;
+	state_pt up_state;
 } tee_state_t;
 
 typedef struct
 {
-	alloc_fn_pt alloc_fn;
-	copy_fn_pt copy_fn;
-	free_fn_pt free_fn;
-} tee_args_t;
+	alloc_fn_pt up_alloc_fn;
+	copy_fn_pt up_copy_fn;
+	free_fn_pt up_free_fn;
+} tee_type_t;
 
 int tee_state_alloc(state_pt * state);
 int tee_state_copy(state_pt dest, state_pt src);

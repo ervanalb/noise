@@ -1,21 +1,15 @@
 #ifndef __ERROR_H
 #define __ERROR_H
 
-#include "node.h"
+typedef enum error_t {SUCCESS = 0, ERR_MALLOC = 1} error_t;
 
-typedef enum {
-	ERR_NONE = 0,
-	ERR_MALLOC,
-} errorcode_t;
+typedef struct error_info_t {
+	error_t type;
+	char message[1024];
+} error_info_t; 
 
-typedef struct {
-	errorcode_t code;
-	node_t * node;
-	char message[128];
-} error_t; 
+error_t raise_error(error_t type, const char * message, ...);
 
-int raise_error(errorcode_t code, node_t * node, const char * message, ...);
-
-extern error_t global_error;
+extern error_info_t global_error;
 
 #endif
