@@ -1,17 +1,17 @@
 #include <stdio.h>
 #include "globals.h"
-#include "node.h"
+#include "block.h"
 #include "wave.h"
 #include "soundcard.h"
-//#include "error.h"
 
 double global_frame_rate = 48000;
 int global_chunk_size = 128;
 
-void* constant_frequency(node_t* node)
+error_t constant_frequency(node_t * node, output_pt * output)
 {
 	static double freq=440;
-	return &freq;
+	*output = (output_pt*)(&freq);
+	return SUCCESS;
 }
 
 /*
@@ -26,10 +26,9 @@ int handle_error(){
 int main()
 {
 	node_t n;
-	n.type_info=0; // No type info
 	pull_fn_pt ui_pulls[1] = {&constant_frequency};
 
-	wave_state_alloc(n.type_info,&n.state);
+	wave_state_alloc(0,&n.state);
 	n.input_pull = ui_pulls;
 	n.input_node=0; // no input nodes
 
@@ -43,7 +42,7 @@ int main()
 		soundcard_write(output);
 	}
 
-	wave_state_free(n.type_info,&n.state);
+	wave_state_free(0,&n.state);
 	soundcard_deinit();
 
 	return 0;

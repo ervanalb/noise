@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include "error.h"
-#include "node.h"
 
 error_info_t global_error;
 

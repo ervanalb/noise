@@ -2,10 +2,10 @@
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
-#include "node.h"
+#include "typefns.h"
 #include "globals.h"
 
-error_t wave_state_alloc(type_info_pt type_info, state_pt* state)
+error_t wave_state_alloc(block_info_pt block_info, state_pt* state)
 {
 	wave_state_t* wave_state;
 
@@ -16,24 +16,19 @@ error_t wave_state_alloc(type_info_pt type_info, state_pt* state)
 	if(!wave_state) return raise_error(ERR_MALLOC,"");
 
 	wave_state->t = 0;
-	wave_state->chunk = malloc(sizeof(double)*global_chunk_size);
 
-	if(!wave_state->chunk) return raise_error(ERR_MALLOC,"");
+	error_t e;
+
+	e=chunk_alloc(0,(output_pt*)(&(wave_state->chunk)));
+	if(e != SUCCESS) return e;
 
 	return SUCCESS;
 }
 
-void wave_state_free(type_info_pt type_info, state_pt state)
+void wave_state_free(block_info_pt block_info, state_pt state)
 {
-	free(((wave_state_t*)state)->chunk);
+	chunk_free(0,((wave_state_t*)state)->chunk);
 	free(state);
-}
-
-error_t wave_state_copy(type_info_pt type_info, state_pt dest, state_pt source)
-{
-	((wave_state_t*)dest)->t = ((wave_state_t*)source)->t;
-	memcpy(((wave_state_t*)dest)->chunk,((wave_state_t*)source)->chunk,sizeof(double)*global_chunk_size);
-	return SUCCESS;
 }
 
 static double f(double t)
@@ -43,7 +38,11 @@ static double f(double t)
 
 error_t wave_pull(node_t * node, output_pt * output)
 {
-	double* freq=pull(node,0);
+	double* freq;
+	error_t e;
+
+	e=pull(node,0,(output_pt*)(&freq));
+	if(e != SUCCESS) return e;
 
 	wave_state_t* state = (wave_state_t*)(node->state);
 

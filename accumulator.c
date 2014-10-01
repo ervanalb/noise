@@ -1,9 +1,8 @@
 #include "accumulator.h"
 #include <stdlib.h>
-#include "node.h"
 #include "globals.h"
 
-error_t accumulator_state_alloc(type_info_pt type_info, state_pt* state)
+error_t accumulator_state_alloc(block_info_pt block_info, state_pt* state)
 {
 	accumulator_state_t* accumulator_state;
 
@@ -18,12 +17,12 @@ error_t accumulator_state_alloc(type_info_pt type_info, state_pt* state)
 	return SUCCESS;
 }
 
-void accumulator_state_free(type_info_pt type_info, state_pt state)
+void accumulator_state_free(block_info_pt block_info, state_pt state)
 {
 	free(state);
 }
 
-error_t accumulator_state_copy(type_info_pt type_info, state_pt dest, state_pt source)
+error_t accumulator_state_copy(block_info_pt block_info, state_pt dest, state_pt source)
 {
 	((accumulator_state_t*)dest)->t = ((accumulator_state_t*)source)->t;
 	return SUCCESS;
@@ -33,7 +32,9 @@ error_t accumulator_pull(node_t * node, output_pt * output)
 {
 	accumulator_state_t* accumulator_state = node->state;
 
-	double* dt=pull(node,0);
+	double* dt;
+
+	pull(node,0,(output_pt*)&dt);
 
 	accumulator_state->t += *dt;
 
