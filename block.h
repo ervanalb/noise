@@ -13,7 +13,7 @@ struct node_t;
 
 typedef error_t (*pull_fn_pt)(struct node_t* node, output_pt* output);
 
-typedef int (*state_alloc_fn_pt)(block_info_pt type, state_pt * state);
+typedef error_t (*state_alloc_fn_pt)(block_info_pt type, state_pt * state);
 typedef void (*state_free_fn_pt)(block_info_pt type, state_pt state);
 
 typedef struct node_t

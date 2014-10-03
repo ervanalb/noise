@@ -1,7 +1,7 @@
 # Files to include
 C_SRC  = $(wildcard *.c)
 OBJECTS := $(patsubst %.c,%.o,$(C_SRC))
-OUTPUT = noise
+OUTPUT = noise.so
 
 CC = gcc
 
@@ -9,8 +9,8 @@ INC = -I
 LIB = -L/usr/local/lib
 
 # Assembler, compiler, and linker flags
-override CFLAGS += $(INC) -O0 -g -Wall
-override LFLAGS += $(LIB) $(CFLAGS)
+override CFLAGS += $(INC) -O0 -g -Wall -fPIC
+override LFLAGS += $(LIB) $(CFLAGS) -shared
 LIBS = -lm -lportaudio
 
 # Targets

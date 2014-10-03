@@ -1,23 +1,24 @@
-#include "node.h"
+#include "block.h"
 
 typedef struct
 {
-	state_pt up_state;
-} tee_state_t;
+	int active;
+	type_info_pt type_info;
+	output_copy_fn_pt copy_fn;
+	output_pt output;
+} union_state_t;
 
 typedef struct
 {
-	alloc_fn_pt up_alloc_fn;
-	copy_fn_pt up_copy_fn;
-	free_fn_pt up_free_fn;
-} tee_type_t;
+	type_info_pt type_info;
+	output_alloc_fn_pt alloc_fn;
+	output_copy_fn_pt copy_fn;
+	output_free_fn_pt free_fn;
+} union_info_t;
 
-int tee_state_alloc(state_pt * state);
-int tee_state_copy(state_pt dest, state_pt src);
-void tee_state_free(state_pt state);
-int tee_new(node_t * node, args_pt args);
-void tee_del(node_t * node);
-int tee_pull_main(node_t * node, output_pt* output);
-int tee_pull_aux(node_t * node, output_pt* output);
-
+error_t union_state_alloc(block_info_pt block_info, state_pt* state);
+void union_state_free(block_info_pt block_info, state_pt state);
+error_t union_pull(node_t * node, output_pt * output);
+error_t tee_pull_aux(node_t* node, output_pt * output);
+error_t wye_pull(node_t * node, output_pt * output);
 
