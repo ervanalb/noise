@@ -132,3 +132,27 @@ error_t divide_pull(node_t * node, output_pt * output)
 	return SUCCESS;
 }
 
+error_t note_to_freq_pull(node_t * node, output_pt * output)
+{
+	double* note;
+
+	error_t e;
+
+	e=pull(node,0,(output_pt*)(&note));
+	if(e != SUCCESS) return e;
+
+	maths_state_t* state = (maths_state_t*)(node->state);
+
+	if(!note)
+	{
+		*output = 0;
+		return SUCCESS;
+	}
+
+	state->out = pow(2,(*note-69)/12)*440;
+
+	*output = ((void *) &(state->out));
+
+	return SUCCESS;
+}
+
