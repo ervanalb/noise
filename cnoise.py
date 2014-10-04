@@ -8,11 +8,11 @@ BLOCK_INFO_PT = c_void_p
 class NODE_T(Structure):
 	pass
 
-PULL_FN_PT = POINTER(CFUNCTYPE(c_int, POINTER(NODE_T), POINTER(OUTPUT_PT)))
+PULL_FN_PT = CFUNCTYPE(c_int, POINTER(NODE_T), POINTER(OUTPUT_PT))
 
 NODE_T._fields_ = [
-	('input_node',POINTER(NODE_T)),
-	('input_pull',PULL_FN_PT),
+	('input_node',POINTER(POINTER(NODE_T))),
+	('input_pull',POINTER(PULL_FN_PT)),
 	('state',STATE_PT),
 	]
 
@@ -79,10 +79,11 @@ class Block(object):
 
         # Allocate space for upstream pull fns
         self.input_pull_fns = (PULL_FN_PT * self.num_inputs)()
-        self.node.input_pull = cast(self.input_pull_fns, PULL_FN_PT)
+	
+        self.node.input_pull = cast(self.input_pull_fns, POINTER(PULL_FN_PT))
         # Allocate space for upstream nodes
         self.input_nodes = (NODE_PT * self.num_inputs)()
-        self.node.input_node = cast(self.input_nodes, NODE_PT)
+        self.node.input_node = cast(self.input_nodes, POINTER(NODE_PT))
 
         self.setup_state()
 
@@ -90,8 +91,8 @@ class Block(object):
         self.state_alloc(BLOCK_INFO_PT(), byref(self.node, NODE_T.state.offset))
 
     def set_input(self, input_idx, block, output_idx):
-        self.node.input_node.contents = block.node
-        self.node.input_pull.contents = block.pull_fns[output_idx]
+        self.node.input_node[input_idx] = block.node_ptr
+        self.node.input_pull[input_idx] = PULL_FN_PT(block.pull_fns[output_idx])
 
 
 #CHUNKSIZE = 128
