@@ -20,5 +20,5 @@ ui.set_input(0, wb, 0)
 
 while True:
     result = ui.pull()
-    data=struct.pack('f'*CHUNKSIZE,*(ui.output[:CHUNKSIZE]))
-    print ui.output[:CHUNKSIZE]
+    data=struct.pack('f'*context.chunk_size,*(ui.output[:context.chunk_size]))
+    print ui.output[:context.chunk_size]
