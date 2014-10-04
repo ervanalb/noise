@@ -90,8 +90,9 @@ class Block(object):
         self.state_alloc(BLOCK_INFO_PT(), byref(self.node, NODE_T.state.offset))
 
     def set_input(self, input_idx, block, output_idx):
-        self.input_nodes[input_idx].contents = block.node_ptr
-        print block.node_ptr, block.pull_fns
+        self.input_nodes[input_idx].contents = block.node
+        self.node.input_node = self.input_nodes[0]
+        print block.node
         self.input_pull_fns[input_idx].contents = block.pull_fns[output_idx]
         self.node.input_pull = self.input_pull_fns[0]
 

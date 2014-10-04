@@ -28,7 +28,7 @@ if __name__ == "__main__":
     ui = context.blocks["UIBlock"]()
 
     wb.set_input(0, ui, 0)
-    wb2.set_input(0, ui, 0)
+    wb2.set_input(0, wb, 0)
     ui.set_input(0, wb2, 0)
 
     while True:
