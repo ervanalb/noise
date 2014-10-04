@@ -25,14 +25,18 @@ if __name__ == "__main__":
 
     wb = context.blocks["WaveBlock"]()
     wb2 = context.blocks["WaveBlock"]()
+    cb = context.blocks["ConstantBlock"](1.)
+    ab = context.blocks["AccumulatorBlock"]()
     ui = context.blocks["UIBlock"]()
 
-    wb.set_input(0, ui, 0)
-    wb2.set_input(0, wb, 0)
-    ui.set_input(0, wb2, 0)
+    ab.set_input(0, cb, 0)
+    wb.set_input(0, ab, 0)
+    #wb2.set_input(0, wb, 0)
+    ui.set_input(0, wb, 0)
 
     while True:
         try:
+            #cb.cvalue.value += 10
             result = ui.pull()
             data=struct.pack('f'*context.chunk_size,*(ui.output[:context.chunk_size]))
             stream.write(data)

@@ -90,8 +90,8 @@ class ConstantBlock(c.Block):
                 ctype = c.c_double
             else:
                 raise TypeError(value)
-        self.cvalue = c.POINTER(ctype)(ctype(value))
-        self.block_info = c.cast(self.cvalue, c.BLOCK_INFO_PT)
+        self.cvalue = ctype(value)  
+        self.block_info = c.cast(c.pointer(self.cvalue), c.BLOCK_INFO_PT)
 
         self.state_alloc = clib_noise.constant_state_alloc
         self.state_free = clib_noise.constant_state_free
@@ -100,7 +100,7 @@ class ConstantBlock(c.Block):
         self.num_outputs = 1
         self.setup()
 
-    def state_alloc(self):
+    def setup_state(self):
         self.state_alloc(self.block_info, c.byref(self.node, c.NODE_T.state.offset))
 
 context.register_block('ConstantBlock',ConstantBlock);
