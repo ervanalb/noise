@@ -105,6 +105,61 @@ class ConstantBlock(c.Block):
 
 context.register_block('ConstantBlock',ConstantBlock);
 
+class PlusBlock(c.Block):
+    def __init__(self, *args, **kwargs):
+        self.state_alloc = clib_noise.maths_state_alloc
+        self.state_free = clib_noise.maths_state_free
+        self.pull_fns = [clib_noise.plus_pull]
+        self.num_inputs = 2
+        self.num_outputs = 1
+        self.setup()
+
+context.register_block('PlusBlock', PlusBlock);
+
+class MinusBlock(c.Block):
+    def __init__(self, *args, **kwargs):
+        self.state_alloc = clib_noise.maths_state_alloc
+        self.state_free = clib_noise.maths_state_free
+        self.pull_fns = [clib_noise.minus_pull]
+        self.num_inputs = 2
+        self.num_outputs = 1
+        self.setup()
+
+context.register_block('MinusBlock', MinusBlock);
+
+class MultiplyBlock(c.Block):
+    def __init__(self, *args, **kwargs):
+        self.state_alloc = clib_noise.maths_state_alloc
+        self.state_free = clib_noise.maths_state_free
+        self.pull_fns = [clib_noise.multiply_pull]
+        self.num_inputs = 2
+        self.num_outputs = 1
+        self.setup()
+
+context.register_block('MultiplyBlock', MultiplyBlock);
+
+class DivideBlock(c.Block):
+    def __init__(self, *args, **kwargs):
+        self.state_alloc = clib_noise.maths_state_alloc
+        self.state_free = clib_noise.maths_state_free
+        self.pull_fns = [clib_noise.divide_pull]
+        self.num_inputs = 2
+        self.num_outputs = 1
+        self.setup()
+
+context.register_block('DivideBlock', DivideBlock);
+
+class FunctionGeneratorBlock(c.Block):
+    def __init__(self, *args, **kwargs):
+        self.state_alloc = clib_noise.function_gen_state_alloc
+        self.state_free = clib_noise.function_gen_state_free
+        self.pull_fns = [clib_noise.function_gen_pull]
+        self.num_inputs = 1
+        self.num_outputs = 1
+        self.setup()
+
+context.register_block('FunctionGeneratorBlock', FunctionGeneratorBlock);
+
 class UIBlock(c.Block):
     def __init__(self):
         # Super backwards block
@@ -120,6 +175,7 @@ class UIBlock(c.Block):
         self.output = c.POINTER(c.c_double)()
 
     def set_input(self, input_idx, block, output_idx):
+        print block.node
         self.input_nodes[input_idx] = block.node
         self.input_pull_fns[input_idx] = block.pull_fns[output_idx]
 
