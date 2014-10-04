@@ -51,7 +51,10 @@ error_t wave_pull(node_t * node, output_pt * output)
 	for(i=0;i<global_chunk_size;i++)
 	{
 		state->chunk[i] = f(state->t);
-		state->t += *freq/global_frame_rate;
+		if(freq)
+		{
+			state->t += *freq/global_frame_rate;
+		}
 	}
 
 	*output = ((void *) (state->chunk));
