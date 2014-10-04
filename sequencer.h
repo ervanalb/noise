@@ -6,7 +6,7 @@ typedef struct {
 
 typedef struct {
 	int length;
-	double* array;
+	double** array;
 } sequence_t;
 
 error_t sequencer_state_alloc(block_info_pt block_info, state_pt* state);

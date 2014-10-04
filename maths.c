@@ -35,6 +35,12 @@ error_t plus_pull(node_t * node, output_pt * output)
 
 	maths_state_t* state = (maths_state_t*)(node->state);
 
+	if(!x || !y)
+	{
+		*output = 0;
+		return SUCCESS;
+	}
+
 	state->out = *x + *y;
 
 	*output = ((void *) &(state->out));
@@ -57,6 +63,12 @@ error_t minus_pull(node_t * node, output_pt * output)
 
 	maths_state_t* state = (maths_state_t*)(node->state);
 
+	if(!x || !y)
+	{
+		*output = 0;
+		return SUCCESS;
+	}
+
 	state->out = *x - *y;
 
 	*output = ((void *) &(state->out));
@@ -70,11 +82,6 @@ error_t multiply_pull(node_t * node, output_pt * output)
 	double* y;
 
 	error_t e;
-    printf("pulling...\n");
-    printf("node addr = %x\n",node);
-    printf("node->input_node = %x\n",node->input_node);
-    printf("node->input_pull = %x\n",node->input_pull);
-    printf("node->input_pull* = %x\n", *((int **) (node->input_pull)));
 
 	e=pull(node,0,(output_pt*)(&x));
 	if(e != SUCCESS) return e;
@@ -83,6 +90,12 @@ error_t multiply_pull(node_t * node, output_pt * output)
 	if(e != SUCCESS) return e;
 
 	maths_state_t* state = (maths_state_t*)(node->state);
+
+	if(!x || !y)
+	{
+		*output = 0;
+		return SUCCESS;
+	}
 
 	state->out = *x * *y;
 
@@ -105,6 +118,12 @@ error_t divide_pull(node_t * node, output_pt * output)
 	if(e != SUCCESS) return e;
 
 	maths_state_t* state = (maths_state_t*)(node->state);
+
+	if(!x || !y)
+	{
+		*output = 0;
+		return SUCCESS;
+	}
 
 	state->out = *x / *y;
 
