@@ -1,5 +1,6 @@
 import cnoise
 import ctypes
+import struct
 import ntype
 
 CHUNKSIZE=128
