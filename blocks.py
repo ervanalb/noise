@@ -1,6 +1,7 @@
 import struct
 import cnoise as c
 
+
 class Block(object):
     def __init__(self, *args, **kwargs):
         self.state_alloc = None

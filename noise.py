@@ -1,3 +1,6 @@
+from blocks import *
+from ntype import *
+
 if __name__ == "__main__":
     wb = WaveBlock()
     ui = UIBlock()
