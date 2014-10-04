@@ -18,14 +18,24 @@ NODE_T._fields_ = [
 
 NODE_PT = POINTER(NODE_T)
 
-class NoiseLib(object):
+class NoiseContext(object):
 	def __init__(self,global_vars):
 		self.libs={}
 		self.global_vars=global_vars
 
-	def load(self,name,filename):
-		self.libs[name]=cdll.LoadLibrary(os.path.join(os.path.abspath(os.path.dirname(__file__)),filename))
-		self.set_global_vars(self.libs[name])
+	def load(self,py_file):
+		__import__(py_file,{'context':self})
+
+	def load_so(self,name,soname):
+		if name not in self.libs:
+			self.libs[name]=cdll.LoadLibrary(os.path.join(os.path.abspath(os.path.dirname(__file__)),filename))
+			self.set_global_vars(self.libs[name])
+
+	def register_type(self,typename,typefn):
+		self.types[typename]=typefn
+
+	def register_block(self,blockname,blockfn):
+		self.blocks[blockname]=blockfn
 
 	def set_global_vars(self,lib):
 		for (t,k,v) in self.global_vars:

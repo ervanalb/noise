@@ -8,6 +8,9 @@ class TypeFactory(object):
 		self.typeinfo=typeinfo
 		self.string=string
 
+	def alloc(self):
+		self.alloc_fn
+
 	def __eq__(self, other):
 		return self.alloc==other.alloc and self.free==other.free and self.copy==other.copy and self.typeinfo==other.typeinfo
 
