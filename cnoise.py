@@ -1,4 +1,5 @@
 from ctypes import *
+import os
 
 clib_noise =cdll.LoadLibrary(os.path.join(os.path.abspath(os.path.dirname(__file__)),'noise.so'))
 
@@ -8,7 +9,7 @@ CHUNKSIZE = 128
 FRAMERATE = 48000
 
 c_int.in_dll(clib_noise, "global_chunk_size").value = CHUNKSIZE
-c_int.in_dll(clib_noisee, "global_frame_rate").value = FRAMERATE
+c_int.in_dll(clib_noise, "global_frame_rate").value = FRAMERATE
 
 STATE_PT = c_void_p
 OUTPUT_PT = c_void_p
