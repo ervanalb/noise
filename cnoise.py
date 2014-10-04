@@ -1,14 +1,5 @@
 from ctypes import *
-
-clib_noise =cdll.LoadLibrary(os.path.join(os.path.abspath(os.path.dirname(__file__)),'noise.so'))
-
-clibs = {"noise": clib_noise}
-
-CHUNKSIZE = 128
-FRAMERATE = 48000
-
-c_int.in_dll(clib_noise, "global_chunk_size").value = CHUNKSIZE
-c_int.in_dll(clib_noisee, "global_frame_rate").value = FRAMERATE
+import os
 
 STATE_PT = c_void_p
 OUTPUT_PT = c_void_p
@@ -26,3 +17,26 @@ NODE_T._fields_ = [
 	]
 
 NODE_PT = POINTER(NODE_T)
+
+class NoiseLib(object):
+	def __init__(self,global_vars):
+		self.libs={}
+		self.global_vars=global_vars
+
+	def load(self,name,filename):
+		self.libs[name]=cdll.LoadLibrary(os.path.join(os.path.abspath(os.path.dirname(__file__)),filename))
+		self.set_global_vars(self.libs[name])
+
+	def set_global_vars(self,lib):
+		for (t,k,v) in self.global_vars:
+			t.in_dll(lib,k).value=v
+
+	def __getitem__(self,index):
+		return self.libs[index]
+
+#CHUNKSIZE = 128
+#FRAMERATE = 48000
+
+#c_int.in_dll(clib_noise, "global_chunk_size").value = CHUNKSIZE
+#c_int.in_dll(clib_noisee, "global_frame_rate").value = FRAMERATE
+
