@@ -1,9 +1,9 @@
 from ctypes import *
 import os
 import pyaudio
+import struct
 
 clib=cdll.LoadLibrary(os.path.join(os.path.abspath(os.path.dirname(__file__)),'noise.so'))
-print clib.wave_pull
 
 CHUNKSIZE = 128
 FRAMERATE = 48000
@@ -25,7 +25,7 @@ BLOCK_INFO_PT = c_void_p
 class NODE_T(Structure):
 	pass
 
-PULL_FN_PT = CFUNCTYPE(c_int, POINTER(NODE_T), POINTER(OUTPUT_PT))
+PULL_FN_PT = POINTER(CFUNCTYPE(c_int, POINTER(NODE_T), POINTER(OUTPUT_PT)))
 
 NODE_T._fields_ = [
 	('input_node',POINTER(NODE_T)),
@@ -33,23 +33,21 @@ NODE_T._fields_ = [
 	('state',STATE_PT),
 	]
 
-
 n=NODE_T()
 
 ui_pulls=(PULL_FN_PT*1)()
-ui_pulls[0].value = clib.constant_frequency
+ui_pulls[0].contents = clib.constant_frequency
 
 clib.wave_state_alloc(BLOCK_INFO_PT(),byref(n,NODE_T.state.offset))
 
+n.input_pull = ui_pulls[0]
+#n.input_node = 0
 
 output = POINTER(c_double)()
 
-print ui_pulls
-print byref(ui_pulls)
-
 while True:
 	result=clib.wave_pull(byref(n),byref(output))
-	data=struct.pack('f'*CHUNKSIZE,*out)
+	data=struct.pack('f'*CHUNKSIZE,*(output[:CHUNKSIZE]))
 	stream.write(data)
 
 stream.stop_stream()
