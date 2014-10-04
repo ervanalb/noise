@@ -1,5 +1,6 @@
 from ctypes import *
 import os
+import grassroots as gr
 
 STATE_PT = c_void_p
 OUTPUT_PT = c_void_p
@@ -69,7 +70,10 @@ class TypeFactory(object):
 	def __str__(self):
 		return self.string
 
-class Block(object):
+class Block(gr.Blade):
+    input_blocks = gr.Field([])
+    block_type = gr.Field("Block")
+
     def __init__(self, *args, **kwargs):
         self.state_alloc = None
         self.state_free = None
@@ -79,6 +83,7 @@ class Block(object):
         self.setup()
 
     def setup(self):
+        self.block_type = type(self).__name__
         # Allocate space for node
         self.node = NODE_T()
         self.node_ptr = pointer(self.node)
@@ -91,6 +96,8 @@ class Block(object):
         self.input_nodes = (NODE_PT * self.num_inputs)()
         self.node.input_node = cast(self.input_nodes, POINTER(NODE_PT))
 
+        self.input_blocks = [(None, None)] * self.num_inputs
+
         self.setup_state()
 
     def setup_state(self):
@@ -99,6 +106,7 @@ class Block(object):
     def set_input(self, input_idx, block, output_idx):
         self.node.input_node[input_idx] = block.node_ptr
         self.node.input_pull[input_idx] = PULL_FN_PT(block.pull_fns[output_idx])
+        self.input_blocks[input_idx] = (id(block), output_idx)
 
 
 #CHUNKSIZE = 128

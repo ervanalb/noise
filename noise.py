@@ -4,7 +4,8 @@ import ntype
 import pyaudio
 import struct
 import nanokontrol
-
+import grassroots as gr
+import threading
 
 
 context=cnoise.NoiseContext()
@@ -18,6 +19,12 @@ context.load('blocks.py')
 #n_chunk=ntype.TypeFactory(lib['noise'].simple_alloc,lib['noise'].simple_free,lib['noise'].simple_copy,ctypes.c_int(ctypes.sizeof(ctypes.c_double)*context.chunk_size),'chunk')
 
 if __name__ == "__main__":
+
+    root = gr.Root()
+    run = lambda: gr.run(root, host="0.0.0.0")
+    thread = threading.Thread(target=run)
+    thread.start()
+
     p = pyaudio.PyAudio()
     try:
         nk = nanokontrol.NanoKontrol2()
@@ -112,3 +119,4 @@ if __name__ == "__main__":
  
     stream.stop_stream()
     stream.close()
+    thread.join(1.0)
