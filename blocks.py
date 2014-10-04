@@ -152,6 +152,17 @@ class DivideBlock(c.Block):
 
 context.register_block('DivideBlock', DivideBlock);
 
+class NoteToFreqBlock(c.Block):
+    def __init__(self, *args, **kwargs):
+        self.state_alloc = clib_noise.maths_state_alloc
+        self.state_free = clib_noise.maths_state_free
+        self.pull_fns = [clib_noise.note_to_freq_pull]
+        self.num_inputs = 1
+        self.num_outputs = 1
+        self.setup()
+
+context.register_block('NoteToFreqBlock', NoteToFreqBlock);
+
 class FunctionGeneratorBlock(c.Block):
     def __init__(self, *args, **kwargs):
         self.state_alloc = clib_noise.function_gen_state_alloc
