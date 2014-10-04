@@ -37,7 +37,8 @@ error_t lpf_pull(node_t * node, output_pt * output)
 
 	if(!cur)
 	{
-		lpf_state = 0;
+		//lpf_state = 0;
+		lpf_state->active = 0;
 		*output = 0; // return NULL
 		return SUCCESS;
 	}
