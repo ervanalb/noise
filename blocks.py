@@ -126,3 +126,4 @@ class UIBlock(c.Block):
     def pull(self):
         return self.input_pull_fns[0](c.byref(self.input_nodes[0]), c.byref(self.output))
 
+context.register_block('UIBlock', UIBlock);

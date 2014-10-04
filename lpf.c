@@ -1,5 +1,7 @@
 #include "lpf.h"
 #include "block.h"
+#include "typefns.h"
+#include "globals.h"
 #include <stdlib.h>
 
 error_t lpf_state_alloc(block_info_pt block_info, state_pt* state)
