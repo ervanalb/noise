@@ -1,36 +1,21 @@
 import struct
 import cnoise as c
 
-noise_lib = c.noise_lib
+context.load_so('noise','noise.so')
+clib_noise = context.libs['noise']
 
-class Block(object):
-    def __init__(self, *args, **kwargs):
-        self.state_alloc = None
-        self.state_free = None
-        self.pull_fns = None # []
-        self.num_inputs = 1
-        self.num_outputs = 1
-        self.setup()
+n_double=c.TypeFactory(clib_noise.simple_alloc,clib_noise.simple_free,clib_noise.simple_copy,c.c_int(c.sizeof(c.c_double)),'double')
+context.register_type('double',n_double)
 
-    def setup(self):
-        # Allocate space for node
-        self.node = c.NODE_T()
-        # Allocate space for upstream pull fns
-        self.input_pull_fns = (c.PULL_FN_PT * self.num_inputs)()
-        self.node.input_pull = self.input_pull_fns[0]
-        # Allocate space for upstream nodes
-        self.input_nodes = (c.NODE_PT * self.num_inputs)()
-        self.node.input_node = self.input_nodes[0]
+n_int=c.TypeFactory(clib_noise.simple_alloc,clib_noise.simple_free,clib_noise.simple_copy,c.c_int(c.sizeof(c.c_int)),'int')
+context.register_type('int',n_int)
 
-        self.state_alloc(c.BLOCK_INFO_PT(), c.byref(self.node, c.NODE_T.state.offset))
+n_chunk=c.TypeFactory(clib_noise.simple_alloc,clib_noise.simple_free,clib_noise.simple_copy,c.c_int(c.sizeof(c.c_double)*context.global_vars['global_chunk_size']),'chunk')
+context.register_type('chunk',n_chunk)
 
-    def set_input(self, input_idx, block, output_idx):
-        self.input_nodes[input_idx].contents = block.node
-        print block.pull_fns
-        self.input_pull_fns[input_idx].contents = block.pull_fns[output_idx]
-        self.node.input_pull = self.input_pull_fns[0]
 
-class WaveBlock(Block):
+
+class WaveBlock(c.Block):
     def __init__(self, *args, **kwargs):
         self.state_alloc = clib_noise.wave_state_alloc
         self.state_free = clib_noise.wave_state_free
@@ -39,7 +24,9 @@ class WaveBlock(Block):
         self.num_outputs = 1
         self.setup()
 
-class LPFBlock(Block):
+context.register_block('WaveBlock',WaveBlock);
+
+class LPFBlock(c.Block):
     def __init__(self, *args, **kwargs):
         self.state_alloc = clib_noise.lpf_state_alloc
         self.state_free = clib_noise.lpf_state_free
@@ -48,7 +35,9 @@ class LPFBlock(Block):
         self.num_outputs = 1
         self.setup()
 
-class AccumulatorBlock(Block):
+context.register_block('LPFBlock',LPFBlock);
+
+class AccumulatorBlock(c.Block):
     def __init__(self, *args, **kwargs):
         self.state_alloc = clib_noise.accumulator_state_alloc
         self.state_free = clib_noise.accumulator_state_free
@@ -57,7 +46,9 @@ class AccumulatorBlock(Block):
         self.num_outputs = 1
         self.setup()
 
-class UnionBlock(Block):
+context.register_block('AccumulatorBlock',AccumulatorBlock);
+
+class UnionBlock(c.Block):
     def __init__(self, *args, **kwargs):
         self.state_alloc = clib_noise.union_state_alloc
         self.state_free = clib_noise.union_state_free
@@ -66,7 +57,9 @@ class UnionBlock(Block):
         self.num_outputs = 1
         self.setup()
 
-class TeeBlock(Block):
+context.register_block('UnionBlock',UnionBlock);
+
+class TeeBlock(c.Block):
     def __init__(self, *args, **kwargs):
         self.state_alloc = clib_noise.union_state_alloc
         self.state_free = clib_noise.union_state_free
@@ -75,7 +68,9 @@ class TeeBlock(Block):
         self.num_outputs = 2
         self.setup()
 
-class WyeBlock(Block):
+context.register_block('TeeBlock',TeeBlock);
+
+class WyeBlock(c.Block):
     def __init__(self, *args, **kwargs):
         self.state_alloc = clib_noise.union_state_alloc
         self.state_free = clib_noise.union_state_free
@@ -84,7 +79,9 @@ class WyeBlock(Block):
         self.num_outputs = 1
         self.setup()
 
-class UIBlock(Block):
+context.register_block('WyeBlock',TeeBlock);
+
+class UIBlock(c.Block):
     def __init__(self):
         # Super backwards block
         self.num_inputs = 1
@@ -104,4 +101,4 @@ class UIBlock(Block):
 
     def pull(self):
         return self.input_pull_fns[0](c.byref(self.input_nodes[0]), c.byref(self.output))
-    
+
