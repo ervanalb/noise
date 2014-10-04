@@ -115,11 +115,12 @@ class UIBlock(c.Block):
         self.input_pull_fns = [None]
         self.input_nodes = [None]
         
-        self.node_ptr = c.NODE_PT()
+        self.node = c.NODE_T()
 
         self.output = c.POINTER(c.c_double)()
 
     def set_input(self, input_idx, block, output_idx):
+        print block.node
         self.input_nodes[input_idx] = block.node
         self.input_pull_fns[input_idx] = block.pull_fns[output_idx]
 
