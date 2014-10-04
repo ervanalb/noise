@@ -21,7 +21,7 @@ NODE_PT = POINTER(NODE_T)
 class SEQUENCE_T(Structure):
     _fields_ = [
         ('length', c_int),
-        ('array', POINTER(c_double)),
+        ('array', POINTER(POINTER(c_double))),
     ]
 
 class NoiseContext(object):

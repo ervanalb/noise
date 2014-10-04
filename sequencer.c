@@ -33,7 +33,8 @@ error_t sequencer_pull(node_t * node, output_pt * output)
 
 	sequencer_state_t* state = (sequencer_state_t*)(node->state);
 
-	double* note = seq->array[((int)(*t)) % seq->length];
+	double* note;
+    note = seq->array[((int)(*t)) % seq->length];
 
 	if(note)
 	{

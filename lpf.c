@@ -25,7 +25,8 @@ error_t lpf_pull(node_t * node, output_pt * output)
 {
 	error_t e;
 
-	double* cur, alpha;
+	double* cur;
+    double* alpha;
 
 	lpf_state_t* lpf_state = (lpf_state_t*)(node->state);
 
@@ -46,7 +47,7 @@ error_t lpf_pull(node_t * node, output_pt * output)
 		lpf_state->prev=*cur;
 	}
 
-	lpf_state->prev = lpf_state->prev + alpha * (*cur - lpf_state->prev);
+	lpf_state->prev = lpf_state->prev + *alpha * (*cur - lpf_state->prev);
 
 	*output = (void*)&(lpf_state->prev);
 
