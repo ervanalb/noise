@@ -1,7 +1,7 @@
 import struct
 import cnoise as c
 
-noise_lib = c.noise_lib
+clib_noise = c.noise_lib
 
 class Block(object):
     def __init__(self, *args, **kwargs):
@@ -22,6 +22,9 @@ class Block(object):
         self.input_nodes = (c.NODE_PT * self.num_inputs)()
         self.node.input_node = self.input_nodes[0]
 
+        self.state_alloc()
+
+    def state_alloc(self):
         self.state_alloc(c.BLOCK_INFO_PT(), c.byref(self.node, c.NODE_T.state.offset))
 
     def set_input(self, input_idx, block, output_idx):
@@ -83,6 +86,28 @@ class WyeBlock(Block):
         self.num_inputs = 2
         self.num_outputs = 1
         self.setup()
+
+class ConstantBlock(Block):
+    def __init__(self, value, ctype=None):
+        if ctype is None:
+            if type(value) == int:
+                ctype = c.c_int32
+            elif type(value) == float:
+                ctype = c.c_double
+            else:
+                raise TypeError(value)
+        self.cvalue = c.POINTER(ctype)(ctype(value))
+        self.block_info = c.cast(self.cvalue, c.BLOCK_INFO_PT)
+
+        self.state_alloc = clib_noise.constant_state_alloc
+        self.state_free = clib_noise.constant_state_free
+        self.pull_fns = [clib_noise.constant_pull]
+        self.num_inputs = 0
+        self.num_outputs = 1
+        self.setup()
+
+    def state_alloc(self):
+        self.state_alloc(self.block_info, c.byref(self.node, c.NODE_T.state.offset))
 
 class UIBlock(Block):
     def __init__(self):
