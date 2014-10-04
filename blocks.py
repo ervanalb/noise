@@ -14,7 +14,6 @@ n_chunk=c.TypeFactory(clib_noise.simple_alloc,clib_noise.simple_free,clib_noise.
 context.register_type('chunk',n_chunk)
 
 
-
 class WaveBlock(c.Block):
     def __init__(self, *args, **kwargs):
         self.state_alloc = clib_noise.wave_state_alloc

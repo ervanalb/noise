@@ -82,7 +82,9 @@ class Block(object):
         # Allocate space for upstream nodes
         self.input_nodes = (c.NODE_PT * self.num_inputs)()
         self.node.input_node = self.input_nodes[0]
+        self.state_alloc()
 
+    def state_alloc(self):
         self.state_alloc(c.BLOCK_INFO_PT(), c.byref(self.node, c.NODE_T.state.offset))
 
     def set_input(self, input_idx, block, output_idx):
