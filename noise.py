@@ -1,49 +1,40 @@
-from ctypes import *
 import os
 import pyaudio
 import struct
+import cnoise as c
 
-clib=cdll.LoadLibrary(os.path.join(os.path.abspath(os.path.dirname(__file__)),'noise.so'))
+n=c.NODE_T()
 
-CHUNKSIZE = 128
-FRAMERATE = 48000
+ui_pulls=(c.PULL_FN_PT*1)()
+ui_pulls[0].contents = c.clib_noise.constant_frequency
 
-c_int.in_dll(clib, "global_chunk_size").value = CHUNKSIZE
-c_int.in_dll(clib, "global_frame_rate").value = FRAMERATE
-
-p = pyaudio.PyAudio()
-
-stream = p.open(format=pyaudio.paFloat32,
-	channels=1,
-	rate=FRAMERATE,
-	output=True)
-
-STATE_PT = c_void_p
-OUTPUT_PT = c_void_p
-BLOCK_INFO_PT = c_void_p
-
-class NODE_T(Structure):
-	pass
-
-PULL_FN_PT = POINTER(CFUNCTYPE(c_int, POINTER(NODE_T), POINTER(OUTPUT_PT)))
-
-NODE_T._fields_ = [
-	('input_node',POINTER(NODE_T)),
-	('input_pull',PULL_FN_PT),
-	('state',STATE_PT),
-	]
-
-n=NODE_T()
-
-ui_pulls=(PULL_FN_PT*1)()
-ui_pulls[0].contents = clib.constant_frequency
-
-clib.wave_state_alloc(BLOCK_INFO_PT(),byref(n,NODE_T.state.offset))
+clib.wave_state_alloc(c.BLOCK_INFO_PT(), c.byref(n,NODE_T.state.offset))
 
 n.input_pull = ui_pulls[0]
 #n.input_node = 0
 
-output = POINTER(c_double)()
+output = c.POINTER(c_double)()
+
+
+class Block(object):
+    def __init__(self, *args, **kwargs):
+        self.state_alloc = None
+        self.state_free = None
+        self.pull_fns = []
+        self.num_inputs = 1
+        self.num_outputs = 1
+        self.setup()
+
+    def setup(self):
+        self.node = c.NODE_T()
+        self.input_pull_fns = (c.PULL_FN_PT * self.num_inputs)()
+        self.input_nodes = (c.NODE_PT * self.num_inputs)()
+        self.state_alloc(
+
+    def set_input(self, input_idx, block):
+        s
+
+
 
 while True:
 	result=clib.wave_pull(byref(n),byref(output))
