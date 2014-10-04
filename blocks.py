@@ -114,7 +114,7 @@ class UIBlock(c.Block):
         self.input_pull_fns = [None]
         self.input_nodes = [None]
         
-        self.node = c.NODE_PT()
+        self.node_ptr = c.NODE_PT()
 
         self.output = c.POINTER(c.c_double)()
 

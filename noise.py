@@ -26,10 +26,14 @@ if __name__ == "__main__":
         channels=1,
         rate=FRAMERATE,
         output=True)
+
     wb = context.blocks["WaveBlock"]()
+    wb2 = context.blocks["WaveBlock"]()
     ui = context.blocks["UIBlock"]()
+
     wb.set_input(0, ui, 0)
-    ui.set_input(0, wb, 0)
+    wb2.set_input(0, ui, 0)
+    ui.set_input(0, wb2, 0)
 
     while True:
         try:

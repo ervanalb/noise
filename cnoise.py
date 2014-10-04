@@ -76,6 +76,8 @@ class Block(object):
     def setup(self):
         # Allocate space for node
         self.node = NODE_T()
+        self.node_ptr = pointer(self.node)
+
         # Allocate space for upstream pull fns
         self.input_pull_fns = (PULL_FN_PT * self.num_inputs)()
         self.node.input_pull = self.input_pull_fns[0]
@@ -89,8 +91,8 @@ class Block(object):
         self.state_alloc(BLOCK_INFO_PT(), byref(self.node, NODE_T.state.offset))
 
     def set_input(self, input_idx, block, output_idx):
-        self.input_nodes[input_idx].contents = block.node
-        print block.pull_fns
+        self.input_nodes[input_idx].contents = block.node_ptr
+        print block.node_ptr, block.pull_fns
         self.input_pull_fns[input_idx].contents = block.pull_fns[output_idx]
         self.node.input_pull = self.input_pull_fns[0]
 
