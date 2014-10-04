@@ -18,6 +18,12 @@ NODE_T._fields_ = [
 
 NODE_PT = POINTER(NODE_T)
 
+class SEQUENCE_T(Structure):
+    _fields_ = [
+        ('length', c_int),
+        ('array', POINTER(c_double)),
+    ]
+
 class NoiseContext(object):
 	def __init__(self):
 		self.libs={}

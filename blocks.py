@@ -82,15 +82,18 @@ class WyeBlock(c.Block):
 context.register_block('WyeBlock',WyeBlock);
 
 class ConstantBlock(c.Block):
-    def __init__(self, value, ctype=None):
-        if ctype is None:
-            if type(value) == int:
-                ctype = c.c_int32
-            elif type(value) == float:
-                ctype = c.c_double
-            else:
-                raise TypeError(value)
-        self.cvalue = ctype(value)  
+    def __init__(self, value=None, ctype=None, cvalue=None):
+        if cvalue is not None:
+            self.cvalue = cvalue
+        else:
+            if ctype is None:
+                if type(value) == int:
+                    ctype = c.c_int32
+                elif type(value) == float:
+                    ctype = c.c_double
+                else:
+                    raise TypeError(value)
+            self.cvalue = ctype(value)  
         self.block_info = c.cast(c.pointer(self.cvalue), c.BLOCK_INFO_PT)
 
         self.state_alloc = clib_noise.constant_state_alloc
@@ -159,6 +162,17 @@ class FunctionGeneratorBlock(c.Block):
         self.setup()
 
 context.register_block('FunctionGeneratorBlock', FunctionGeneratorBlock);
+
+class SequencerBlock(c.Block):
+    def __init__(self, *args, **kwargs):
+        self.state_alloc = clib_noise.sequencer_state_alloc
+        self.state_free = clib_noise.sequencer_state_free
+        self.pull_fns = [clib_noise.sequencer_pull]
+        self.num_inputs = 2 # time, seq
+        self.num_outputs = 1
+        self.setup()
+
+context.register_block('SequencerBlock', SequencerBlock);
 
 class UIBlock(c.Block):
     def __init__(self):
