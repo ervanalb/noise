@@ -1,3 +1,5 @@
+#include "typefns.h"
+#include "globals.h"
 
 typedef struct {
 	int active;
