@@ -3,7 +3,7 @@ import cnoise as c
 from blocks import *
 from ntype import *
 
-c.noiselib.set_globals()
+#c.noiselib.set_globals()
 
 if __name__ == "__main__":
     wb = WaveBlock()

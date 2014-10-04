@@ -79,7 +79,31 @@ class WyeBlock(c.Block):
         self.num_outputs = 1
         self.setup()
 
-context.register_block('WyeBlock',TeeBlock);
+context.register_block('WyeBlock',WyeBlock);
+
+class ConstantBlock(Block):
+    def __init__(self, value, ctype=None):
+        if ctype is None:
+            if type(value) == int:
+                ctype = c.c_int32
+            elif type(value) == float:
+                ctype = c.c_double
+            else:
+                raise TypeError(value)
+        self.cvalue = c.POINTER(ctype)(ctype(value))
+        self.block_info = c.cast(self.cvalue, c.BLOCK_INFO_PT)
+
+        self.state_alloc = clib_noise.constant_state_alloc
+        self.state_free = clib_noise.constant_state_free
+        self.pull_fns = [clib_noise.constant_pull]
+        self.num_inputs = 0
+        self.num_outputs = 1
+        self.setup()
+
+    def state_alloc(self):
+        self.state_alloc(self.block_info, c.byref(self.node, c.NODE_T.state.offset))
+
+context.register_block('ConstantBlock',ConstantBlock);
 
 class UIBlock(c.Block):
     def __init__(self):
