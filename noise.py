@@ -5,26 +5,22 @@ import pyaudio
 import struct
 
 
-CHUNKSIZE=128
-FRAMERATE=48000
-
-global_vars=[(ctypes.c_int,'global_chunk_size',CHUNKSIZE),(ctypes.c_int,'global_frame_rate',FRAMERATE)]
-
-
-context=cnoise.NoiseContext(global_vars)
+context=cnoise.NoiseContext()
+context.chunk_size = 128
+context.frame_rate = 48000
 
 context.load('blocks.py')
 
 #n_double=ntype.TypeFactory(lib['noise'].simple_alloc,lib['noise'].simple_free,lib['noise'].simple_copy,ctypes.c_int(ctypes.sizeof(ctypes.c_double)),'double')
 #n_int=ntype.TypeFactory(lib['noise'].simple_alloc,lib['noise'].simple_free,lib['noise'].simple_copy,ctypes.c_int(ctypes.sizeof(ctypes.c_int)),'int')
-#n_chunk=ntype.TypeFactory(lib['noise'].simple_alloc,lib['noise'].simple_free,lib['noise'].simple_copy,ctypes.c_int(ctypes.sizeof(ctypes.c_double)*CHUNKSIZE),'chunk')
+#n_chunk=ntype.TypeFactory(lib['noise'].simple_alloc,lib['noise'].simple_free,lib['noise'].simple_copy,ctypes.c_int(ctypes.sizeof(ctypes.c_double)*context.chunk_size),'chunk')
 
 if __name__ == "__main__":
     p = pyaudio.PyAudio()
 
     stream = p.open(format=pyaudio.paFloat32,
         channels=1,
-        rate=FRAMERATE,
+        rate=context.frame_rate,
         output=True)
 
     wb = context.blocks["WaveBlock"]()
@@ -38,7 +34,7 @@ if __name__ == "__main__":
     while True:
         try:
             result = ui.pull()
-            data=struct.pack('f'*CHUNKSIZE,*(ui.output[:CHUNKSIZE]))
+            data=struct.pack('f'*context.chunk_size,*(ui.output[:context.chunk_size]))
             stream.write(data)
         except KeyboardInterrupt:
             break
