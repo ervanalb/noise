@@ -41,10 +41,12 @@ error_t wave_pull(node_t * node, output_pt * output)
 	double* freq;
 	error_t e;
 
+/*
     printf("pulling...\n");
     printf("node addr = %x\n",node);
     printf("node->input_node = %x\n",node->input_node);
     printf("node->input_pull = %x\n",node->input_pull);
+*/
 
 	e=pull(node,0,(output_pt*)(&freq));
 	if(e != SUCCESS) return e;
