@@ -3,6 +3,7 @@ import ctypes
 import ntype
 import pyaudio
 import struct
+import nanokontrol
 
 
 
@@ -18,6 +19,11 @@ context.load('blocks.py')
 
 if __name__ == "__main__":
     p = pyaudio.PyAudio()
+    try:
+        nk = nanokontrol.NanoKontrol2()
+    except:
+        nk = None
+    nkm = nanokontrol.Map
 
     stream = p.open(format=pyaudio.paFloat32,
         channels=1,
@@ -96,6 +102,11 @@ if __name__ == "__main__":
             result = ui.pull()
             data=struct.pack('f'*context.chunk_size,*(ui.output[:context.chunk_size]))
             stream.write(data)
+            if nk is not None:
+                nk.process_input()
+                cbt.cvalue.value = nk.state[nkm.SLIDERS[0]] / 30.
+                cba.cvalue.value = nk.state[nkm.SLIDERS[1]] / 5.
+
         except KeyboardInterrupt:
             break
  
