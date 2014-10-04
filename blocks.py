@@ -1,6 +1,7 @@
 import struct
 import cnoise as c
 
+noise_lib = c.noise_lib
 
 class Block(object):
     def __init__(self, *args, **kwargs):
@@ -31,10 +32,55 @@ class Block(object):
 
 class WaveBlock(Block):
     def __init__(self, *args, **kwargs):
-        self.state_alloc = c.clib_noise.wave_state_alloc
-        self.state_free = c.clib_noise.wave_state_free
-        self.pull_fns = [c.clib_noise.wave_pull]
+        self.state_alloc = clib_noise.wave_state_alloc
+        self.state_free = clib_noise.wave_state_free
+        self.pull_fns = [clib_noise.wave_pull]
         self.num_inputs = 1
+        self.num_outputs = 1
+        self.setup()
+
+class LPFBlock(Block):
+    def __init__(self, *args, **kwargs):
+        self.state_alloc = clib_noise.lpf_state_alloc
+        self.state_free = clib_noise.lpf_state_free
+        self.pull_fns = [clib_noise.lpf_pull]
+        self.num_inputs = 2
+        self.num_outputs = 1
+        self.setup()
+
+class AccumulatorBlock(Block):
+    def __init__(self, *args, **kwargs):
+        self.state_alloc = clib_noise.accumulator_state_alloc
+        self.state_free = clib_noise.accumulator_state_free
+        self.pull_fns = [clib_noise.accumulator_pull]
+        self.num_inputs = 1
+        self.num_outputs = 1
+        self.setup()
+
+class UnionBlock(Block):
+    def __init__(self, *args, **kwargs):
+        self.state_alloc = clib_noise.union_state_alloc
+        self.state_free = clib_noise.union_state_free
+        self.pull_fns = [clib_noise.union_pull]
+        self.num_inputs = 1
+        self.num_outputs = 1
+        self.setup()
+
+class TeeBlock(Block):
+    def __init__(self, *args, **kwargs):
+        self.state_alloc = clib_noise.union_state_alloc
+        self.state_free = clib_noise.union_state_free
+        self.pull_fns = [clib_noise.union_pull, clib_noise.tee_pull_aux]
+        self.num_inputs = 1
+        self.num_outputs = 2
+        self.setup()
+
+class WyeBlock(Block):
+    def __init__(self, *args, **kwargs):
+        self.state_alloc = clib_noise.union_state_alloc
+        self.state_free = clib_noise.union_state_free
+        self.pull_fns = [clib_noise.wye_pull]
+        self.num_inputs = 2
         self.num_outputs = 1
         self.setup()
 
@@ -44,7 +90,7 @@ class UIBlock(Block):
         self.num_inputs = 1
         self.num_outputs = 1
 
-        self.pull_fns = [c.clib_noise.constant_frequency]
+        self.pull_fns = [clib_noise.constant_frequency]
         self.input_pull_fns = [None]
         self.input_nodes = [None]
         

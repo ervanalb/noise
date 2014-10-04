@@ -1,6 +1,8 @@
 from ctypes import *
 import os
 
+print "LOADING CTYPES!"
+
 STATE_PT = c_void_p
 OUTPUT_PT = c_void_p
 BLOCK_INFO_PT = c_void_p
