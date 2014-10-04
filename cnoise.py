@@ -19,9 +19,8 @@ NODE_T._fields_ = [
 NODE_PT = POINTER(NODE_T)
 
 class NoiseContext(object):
-	def __init__(self,global_vars):
+	def __init__(self):
 		self.libs={}
-		self.global_vars=global_vars
 		self.blocks={}
 		self.types={}
 
@@ -30,9 +29,9 @@ class NoiseContext(object):
 		execfile(py_file,vars_dict)
 
 	def load_so(self,name,soname):
-		if name not in self.libs:
-			self.libs[name]=cdll.LoadLibrary(os.path.join(os.path.abspath(os.path.dirname(__file__)),soname))
-			self.set_global_vars(self.libs[name])
+		l=cdll.LoadLibrary(os.path.join(os.path.abspath(os.path.dirname(__file__)),soname))
+		self.libs[name]=l
+		return l
 
 	def register_type(self,typename,typefn):
 		self.types[typename]=typefn

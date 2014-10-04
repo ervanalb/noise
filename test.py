@@ -3,13 +3,9 @@ import ctypes
 import struct
 import ntype
 
-CHUNKSIZE=128
-FRAMERATE=48000
-
-global_vars=[(ctypes.c_int,'global_chunk_size',CHUNKSIZE),(ctypes.c_int,'global_frame_rate',FRAMERATE)]
-
-
-context=cnoise.NoiseContext(global_vars)
+context=cnoise.NoiseContext()
+context.chunk_size = 128
+context.frame_rate = 48000
 
 context.load('blocks.py')
 
@@ -24,5 +20,5 @@ ui.set_input(0, wb, 0)
 
 while True:
     result = ui.pull()
-    data=struct.pack('f'*CHUNKSIZE,*(ui.output[:CHUNKSIZE]))
-    print ui.output[:CHUNKSIZE]
+    data=struct.pack('f'*context.chunk_size,*(ui.output[:context.chunk_size]))
+    print ui.output[:context.chunk_size]

@@ -1,8 +1,10 @@
 import struct
 import cnoise as c
 
-context.load_so('noise','noise.so')
-clib_noise = context.libs['noise']
+clib_noise = context.load_so('noise','noise.so')
+
+c.c_int.in_dll(clib_noise, "global_chunk_size").value = context.chunk_size
+c.c_int.in_dll(clib_noise, "global_frame_rate").value = context.frame_rate
 
 n_double=c.TypeFactory(clib_noise.simple_alloc,clib_noise.simple_free,clib_noise.simple_copy,c.c_int(c.sizeof(c.c_double)),'double')
 context.register_type('double',n_double)
@@ -10,9 +12,8 @@ context.register_type('double',n_double)
 n_int=c.TypeFactory(clib_noise.simple_alloc,clib_noise.simple_free,clib_noise.simple_copy,c.c_int(c.sizeof(c.c_int)),'int')
 context.register_type('int',n_int)
 
-#n_chunk=c.TypeFactory(clib_noise.simple_alloc,clib_noise.simple_free,clib_noise.simple_copy,c.c_int(c.sizeof(c.c_double)*context.global_vars[0]),'chunk')
-#context.register_type('chunk',n_chunk)
-
+n_chunk=c.TypeFactory(clib_noise.simple_alloc,clib_noise.simple_free,clib_noise.simple_copy,c.c_int(c.sizeof(c.c_double)*context.chunk_size),'chunk')
+context.register_type('chunk',n_chunk)
 
 class WaveBlock(c.Block):
     def __init__(self, *args, **kwargs):
