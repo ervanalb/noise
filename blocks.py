@@ -20,7 +20,7 @@ class WaveBlock(c.Block):
         self.state_alloc = clib_noise.wave_state_alloc
         self.state_free = clib_noise.wave_state_free
         self.pull_fns = [clib_noise.wave_pull]
-        self.num_inputs = 1
+        self.num_inputs = 2
         self.num_outputs = 1
         self.setup()
 
