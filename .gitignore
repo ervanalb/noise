@@ -2,4 +2,4 @@
 noise.so
 *.swp
 *.swo
-
+*.pyc
