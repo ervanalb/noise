@@ -10,8 +10,8 @@ context.register_type('double',n_double)
 n_int=c.TypeFactory(clib_noise.simple_alloc,clib_noise.simple_free,clib_noise.simple_copy,c.c_int(c.sizeof(c.c_int)),'int')
 context.register_type('int',n_int)
 
-n_chunk=c.TypeFactory(clib_noise.simple_alloc,clib_noise.simple_free,clib_noise.simple_copy,c.c_int(c.sizeof(c.c_double)*context.global_vars['global_chunk_size']),'chunk')
-context.register_type('chunk',n_chunk)
+#n_chunk=c.TypeFactory(clib_noise.simple_alloc,clib_noise.simple_free,clib_noise.simple_copy,c.c_int(c.sizeof(c.c_double)*context.global_vars[0]),'chunk')
+#context.register_type('chunk',n_chunk)
 
 
 class WaveBlock(c.Block):
@@ -80,7 +80,7 @@ class WyeBlock(c.Block):
 
 context.register_block('WyeBlock',WyeBlock);
 
-class ConstantBlock(Block):
+class ConstantBlock(c.Block):
     def __init__(self, value, ctype=None):
         if ctype is None:
             if type(value) == int:
