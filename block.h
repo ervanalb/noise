@@ -29,4 +29,24 @@ typedef void* type_info_pt;
 typedef error_t (*output_alloc_fn_pt)(type_info_pt type, output_pt * output);
 typedef error_t (*output_free_fn_pt)(type_info_pt type, output_pt output);
 typedef error_t (*output_copy_fn_pt)(type_info_pt type, output_pt dest, output_pt src);
+
+typedef struct
+{
+	type_info_pt type_info;
+	output_copy_fn_pt copy_fn;
+	output_pt object;
+} object_state_t;
+
+typedef struct
+{
+	type_info_pt type_info;
+	output_alloc_fn_pt alloc_fn;
+	output_copy_fn_pt copy_fn;
+	output_free_fn_pt free_fn;
+} object_info_t;
+
+error_t object_alloc(object_info_t* object_info, object_state_t* object_state);
+void object_free(object_info_t* object_info, object_state_t* object_state);
+error_t object_copy(object_state_t* object_state, output_pt src);
+
 #endif

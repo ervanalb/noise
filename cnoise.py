@@ -1,10 +1,13 @@
 from ctypes import *
 import os
-import grassroots as gr
+#import grassroots as gr
 
 STATE_PT = c_void_p
 OUTPUT_PT = c_void_p
 BLOCK_INFO_PT = c_void_p
+ERROR_T = c_int
+
+SUCCESS=0
 
 class NODE_T(Structure):
 	pass
@@ -19,11 +22,10 @@ NODE_T._fields_ = [
 
 NODE_PT = POINTER(NODE_T)
 
-class SEQUENCE_T(Structure):
-    _fields_ = [
-        ('length', c_int),
-        ('array', POINTER(POINTER(c_double))),
-    ]
+TYPE_INFO_PT = c_void_p
+OUTPUT_ALLOC_FN_PT = CFUNCTYPE(ERROR_T,TYPE_INFO_PT, POINTER(OUTPUT_PT))
+OUTPUT_FREE_FN_PT = CFUNCTYPE(ERROR_T,TYPE_INFO_PT, OUTPUT_PT)
+OUTPUT_COPY_FN_PT = CFUNCTYPE(ERROR_T,TYPE_INFO_PT, OUTPUT_PT, OUTPUT_PT)
 
 class NoiseContext(object):
 	def __init__(self):
@@ -53,26 +55,81 @@ class NoiseContext(object):
 	def __getitem__(self,index):
 		return self.libs[index]
 
+class MetaNoiseObject(type):
+	def __str__(self):
+		return self.string
+
+	def __eq__(self,other):
+		return self.string == other.string # LOL
+
+class NoiseObject(object):
+	__metaclass__ = MetaNoiseObject
+
+	@classmethod
+	def populate_object_info(cls,object_info):
+		object_info.alloc_fn = OUTPUT_ALLOC_FN_PT(cls.alloc_fn)
+		object_info.free_fn = OUTPUT_FREE_FN_PT(cls.free_fn)
+		object_info.copy_fn = OUTPUT_COPY_FN_PT(cls.copy_fn)
+		object_info.type_info = cast(pointer(cls.type_info),TYPE_INFO_PT)
+
+	@classmethod
+	def alloc(cls):
+		out=OUTPUT_PT();
+		e=cls.alloc_fn(byref(cls.type_info),byref(out))
+		if e != SUCCESS:
+			raise Exception("noise error")
+		return out
+
+	@classmethod
+	def free(cls,ptr):
+		cls.free_fn(byref(cls.type_info),ptr)
+
+	def __init__(self):
+		self.o=self.alloc()
+
+	def __del__(self):
+		self.free(self.o)
+
 class TypeFactory(object):
-	def __init__(self,alloc,free,copy,typeinfo,string):
-		self.alloc=alloc
-		self.free=free
-		self.copy=copy
+	def __init__(self,alloc_fn,free_fn,copy_fn,typeinfo,string):
+		self.alloc_fn=alloc_fn
+		self.free_fn=free_fn
+		self.copy_fn=copy_fn
 		self.typeinfo=typeinfo
 		self.string=string
 
-	def alloc(self):
-		self.alloc_fn
-
+	# This is actually really tricky and subtle, ignore it for now
+	#def __eq__(self, other):
+	#	return self.alloc_fn==other.alloc_fn and self.free_fn==other.free_fn and self.copy_fn==other.copy_fn and self.typeinfo==other.typeinfo
+	# Unfortunate hack
 	def __eq__(self, other):
-		return self.alloc==other.alloc and self.free==other.free and self.copy==other.copy and self.typeinfo==other.typeinfo
+		return self.string == other.string
 
 	def __str__(self):
 		return self.string
 
-class Block(gr.Blade):
-    input_blocks = gr.Field([])
-    block_type = gr.Field("Block")
+	def __call__(self,*args,**kwargs):
+		return NoiseObject(*args,**kwargs)
+
+	def populate_object_info(self,object_info):
+		object_info.alloc_fn = OUTPUT_ALLOC_FN_PT(self.alloc_fn)
+		object_info.free_fn = OUTPUT_FREE_FN_PT(self.free_fn)
+		object_info.copy_fn = OUTPUT_COPY_FN_PT(self.copy_fn)
+		object_info.type_info = cast(pointer(self.typeinfo),TYPE_INFO_PT)
+
+	def alloc(self):
+		out=OUTPUT_PT();
+		e=self.alloc_fn(byref(self.typeinfo),byref(out))
+		if e != SUCCESS:
+			raise Exception("noise error")
+		return out
+
+	def free(self,ptr):
+		self.free_fn(byref(self.typeinfo),ptr)
+
+class Block(object):
+    #input_blocks = gr.Field([])
+    #block_type = gr.Field("Block")
 
     def __init__(self, *args, **kwargs):
         self.state_alloc = None
@@ -108,10 +165,17 @@ class Block(gr.Blade):
         self.node.input_pull[input_idx] = PULL_FN_PT(block.pull_fns[output_idx])
         self.input_blocks[input_idx] = (id(block), output_idx)
 
+class OBJECT_STATE_T(Structure):
+	_fields_=[
+		('type_info',TYPE_INFO_PT),
+		('copy_fn',OUTPUT_COPY_FN_PT),
+		('object',OUTPUT_PT)
+	]
 
-#CHUNKSIZE = 128
-#FRAMERATE = 48000
-
-#c_int.in_dll(clib_noise, "global_chunk_size").value = CHUNKSIZE
-#c_int.in_dll(clib_noisee, "global_frame_rate").value = FRAMERATE
-
+class OBJECT_INFO_T(Structure):
+	_fields_=[
+		('type_info',TYPE_INFO_PT),
+		('alloc_fn',OUTPUT_ALLOC_FN_PT),
+		('copy_fn',OUTPUT_COPY_FN_PT),
+		('free_fn',OUTPUT_FREE_FN_PT)
+	]

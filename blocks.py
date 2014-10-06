@@ -6,14 +6,88 @@ clib_noise = context.load_so('noise','noise.so')
 c.c_int.in_dll(clib_noise, "global_chunk_size").value = context.chunk_size
 c.c_int.in_dll(clib_noise, "global_frame_rate").value = context.frame_rate
 
-n_double=c.TypeFactory(clib_noise.simple_alloc,clib_noise.simple_free,clib_noise.simple_copy,c.c_int(c.sizeof(c.c_double)),'double')
+class n_double(c.NoiseObject):
+	alloc_fn = clib_noise.simple_alloc
+	free_fn = clib_noise.simple_free
+	copy_fn = clib_noise.simple_copy
+	type_info = c.c_int(c.sizeof(c.c_double))
+	string = 'double'
+
+	@property
+	def value(self):
+		return c.cast(self.o,c.POINTER(c.c_double)).contents.value
+
+	@value.setter
+	def value(self,val):
+		c.cast(self.o,c.POINTER(c.c_double)).contents.value=val
+
+	def __init__(self,val):
+		c.NoiseObject.__init__(self)
+		self.o.contents.value=val
+
 context.register_type('double',n_double)
 
-n_int=c.TypeFactory(clib_noise.simple_alloc,clib_noise.simple_free,clib_noise.simple_copy,c.c_int(c.sizeof(c.c_int)),'int')
+class n_int(c.NoiseObject):
+	alloc_fn = clib_noise.simple_alloc
+	free_fn = clib_noise.simple_free
+	copy_fn = clib_noise.simple_copy
+	type_info = c.c_int(c.sizeof(c.c_int))
+	string = 'int'
+
+	@property
+	def value(self):
+		return c.cast(self.o,c.POINTER(c.c_int)).contents.value
+
+	@value.setter
+	def value(self,val):
+		c.cast(self.o,c.POINTER(c.c_int)).contents.value=val
+
+	def __init__(self,val):
+		c.NoiseObject.__init__(self)
+		self.value=val
+
 context.register_type('int',n_int)
 
-n_chunk=c.TypeFactory(clib_noise.simple_alloc,clib_noise.simple_free,clib_noise.simple_copy,c.c_int(c.sizeof(c.c_double)*context.chunk_size),'chunk')
+class n_chunk(c.NoiseObject):
+	alloc_fn = clib_noise.simple_alloc
+	free_fn = clib_noise.simple_free
+	copy_fn = clib_noise.simple_copy
+	type_info = c.c_int(c.sizeof(c.c_double)*context.chunk_size)
+	string = 'chunk'
+
+	def __init__(self):
+		c.NoiseObject.__init__(self)
+
 context.register_type('chunk',n_chunk)
+
+class ARRAY_INFO_T(c.Structure):
+	_fields_=[
+		('length',c.c_int),
+		('element',c.OBJECT_INFO_T)
+	]
+
+def array_factory(size,element_type):
+	array_info=ARRAY_INFO_T()
+	array_info.length=size
+	element_type.populate_object_info(array_info.element)
+	array_str = "{1}[{0}]".format(size,element_type.string)
+
+	class n_array(c.NoiseObject):
+		alloc_fn = clib_noise.array_alloc
+		free_fn = clib_noise.array_free
+		copy_fn = clib_noise.array_copy
+		type_info = array_info
+		string = array_str
+
+		def __init__(self,lst):
+			c.NoiseObject.__init__(self)
+			for item in lst:
+				if item is not None:
+					element_type(item) # something like this
+
+	return n_array
+
+context.register_type('array',array_factory)
 
 class WaveBlock(c.Block):
     def __init__(self, *args, **kwargs):

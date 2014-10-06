@@ -1,13 +1,14 @@
 #include "block.h"
-
-typedef struct {
-	double out;
-} sequencer_state_t;
+#include "typefns.h"
 
 typedef struct {
 	int length;
-	double** array;
-} sequence_t;
+	object_state_t object_state;
+} sequencer_state_t;
+
+typedef struct {
+	array_info_t* array_info;
+} sequencer_info_t;
 
 error_t sequencer_state_alloc(block_info_pt block_info, state_pt* state);
 void sequencer_state_free(block_info_pt block_info, state_pt state);

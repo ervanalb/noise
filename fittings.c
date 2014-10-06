@@ -4,7 +4,7 @@
 error_t union_state_alloc(block_info_pt block_info, state_pt* state)
 {
 	union_state_t* union_state;
-	union_info_t* union_info = (union_info_t*)block_info;
+	object_info_t* object_info = (object_info_t*)block_info;
 
 	union_state = malloc(sizeof(union_state_t));
 
@@ -13,17 +13,15 @@ error_t union_state_alloc(block_info_pt block_info, state_pt* state)
 	if(!union_state) return raise_error(ERR_MALLOC,"");
 
 	union_state->active=0;
-	union_state->type_info = union_info->type_info;
-	union_state->copy_fn = union_info->copy_fn;
-
-	return (*(union_info->alloc_fn))(union_info->type_info,(output_pt*)(&(union_state->output)));
+	return object_alloc(object_info,&union_state->object_state);
 }
 
 void union_state_free(block_info_pt block_info, state_pt state)
 {
-	union_info_t* union_info = (union_info_t*)block_info;
+	object_info_t* object_info = (object_info_t*)block_info;
+	union_state_t* union_state = (union_state_t*)state;
 
-	(*(union_info->free_fn))(union_info->type_info,((union_state_t*)state)->output);
+	object_free(object_info,&union_state->object_state);
 	free(state);
 }
 
@@ -46,10 +44,10 @@ error_t union_pull(node_t * node, output_pt * output)
 
 	union_state->active = 1;
 
-	e=(*(union_state->copy_fn))(union_state->type_info,union_state->output,result);
+	object_copy(&union_state->object_state,result);
 	if(e != SUCCESS) return e;
 
-	*output = union_state->output;
+	*output = union_state->object_state.object;
 	return SUCCESS;
 }
 
@@ -63,7 +61,7 @@ error_t tee_pull_aux(node_t* node, output_pt * output)
 	}
 	else
 	{
-		*output = union_state->output;
+		*output = union_state->object_state.object;
 	}
 	return SUCCESS;
 }
@@ -91,10 +89,10 @@ error_t wye_pull(node_t * node, output_pt * output)
 
 	union_state->active = 1;
 
-	e=(*(union_state->copy_fn))(union_state->type_info,union_state->output,result);
+	object_copy(&union_state->object_state,result);
 	if(e != SUCCESS) return e;
 
-	*output = union_state->output;
+	*output = union_state->object_state.object;
 	return SUCCESS;
 }
 

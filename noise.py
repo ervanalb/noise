@@ -3,8 +3,8 @@ import ctypes
 import ntype
 import pyaudio
 import struct
-import nanokontrol
-import grassroots as gr
+#import nanokontrol
+#import grassroots as gr
 import threading
 
 
@@ -20,17 +20,17 @@ context.load('blocks.py')
 
 if __name__ == "__main__":
 
-    root = gr.Root()
-    run = lambda: gr.run(root, host="0.0.0.0")
-    thread = threading.Thread(target=run)
-    thread.start()
+    #root = gr.Root()
+    #run = lambda: gr.run(root, host="0.0.0.0")
+    #thread = threading.Thread(target=run)
+    #thread.start()
 
     p = pyaudio.PyAudio()
     try:
         nk = nanokontrol.NanoKontrol2()
     except:
         nk = None
-    nkm = nanokontrol.Map
+    #nkm = nanokontrol.Map
 
     stream = p.open(format=pyaudio.paFloat32,
         channels=1,
