@@ -7,68 +7,87 @@ c.c_int.in_dll(clib_noise, "global_chunk_size").value = context.chunk_size
 c.c_int.in_dll(clib_noise, "global_frame_rate").value = context.frame_rate
 
 class n_double(c.NoiseObject):
-	alloc_fn = clib_noise.simple_alloc
-	free_fn = clib_noise.simple_free
-	copy_fn = clib_noise.simple_copy
-	type_info = c.c_int(c.sizeof(c.c_double))
-	string = 'double'
+    alloc_fn = clib_noise.simple_alloc
+    free_fn = clib_noise.simple_free
+    copy_fn = clib_noise.simple_copy
+    type_info = c.c_int(c.sizeof(c.c_double))
+    string = 'double'
 
-	@property
-	def value(self):
-		return c.cast(self.o,c.POINTER(c.c_double)).contents.value
+    @property
+    def value(self):
+        return c.cast(self.o,c.POINTER(c.c_double)).contents.value
 
-	@value.setter
-	def value(self,val):
-		c.cast(self.o,c.POINTER(c.c_double)).contents.value=val
+    @value.setter
+    def value(self,val):
+        c.cast(self.o,c.POINTER(c.c_double)).contents.value=val
 
 context.register_type('double',n_double)
 
 class n_int(c.NoiseObject):
-	alloc_fn = clib_noise.simple_alloc
-	free_fn = clib_noise.simple_free
-	copy_fn = clib_noise.simple_copy
-	type_info = c.c_int(c.sizeof(c.c_int))
-	string = 'int'
+    alloc_fn = clib_noise.simple_alloc
+    free_fn = clib_noise.simple_free
+    copy_fn = clib_noise.simple_copy
+    type_info = c.c_int(c.sizeof(c.c_int))
+    string = 'int'
 
-	@property
-	def value(self):
-		return c.cast(self.o,c.POINTER(c.c_int)).contents.value
+    @property
+    def value(self):
+        return c.cast(self.o,c.POINTER(c.c_int)).contents.value
 
-	@value.setter
-	def value(self,val):
-		c.cast(self.o,c.POINTER(c.c_int)).contents.value=val
+    @value.setter
+    def value(self,val):
+        c.cast(self.o,c.POINTER(c.c_int)).contents.value=val
 
 context.register_type('int',n_int)
 
 class n_chunk(c.NoiseObject):
-	alloc_fn = clib_noise.simple_alloc
-	free_fn = clib_noise.simple_free
-	copy_fn = clib_noise.simple_copy
-	type_info = c.c_int(c.sizeof(c.c_double)*context.chunk_size)
-	string = 'chunk'
+    alloc_fn = clib_noise.simple_alloc
+    free_fn = clib_noise.simple_free
+    copy_fn = clib_noise.simple_copy
+    type_info = c.c_int(c.sizeof(c.c_double)*context.chunk_size)
+    string = 'chunk'
 
 context.register_type('chunk',n_chunk)
 
 class ARRAY_INFO_T(c.Structure):
-	_fields_=[
-		('length',c.c_int),
-		('element',c.OBJECT_INFO_T)
-	]
+    _fields_=[
+        ('length',c.c_int),
+        ('element',c.OBJECT_INFO_T)
+    ]
+
+OUTPUT_ARRAY_T = c.OUTPUT_PT
 
 def array_factory(size,element_type):
-	array_info=ARRAY_INFO_T()
-	array_info.length=size
-	element_type.populate_object_info(array_info.element)
-	array_str = "{1}[{0}]".format(size,element_type.string)
+    array_info=ARRAY_INFO_T()
+    array_info.length=size
+    element_type.populate_object_info(array_info.element)
+    array_str = "{1}[{0}]".format(size,element_type.string)
 
-	class n_array(c.NoiseObject):
-		alloc_fn = clib_noise.array_alloc
-		free_fn = clib_noise.array_free
-		copy_fn = clib_noise.array_copy
-		type_info = array_info
-		string = array_str
+    class n_array(c.NoiseObject):
+        alloc_fn = clib_noise.array_alloc
+        free_fn = clib_noise.array_free
+        copy_fn = clib_noise.array_copy
+        type_info = array_info
+        string = array_str
 
-	return n_array
+        @property
+        def value(self):
+            arr=c.cast(self.o,c.POINTER(OUTPUT_ARRAY_T*size)).contents
+            return [element_type.deref(arr[i]) for i in range(size)]
+
+        @value.setter
+        def value(self,val):
+            array=c.cast(self.o,c.POINTER(OUTPUT_ARRAY_T*size)).contents
+            for i in range(size):
+                if array[i] is not None:
+                    element_type.free(array[i])
+                if val[i] is not None:
+                    array[i]=element_type.alloc()
+                    element_type(array[i]).value=val[i]
+                else:
+                    array[i]=c.OUTPUT_PT()
+
+    return n_array
 
 context.register_type('array',array_factory)
 
@@ -132,17 +151,18 @@ class ConstantBlock(c.Block):
     pull_fns = [clib_noise.constant_pull]
     num_outputs = 1
 
-    def __init__(self):
-        self.block_info=c.BLOCK_INFO_PT()
+    def __init__(self,noise_obj=None):
         c.Block.__init__(self)
+        if noise_obj is not None:
+            self.pointer=noise_obj.o
 
-	@property
-	def pointer(self):
-		return c.cast(self.block_info,OUTPUT_PT)
+    @property
+    def pointer(self):
+        return c.cast(self.node.state,c.OUTPUT_PT)
 
-	@pointer.setter
-	def pointer(self,ptr):
-		self.block_info=c.cast(ptr,BLOCK_INFO_PT)
+    @pointer.setter
+    def pointer(self,ptr):
+        self.node.state=c.cast(ptr,c.BLOCK_INFO_PT)
 
 context.register_block('ConstantBlock',ConstantBlock);
 
@@ -200,12 +220,21 @@ class FunctionGeneratorBlock(c.Block):
 
 context.register_block('FunctionGeneratorBlock', FunctionGeneratorBlock);
 
+class SEQUENCER_INFO_T(c.Structure):
+    _fields_=[('array_info',c.POINTER(ARRAY_INFO_T))]
+
 class SequencerBlock(c.Block):
     state_alloc = clib_noise.sequencer_state_alloc
     state_free = clib_noise.sequencer_state_free
     pull_fns = [clib_noise.sequencer_pull]
     num_inputs = 2 # time, seq
     num_outputs = 1
+
+    def __init__(self,array_type):
+        seq_info = SEQUENCER_INFO_T()
+        seq_info.array_info = c.cast(c.pointer(array_type.type_info),c.POINTER(ARRAY_INFO_T))
+        self.block_info = c.cast(c.pointer(seq_info),c.BLOCK_INFO_PT)
+        c.Block.__init__(self)
 
 context.register_block('SequencerBlock', SequencerBlock);
 

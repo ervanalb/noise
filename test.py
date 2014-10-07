@@ -9,11 +9,16 @@ context.frame_rate = 48000
 
 context.load('blocks.py')
 
-c=context.blocks['ConstantBlock']()
+a_t = context.types['array'](5,context.types['int'])
 
-n=context.types['int'].new()
-n.value=3
+a=a_t.new()
 
-c.pointer=n.o
+print a.value
 
+a.value=[1,2,3,4,5]
 
+print a.value
+
+a.value=[5,4,3,2,1]
+
+print a.value

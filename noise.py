@@ -14,10 +14,6 @@ context.frame_rate = 48000
 
 context.load('blocks.py')
 
-#n_double=ntype.TypeFactory(lib['noise'].simple_alloc,lib['noise'].simple_free,lib['noise'].simple_copy,ctypes.c_int(ctypes.sizeof(ctypes.c_double)),'double')
-#n_int=ntype.TypeFactory(lib['noise'].simple_alloc,lib['noise'].simple_free,lib['noise'].simple_copy,ctypes.c_int(ctypes.sizeof(ctypes.c_int)),'int')
-#n_chunk=ntype.TypeFactory(lib['noise'].simple_alloc,lib['noise'].simple_free,lib['noise'].simple_copy,ctypes.c_int(ctypes.sizeof(ctypes.c_double)*context.chunk_size),'chunk')
-
 if __name__ == "__main__":
 
     #root = gr.Root()
@@ -38,33 +34,21 @@ if __name__ == "__main__":
         output=True)
     unison = [65, 75, None, 72, 67, 67, 68, None, 65, 70, 72, 70, 65, 65, None, None, 65, 75, None, 72, 67, 67, 68, 65, 72, 75, None, 72, 77, None, None, None]
 
-    seqa = (ctypes.POINTER(ctypes.c_double) * len(unison))()
-    for i, u in enumerate(unison):
-        if u is not None:
-            seqa[i] = ctypes.pointer(ctypes.c_double(u))
-        else:
-            seqa[i] = ctypes.POINTER(ctypes.c_double)()
+    n_double=context.types['double']
+    n_int=context.types['int']
 
-    #seqa[0] = ctypes.pointer(ctypes.c_double(70.))
-    #seqa[1] = ctypes.pointer(ctypes.c_double(71.))
-    ##seqa[2] = ctypes.pointer(ctypes.c_double(72.))
-    #seqa[2] = ctypes.POINTER(ctypes.c_double)()
-    #seqa[3] = ctypes.pointer(ctypes.c_double(74.))
-    sequence = cnoise.SEQUENCE_T()
-    sequence.length = len(unison)
-    sequence.array = seqa
+    song=context.types['array'](len(unison),n_double).new(unison)
 
     wb = context.blocks["WaveBlock"]()
     wb2 = context.blocks["WaveBlock"]()
     wb3 = context.blocks["WaveBlock"]()
-    cb440 = context.blocks["ConstantBlock"](440.)
-    cb200 = context.blocks["ConstantBlock"](20.)
-    cb1 = context.blocks["ConstantBlock"](0.05)
-    cba = context.blocks["ConstantBlock"](0.10)
-    cbt = context.blocks["ConstantBlock"](0.012)
-    csaw = context.blocks["ConstantBlock"](1)
-    cbseq = context.blocks["ConstantBlock"](cvalue=sequence)
-    cbsong = context.blocks["ConstantBlock"](cvalue=sequence)
+    cb440 = context.blocks["ConstantBlock"](n_double.new(440))
+    cb200 = context.blocks["ConstantBlock"](n_double.new(20))
+    cb1 = context.blocks["ConstantBlock"](n_double.new(0.05))
+    cba = context.blocks["ConstantBlock"](n_double.new(0.10))
+    cbt = context.blocks["ConstantBlock"](n_double.new(0.012))
+    csaw = context.blocks["ConstantBlock"](n_int.new(1))
+    cbsong = context.blocks["ConstantBlock"](song)
     ab = context.blocks["AccumulatorBlock"]()
     atime = context.blocks["AccumulatorBlock"]()
     mult = context.blocks["MultiplyBlock"]()
@@ -73,14 +57,13 @@ if __name__ == "__main__":
     lpf = context.blocks["LPFBlock"]()
     lpfnote = context.blocks["LPFBlock"]()
     fgen = context.blocks["FunctionGeneratorBlock"]()
-    seq = context.blocks["SequencerBlock"]()
+    seq = context.blocks["SequencerBlock"](song) # could also call this with a type
     nfb = context.blocks["NoteToFreqBlock"]()
     ui = context.blocks["UIBlock"]()
 
     atime.set_input(0, cbt, 0)
     seq.set_input(0, atime, 0)
     seq.set_input(1, cbsong, 0)
-    #seq.set_input(1, cbseq, 0)
     nfb.set_input(0, seq, 0)
     lpfnote.set_input(0, nfb, 0)
     lpfnote.set_input(1, cba, 0)

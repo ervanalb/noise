@@ -81,16 +81,23 @@ class NoiseObject(object):
         return out
 
     @classmethod
-    def new(cls):
+    def new(cls,val=None):
         instance=cls(cls.alloc())
         def del_method(self):
             cls.free(self.o)
         instance.__del__=del_method
+        if val is not None:
+            instance.value=val
         return instance
 
     @classmethod
     def free(cls,ptr):
         cls.free_fn(byref(cls.type_info),ptr)
+
+    @classmethod
+    def deref(cls,ptr):
+        if ptr is None: return None
+        return cls(ptr).value
 
     def __init__(self, pointer):
         self.o=pointer
