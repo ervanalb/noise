@@ -23,27 +23,18 @@ int handle_error(){
 }
 */
 
-int main()
+void play(node_t* n, pull_fn_pt pull_f)
 {
-	node_t n;
-	pull_fn_pt ui_pulls[1] = {&constant_frequency};
-
-	wave_state_alloc(0,&n.state);
-	n.input_pull = ui_pulls;
-	n.input_node=0; // no input nodes
-
 	soundcard_init();
 
 	double* output;
 
 	for(;;)
 	{
-		wave_pull(&n, (output_pt*)(&output));
+		(*pull_f)(n, (output_pt*)(&output));
 		soundcard_write(output);
 	}
 
-	wave_state_free(0,&n.state);
 	soundcard_deinit();
-
-	return 0;
 }
+

@@ -1,7 +1,7 @@
 import cnoise
 import ctypes
 import ntype
-import pyaudio
+#import pyaudio
 import struct
 #import nanokontrol
 import threading
@@ -16,20 +16,19 @@ context.load('blocks.py')
 if __name__ == "__main__":
 
 
-    p = pyaudio.PyAudio()
-    try:
-        nk = nanokontrol.NanoKontrol2()
-    except:
-        nk = None
+    #p = pyaudio.PyAudio()
+    #try:
+    #    nk = nanokontrol.NanoKontrol2()
+    #except:
+    #    nk = None
     #nkm = nanokontrol.Map
-
+    """
     stream = p.open(format=pyaudio.paFloat32,
         channels=1,
         rate=context.frame_rate,
         frames_per_buffer=context.chunk_size,
         output=True)
-
-    print stream.get_output_latency()
+    """
 
     unison = [65, 75, None, 72, 67, 67, 68, None, 65, 70, 72, 70, 65, 65, None, None, 65, 75, None, 72, 67, 67, 68, 65, 72, 75, None, 72, 77, None, None, None]
     n=101
@@ -99,6 +98,9 @@ if __name__ == "__main__":
     fb.set_input(1, filt, 0)
     ui.set_input(0, fb, 0)
 
+    context.libs['noise'].play(ctypes.byref(fb.node),fb.pull_fns[0])
+
+    """
     while True:
         try:
             #cb.cvalue.value += 10
@@ -113,7 +115,7 @@ if __name__ == "__main__":
 
         except KeyboardInterrupt:
             break
- 
     stream.stop_stream()
     stream.close()
+    """
     thread.join(1.0)
