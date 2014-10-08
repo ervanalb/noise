@@ -47,7 +47,42 @@ class n_chunk(c.NoiseObject):
     type_info = c.c_int(c.sizeof(c.c_double)*context.chunk_size)
     string = 'chunk'
 
+    @property
+    def value(self):
+        arr=c.cast(self.o,c.POINTER(c.c_double*context.chunk_size)).contents
+        return [e for e in arr]
+
+    @value.setter
+    def value(self,val):
+        array=c.cast(self.o,c.POINTER(c.c_double*context.chunk_size)).contents
+        for i in range(context.chunk_size):
+            array[i]=val[i]
+
+
 context.register_type('chunk',n_chunk)
+
+def wave_factory(length):
+    class n_wave(c.NoiseObject):
+        alloc_fn = clib_noise.simple_alloc
+        free_fn = clib_noise.simple_free
+        copy_fn = clib_noise.simple_copy
+        type_info = c.c_int(c.sizeof(c.c_double)*length)
+        string='wave'
+
+        @property
+        def value(self):
+            arr=c.cast(self.o,c.POINTER(c.c_double*length)).contents
+            return [e for e in arr]
+
+        @value.setter
+        def value(self,val):
+            array=c.cast(self.o,c.POINTER(c.c_double*length)).contents
+            for i in range(length):
+                array[i]=val[i]
+
+    return n_wave
+
+context.register_type('wave',wave_factory)
 
 class ARRAY_INFO_T(c.Structure):
     _fields_=[
@@ -98,7 +133,7 @@ class WaveBlock(c.Block):
     num_inputs = 2
     num_outputs = 1
 
-context.register_block('WaveBlock',WaveBlock);
+context.register_block('WaveBlock',WaveBlock)
 
 class LPFBlock(c.Block):
     state_alloc = clib_noise.lpf_state_alloc
@@ -107,7 +142,7 @@ class LPFBlock(c.Block):
     num_inputs = 2
     num_outputs = 1
 
-context.register_block('LPFBlock',LPFBlock);
+context.register_block('LPFBlock',LPFBlock)
 
 class AccumulatorBlock(c.Block):
     state_alloc = clib_noise.accumulator_state_alloc
@@ -116,7 +151,7 @@ class AccumulatorBlock(c.Block):
     num_inputs = 1
     num_outputs = 1
 
-context.register_block('AccumulatorBlock',AccumulatorBlock);
+context.register_block('AccumulatorBlock',AccumulatorBlock)
 
 class UnionBlock(c.Block):
     state_alloc = clib_noise.union_state_alloc
@@ -125,7 +160,7 @@ class UnionBlock(c.Block):
     num_inputs = 1
     num_outputs = 1
 
-context.register_block('UnionBlock',UnionBlock);
+context.register_block('UnionBlock',UnionBlock)
 
 class TeeBlock(c.Block):
     state_alloc = clib_noise.union_state_alloc
@@ -134,7 +169,7 @@ class TeeBlock(c.Block):
     num_inputs = 1
     num_outputs = 2
 
-context.register_block('TeeBlock',TeeBlock);
+context.register_block('TeeBlock',TeeBlock)
 
 class WyeBlock(c.Block):
     state_alloc = clib_noise.union_state_alloc
@@ -143,7 +178,7 @@ class WyeBlock(c.Block):
     num_inputs = 2
     num_outputs = 1
 
-context.register_block('WyeBlock',WyeBlock);
+context.register_block('WyeBlock',WyeBlock)
 
 class ConstantBlock(c.Block):
     state_alloc = clib_noise.constant_state_alloc
@@ -164,7 +199,7 @@ class ConstantBlock(c.Block):
     def pointer(self,ptr):
         self.node.state=c.cast(ptr,c.BLOCK_INFO_PT)
 
-context.register_block('ConstantBlock',ConstantBlock);
+context.register_block('ConstantBlock',ConstantBlock)
 
 class PlusBlock(c.Block):
     state_alloc = clib_noise.maths_state_alloc
@@ -173,7 +208,7 @@ class PlusBlock(c.Block):
     num_inputs = 2
     num_outputs = 1
 
-context.register_block('PlusBlock', PlusBlock);
+context.register_block('PlusBlock', PlusBlock)
 
 class MinusBlock(c.Block):
     state_alloc = clib_noise.maths_state_alloc
@@ -182,7 +217,7 @@ class MinusBlock(c.Block):
     num_inputs = 2
     num_outputs = 1
 
-context.register_block('MinusBlock', MinusBlock);
+context.register_block('MinusBlock', MinusBlock)
 
 class MultiplyBlock(c.Block):
     state_alloc = clib_noise.maths_state_alloc
@@ -191,7 +226,7 @@ class MultiplyBlock(c.Block):
     num_inputs = 2
     num_outputs = 1
 
-context.register_block('MultiplyBlock', MultiplyBlock);
+context.register_block('MultiplyBlock', MultiplyBlock)
 
 class DivideBlock(c.Block):
     state_alloc = clib_noise.maths_state_alloc
@@ -200,7 +235,7 @@ class DivideBlock(c.Block):
     num_inputs = 2
     num_outputs = 1
 
-context.register_block('DivideBlock', DivideBlock);
+context.register_block('DivideBlock', DivideBlock)
 
 class NoteToFreqBlock(c.Block):
     state_alloc = clib_noise.maths_state_alloc
@@ -209,7 +244,7 @@ class NoteToFreqBlock(c.Block):
     num_inputs = 1
     num_outputs = 1
 
-context.register_block('NoteToFreqBlock', NoteToFreqBlock);
+context.register_block('NoteToFreqBlock', NoteToFreqBlock)
 
 class FunctionGeneratorBlock(c.Block):
     state_alloc = clib_noise.function_gen_state_alloc
@@ -218,7 +253,7 @@ class FunctionGeneratorBlock(c.Block):
     num_inputs = 1
     num_outputs = 1
 
-context.register_block('FunctionGeneratorBlock', FunctionGeneratorBlock);
+context.register_block('FunctionGeneratorBlock', FunctionGeneratorBlock)
 
 class SEQUENCER_INFO_T(c.Structure):
     _fields_=[('array_info',c.POINTER(ARRAY_INFO_T))]
@@ -236,7 +271,20 @@ class SequencerBlock(c.Block):
         self.block_info = c.cast(c.pointer(seq_info),c.BLOCK_INFO_PT)
         c.Block.__init__(self)
 
-context.register_block('SequencerBlock', SequencerBlock);
+context.register_block('SequencerBlock', SequencerBlock)
+
+class ConvolveBlock(c.Block):
+    state_alloc = clib_noise.convolve_state_alloc
+    state_free = clib_noise.convolve_state_free
+    pull_fns = [clib_noise.convolve_pull]
+    num_inputs = 2 # chunks, wave
+    num_outputs = 1 # chunks
+
+    def __init__(self,length):
+        self.block_info = c.cast(c.pointer(c.c_int(length)),c.BLOCK_INFO_PT)
+        c.Block.__init__(self)
+
+context.register_block('ConvolveBlock', ConvolveBlock)
 
 class UIBlock(c.Block):
     def __init__(self):
@@ -260,4 +308,4 @@ class UIBlock(c.Block):
     def pull(self):
         return self.input_pull_fns[0](c.byref(self.input_nodes[0]), c.byref(self.output))
 
-context.register_block('UIBlock', UIBlock);
+context.register_block('UIBlock', UIBlock)

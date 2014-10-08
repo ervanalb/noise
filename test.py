@@ -9,16 +9,10 @@ context.frame_rate = 48000
 
 context.load('blocks.py')
 
-a_t = context.types['array'](5,context.types['int'])
+w_t = context.types['wave'](5).new([1,2,3,4,5])
 
-a=a_t.new()
+print w_t.value
 
-print a.value
+w_t.value = [2,3,4,5,6]
 
-a.value=[1,2,3,4,5]
-
-print a.value
-
-a.value=[5,4,3,2,1]
-
-print a.value
+print w_t.value

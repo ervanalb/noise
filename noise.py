@@ -6,7 +6,7 @@ import struct
 #import nanokontrol
 #import grassroots as gr
 import threading
-
+import scipy.signal
 
 context=cnoise.NoiseContext()
 context.chunk_size = 128
@@ -31,11 +31,20 @@ if __name__ == "__main__":
     stream = p.open(format=pyaudio.paFloat32,
         channels=1,
         rate=context.frame_rate,
+        frames_per_buffer=context.chunk_size,
         output=True)
+
+    print stream.get_output_latency()
+
     unison = [65, 75, None, 72, 67, 67, 68, None, 65, 70, 72, 70, 65, 65, None, None, 65, 75, None, 72, 67, 67, 68, 65, 72, 75, None, 72, 77, None, None, None]
+    f = scipy.signal.firwin(100,.1)
+    g = [-n for n in f]
+    g[0]=1
+    #f=g
 
     n_double=context.types['double']
     n_int=context.types['int']
+    n_wave=context.types['wave']
 
     song=context.types['array'](len(unison),n_double).new(unison)
 
@@ -59,6 +68,8 @@ if __name__ == "__main__":
     fgen = context.blocks["FunctionGeneratorBlock"]()
     seq = context.blocks["SequencerBlock"](song) # could also call this with a type
     nfb = context.blocks["NoteToFreqBlock"]()
+    filt = context.blocks["ConstantBlock"](n_wave(len(f)).new(f))
+    fb = context.blocks["ConvolveBlock"](len(f))
     ui = context.blocks["UIBlock"]()
 
     atime.set_input(0, cbt, 0)
@@ -84,13 +95,17 @@ if __name__ == "__main__":
     #wb2.set_input(0, wb, 0)
     wb3.set_input(0, cb440, 0)
     wb3.set_input(1, csaw, 0)
-    ui.set_input(0, wb2, 0)
+
+    fb.set_input(0, wb2, 0)
+    fb.set_input(1, filt, 0)
+    ui.set_input(0, fb, 0)
 
     while True:
         try:
             #cb.cvalue.value += 10
             result = ui.pull()
             data=struct.pack('f'*context.chunk_size,*(ui.output[:context.chunk_size]))
+            #print ui.output[:context.chunk_size]
             stream.write(data)
             if nk is not None:
                 nk.process_input()
