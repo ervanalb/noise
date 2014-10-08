@@ -37,10 +37,14 @@ if __name__ == "__main__":
     print stream.get_output_latency()
 
     unison = [65, 75, None, 72, 67, 67, 68, None, 65, 70, 72, 70, 65, 65, None, None, 65, 75, None, 72, 67, 67, 68, 65, 72, 75, None, 72, 77, None, None, None]
-    f = scipy.signal.firwin(100,.1)
-    g = [-n for n in f]
-    g[0]=1
-    #f=g
+    n=101
+    lpf = scipy.signal.firwin(101,.05)
+    hpf = -lpf
+    hpf[n/2]+=1
+
+    echo = [.7]+[0]*500+[.3]
+
+    f=hpf
 
     n_double=context.types['double']
     n_int=context.types['int']

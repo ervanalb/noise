@@ -27,6 +27,12 @@ error_t convolve_state_alloc(block_info_pt block_info, state_pt* state)
     e=chunk_alloc((type_info_pt)0,(output_pt*)&convolve_state->output);
     if(e != SUCCESS) return e;
 
+    int i;
+    for(i=0;i<input_len;i++)
+    {
+        convolve_state->history[i]=0;
+    }
+
 	return SUCCESS;
 }
 
