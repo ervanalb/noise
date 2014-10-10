@@ -223,7 +223,7 @@ jsPlumb.bind("connectionDetached", function(info, ev){
 
 // Sync
 var sync = function(){
-    $.get(BASE_URL + "/", function(response){
+    $.get(BASE_URL + "/status", function(response){
         block_types = _.indexBy(response.blocks, 'class');
         type_types = _.indexBy(response.types, 'class');
         blocks.set(response.block_instances);

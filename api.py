@@ -2,16 +2,14 @@ import cnoise
 import ntype
 import threading
 
-from flask import Flask, request, jsonify
-from flask_cors import CORS
+from flask import Flask, request, jsonify, render_template
 
 context=cnoise.NoiseContext()
 context.chunk_size = 128
 context.frame_rate = 48000
 context.load('blocks.py')
 
-app = Flask(__name__)
-cors = CORS(app)
+app = Flask(__name__, static_folder="spider")
 
 next_block_id = 0
 block_inventory = {}
@@ -19,7 +17,7 @@ block_inventory = {}
 next_connection_id = 0
 connection_inventory = {}
 
-@app.route("/")
+@app.route("/status")
 def list_available_blocks():
     block_types = [ 
         {
