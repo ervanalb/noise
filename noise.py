@@ -4,7 +4,6 @@ import ntype
 import pyaudio
 import struct
 #import nanokontrol
-#import grassroots as gr
 import threading
 import scipy.signal
 
@@ -16,10 +15,6 @@ context.load('blocks.py')
 
 if __name__ == "__main__":
 
-    #root = gr.Root()
-    #run = lambda: gr.run(root, host="0.0.0.0")
-    #thread = threading.Thread(target=run)
-    #thread.start()
 
     p = pyaudio.PyAudio()
     try:
@@ -44,7 +39,7 @@ if __name__ == "__main__":
 
     echo = [.7]+[0]*500+[.3]
 
-    f=hpf
+    f=lpf
 
     n_double=context.types['double']
     n_int=context.types['int']

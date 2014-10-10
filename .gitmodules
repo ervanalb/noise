@@ -4,3 +4,6 @@
 [submodule "nanokontrol"]
 	path = nanokontrol
 	url = git@github.com:zbanks/nanokontrol
+[submodule "wireit"]
+	path = wireit
+	url = https://github.com/neyric/wireit

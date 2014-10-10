@@ -1,6 +1,5 @@
 from ctypes import *
 import os
-#import grassroots as gr
 
 STATE_PT = c_void_p
 OUTPUT_PT = c_void_p
@@ -107,8 +106,6 @@ class Block(object):
     num_outputs=0
     block_info=BLOCK_INFO_PT()
     pull_fns=[]
-    #input_blocks = gr.Field([])
-    #block_type = gr.Field("Block")
 
     def __init__(self):
         self.block_type = type(self).__name__

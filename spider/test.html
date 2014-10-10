@@ -1,0 +1,35 @@
+<!doctype html>
+<html>
+<head>
+    <title>Spider Test</title>
+    <script type="text/javascript" src="js/jquery.js"></script>
+    <script type="text/javascript" src="js/jquery-ui.js"></script>
+    <script type="text/javascript" src="js/underscore.js"></script>
+    <script type="text/javascript" src="js/backbone.js"></script>
+    <script type="text/javascript" src="js/raphael.js"></script>
+    <script type="text/javascript" src="js/jsPlumb.js"></script>
+    <script type="text/javascript" src="js/bootstrap.js"></script>
+
+    <script type="text/javascript" src="js/spider.js"></script>
+
+    <link rel="stylesheet" type="text/css" href="css/bootstrap.css">
+    <link rel="stylesheet" type="text/css" href="css/spider.css">
+    <link rel="stylesheet" type="text/css" href="css/jquery-ui.css">
+
+    <script type="text/javascript">
+        $(function(){
+            var createBlock = function(){
+                var b = new Block();
+                b.create();
+                var bv = window.bv = new BlockView({model: b});
+                //bv.$el.appendTo($("div.block-container"));
+            }
+            createBlock();
+        });
+    </script>
+</head>
+<body>
+    <div class="block-container">
+    </div>
+</body>
+</html>
