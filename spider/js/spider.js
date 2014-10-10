@@ -71,9 +71,18 @@ var BlockView = Backbone.View.extend({
         this.setupPlumb();
         this.render();
     },
+    stopDrag: function(ev){
+        console.log('drag', this, ev);
+        var pos = this.$el.offset();
+        this.model.set('x', pos.left);
+        this.model.set('y', pos.top);
+    },
     setupPlumb: function(){
         var view = this;
-        jsPlumb.draggable(this.$el, {handle: "div.block-header"});
+        jsPlumb.draggable(this.$el, {
+            handle: "div.block-header",
+            stop: _.bind(this.stopDrag, this)
+        });
         var inSize = 0.8 / (this.model.get('inputs').length );
         var outSize = 0.8 / (this.model.get('outputs').length );
         this.model.set('input_endpoints', _.map(this.model.get('inputs'), function(inp, i){
@@ -123,8 +132,11 @@ var BlockView = Backbone.View.extend({
 
         this.$divFooter = $("<div>").appendTo(this.$divBox).addClass("block-footer").text("Ready");
 
-        this.$el.empty().append(this.$divBox);
+        this.$el.empty()
+        this.$el.offset({left: this.model.get('x'), top: this.model.get('y')});
+        this.$el.append(this.$divBox);
         this.renderPipes();
+        jsPlumb.repaint(this.$el);
         return this;
     },
     renderPipes: function(){

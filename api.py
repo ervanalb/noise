@@ -36,7 +36,9 @@ def list_available_blocks():
     block_inv = [
         {
             "id": bid,
-            "class": blk.__class__.__name__ #XXX
+            "class": blk.__class__.__name__, #XXX
+            "x": blk.x,
+            "y": blk.y
         } for bid, blk in block_inventory.items()
     ]
     conn_inv = [
@@ -56,7 +58,13 @@ def new_block():
     args = data.get("args", [])
     kwargs = data.get("args", {})
 
+    x = data.get('x', 100)
+    y = data.get('y', 100)
+
     block = context.blocks[block_class](*args, **kwargs)
+    block.x = x
+    block.y = y
+
     block_inventory[next_block_id] = block
     next_block_id += 1
     return jsonify(id=next_block_id - 1, bclass=block_class)
