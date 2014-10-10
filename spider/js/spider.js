@@ -1,7 +1,10 @@
 var BASE_URL = "http://localhost:5000";
+var block_types = {};
+var type_types = {};
 
 // Blocks
 var Connection = Backbone.Model.extend({
+    idAttribute: "id",
     defaults: {
         id: null
     }
@@ -12,15 +15,34 @@ var Connections = Backbone.Collection.extend({
 });
 
 var Block = Backbone.Model.extend({
+    idAttribute: "id",
     defaults: {
+        /*
         inputs: [
             {name: "A", type: "int"},
         ],
         outputs: [
             {name: "X", type: "int"},
         ],
+        */
         name: "Block",
-        sid: null
+    },
+    initialize: function(options){
+        var bclass = block_types[this.get('class')];
+        if(!bclass){
+            console.log(this);
+            throw "Unknown class: " + this.get('class');
+        }
+        if(!this.has('inputs')){
+            this.set('inputs', _.map(_.range(bclass.num_inputs), function(i){
+                return {name: "Input " + i, type: "int"};
+            }));
+        }
+        if(!this.has('outputs')){
+            this.set('outputs', _.map(_.range(bclass.num_outputs), function(i){
+                return {name: "Output " + i, type: "int"};
+            }));
+        }
     },
     create: function(){
         var block = this; 
@@ -28,7 +50,7 @@ var Block = Backbone.Model.extend({
             "class": "WaveBlock"
         }, function(response){
             console.log("Created block:", response);
-            block.set('sid', parseInt(response.id));
+            block.set('id', parseInt(response.id));
         });
     },
 });
@@ -54,8 +76,8 @@ var BlockView = Backbone.View.extend({
         jsPlumb.draggable(this.$el, {handle: "div.block-header"});
         var inSize = 0.8 / (this.model.get('inputs').length );
         var outSize = 0.8 / (this.model.get('outputs').length );
-        _.each(this.model.get('inputs'), function(inp, i){
-            jsPlumb.addEndpoint(view.$el, 
+        this.model.set('input_endpoints', _.map(this.model.get('inputs'), function(inp, i){
+            return jsPlumb.addEndpoint(view.$el, 
                 {anchor: [0, inSize * (i + 0.5) + 0.1, -1, 0]},
                 {
                     isSource: false, 
@@ -66,9 +88,9 @@ var BlockView = Backbone.View.extend({
                         target_block: view.model
                     }
                 });
-        });
-        _.each(this.model.get('outputs'), function(outp, i){
-            jsPlumb.addEndpoint(view.$el, 
+        }));
+        this.model.set('output_endpoints', _.map(this.model.get('outputs'), function(outp, i){
+            return jsPlumb.addEndpoint(view.$el, 
                 {anchor: [1, outSize * (i + 0.5) + 0.1, 1, 0]},
                 {
                     isSource: true, 
@@ -79,7 +101,7 @@ var BlockView = Backbone.View.extend({
                         source_block: view.model
                     }
                 });
-        });
+        }));
 
     },
     render: function(){
@@ -110,8 +132,54 @@ var BlockView = Backbone.View.extend({
     }
 });
 
+var BlocksView = Backbone.View.extend({
+    initialize: function(options){
+        this.listenTo(this.collection, 'add', this.addOne);
+        this.listenTo(this.collection, 'reset', this.addAll);
+        //this.listenTo(this.collection, 'all', this.render);
+    },
+    addOne: function(block) {
+        var view = new BlockView({model: block});
+        console.log(view);
+        this.$el.append(view.render().el);
+    },
+    addAll: function(block){
+        this.collection.each(this.addOne, this);
+    }
+});
+
 var connections = new Connections();
-var blocks = new Connections();
+var blocks = new Blocks();
+var blocksView = new BlocksView({el: "div.block-container", collection: blocks});
+
+var ConnectionsView = Backbone.View.extend({
+    initialize: function(options){
+        this.listenTo(connections, 'add', this.addOne);
+        this.listenTo(connections, 'remove', this.rmOne);
+        this.listenTo(connections, 'reset', this.addAll);
+    },
+    addOne: function(conn) {
+        info = conn.get('conn');
+        console.log('add', info);
+        source = blocks.get(info.source_id);
+        target = blocks.get(info.target_id);
+        //console.log(blocks, info.source_id, source);
+        source_endpoint = source.get('output_endpoints')[info.source_idx];
+        target_endpoint = target.get('input_endpoints')[info.target_idx];
+        var jsConn = jsPlumb.connect({source: source_endpoint,target: target_endpoint}, {parameters: {id: conn.id }});
+        conn.set('jsConn', jsConn);
+    },
+    rmOne: function(conn) {
+        console.log('rm', conn);
+        jsPlumb.detach(this.model.get('jsConn'));
+    },
+    addAll: function(block){
+        this.collection.each(this.addOne, this);
+    }
+});
+
+var connectionsView = new ConnectionsView();
+
 
 // Canvas
 jsPlumb.setContainer($("body"));
@@ -123,14 +191,16 @@ jsPlumb.bind("connection", function(info, ev){
     // Called even after connnectionMoved
     console.log("conn", info);
     var params = info.connection.getParameters();
-    $.post(BASE_URL + "/new/connection", {
-        "source_block_id": params.source_block.get('sid'),
-        "target_block_id": params.target_block.get('sid'),
-        "source_idx": params.source_idx,
-        "target_idx": params.target_idx
-    }, function(response){
-        info.connection.setParameter('id', parseInt(response.id));
-    });
+    if(_.isUndefined(params.id)){
+        $.post(BASE_URL + "/new/connection", {
+            "source_block_id": params.source_block.id,
+            "target_block_id": params.target_block.id,
+            "source_idx": params.source_idx,
+            "target_idx": params.target_idx
+        }, function(response){
+            info.connection.setParameter('id', parseInt(response.id));
+        });
+    }
 });
 
 jsPlumb.bind("connectionMoved", function(info, ev){
@@ -141,7 +211,8 @@ jsPlumb.bind("connectionDetached", function(info, ev){
     // Called even if the connection didn't exist
     console.log("conn detached", info);
     var params = info.connection.getParameters();
-    if(params.id){
+    if(!_.isUndefined(params.id)){
+        console.log('deleting', params.id);
         $.post(BASE_URL + "/delete/connection", {
             "id": params.id
         }, function(response){
@@ -150,13 +221,12 @@ jsPlumb.bind("connectionDetached", function(info, ev){
     }
 });
 
-var block_types = {};
-var type_types = {};
-
 // Sync
-var setupSync = function(){
+var sync = function(){
     $.get(BASE_URL + "/", function(response){
-        block_types = response.blocks;
-        type_types = response.types;
+        block_types = _.indexBy(response.blocks, 'class');
+        type_types = _.indexBy(response.types, 'class');
+        blocks.set(response.block_instances);
+        connections.set(response.connection_instances);
     });
 }
