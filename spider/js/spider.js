@@ -1,21 +1,11 @@
-var BASE_URL = "http://localhost:5000";
+var BASE_URL = "";
 var block_types = {};
 var type_types = {};
 
 // Blocks
-var Connection = Backbone.Model.extend({
-    idAttribute: "id",
-    defaults: {
-        id: null
-    }
-});
-
-var Connections = Backbone.Collection.extend({
-    model: Connection
-});
 
 var Block = Backbone.Model.extend({
-    idAttribute: "id",
+    idAttribute: "block_id",
     defaults: {
         /*
         inputs: [
@@ -25,13 +15,20 @@ var Block = Backbone.Model.extend({
             {name: "X", type: "int"},
         ],
         */
+        "block_class": "WaveBlock",
         name: "Block",
+        x: 150,
+        y: 150,
+        args: [],
+        kwargs: {}
     },
     initialize: function(options){
-        var bclass = block_types[this.get('class')];
+        var bclass = block_types[this.get('block_class')];
+        console.log('nm', this.get('name'));
+        //this.set("name", this.get("block_class"));
         if(!bclass){
             console.log(this);
-            throw "Unknown class: " + this.get('class');
+            throw "Unknown class: " + this.get('block_class');
         }
         if(!this.has('inputs')){
             this.set('inputs', _.map(_.range(bclass.num_inputs), function(i){
@@ -44,21 +41,49 @@ var Block = Backbone.Model.extend({
             }));
         }
     },
-    create: function(){
-        var block = this; 
-        $.post(BASE_URL + "/new/block", {
-            "class": "WaveBlock"
-        }, function(response){
-            console.log("Created block:", response);
-            block.set('id', parseInt(response.id));
-        });
-    },
+    toJSON: function(options){
+        return this.pick('block_class', 'x', 'y', 'name', 'args', 'kwargs');
+    }
 });
 
 
 var Blocks = Backbone.Collection.extend({
     model: Block,
+    url: BASE_URL + "/blocks",
 });
+var blocks = new Blocks();
+
+var Connection = Backbone.Model.extend({
+    idAttribute: "connection_id",
+    defaults: {
+    },
+    initialize: function(data, options){
+        var options = options || {};
+        if(!options.fromPlumb){
+            source = blocks.get(this.get('source_id'));
+            target = blocks.get(this.get('target_id'));
+            console.log(source, target, this.attributes);
+            source_endpoint = source.get('output_endpoints')[this.get('source_idx')];
+            target_endpoint = target.get('input_endpoints')[this.get('target_idx')];
+
+            var jsConn = jsPlumb.connect({source: source_endpoint,target: target_endpoint}, {parameters: {id: this.id }});
+            this.set('jsConn', jsConn);
+        }else{
+            this.save();
+        }
+    },
+    toJSON: function(options){
+        return this.pick('source_id', 'source_idx',
+                         'target_id', 'target_idx',
+                         'connection_id');
+    }
+});
+
+var Connections = Backbone.Collection.extend({
+    model: Connection,
+    url: BASE_URL + "/connections"
+});
+var connections = new Connections();
 
 var BlockView = Backbone.View.extend({
     tagName: "div",
@@ -76,6 +101,7 @@ var BlockView = Backbone.View.extend({
         var pos = this.$el.offset();
         this.model.set('x', pos.left);
         this.model.set('y', pos.top);
+        this.model.save();
     },
     setupPlumb: function(){
         var view = this;
@@ -160,8 +186,6 @@ var BlocksView = Backbone.View.extend({
     }
 });
 
-var connections = new Connections();
-var blocks = new Blocks();
 var blocksView = new BlocksView({el: "div.block-container", collection: blocks});
 
 var ConnectionsView = Backbone.View.extend({
@@ -171,15 +195,7 @@ var ConnectionsView = Backbone.View.extend({
         this.listenTo(connections, 'reset', this.addAll);
     },
     addOne: function(conn) {
-        info = conn.get('conn');
-        console.log('add', info);
-        source = blocks.get(info.source_id);
-        target = blocks.get(info.target_id);
-        //console.log(blocks, info.source_id, source);
-        source_endpoint = source.get('output_endpoints')[info.source_idx];
-        target_endpoint = target.get('input_endpoints')[info.target_idx];
-        var jsConn = jsPlumb.connect({source: source_endpoint,target: target_endpoint}, {parameters: {id: conn.id }});
-        conn.set('jsConn', jsConn);
+        //XXX
     },
     rmOne: function(conn) {
         console.log('rm', conn);
@@ -204,14 +220,13 @@ jsPlumb.bind("connection", function(info, ev){
     console.log("conn", info);
     var params = info.connection.getParameters();
     if(_.isUndefined(params.id)){
-        $.post(BASE_URL + "/new/connection", {
-            "source_block_id": params.source_block.id,
-            "target_block_id": params.target_block.id,
+        var conn = connections.add({
+            "source_id": params.source_block.id,
+            "target_id": params.target_block.id,
             "source_idx": params.source_idx,
-            "target_idx": params.target_idx
-        }, function(response){
-            info.connection.setParameter('id', parseInt(response.id));
-        });
+            "target_idx": params.target_idx,
+            "jsConn": info.connection
+        }, {fromPlumb: true});
     }
 });
 
@@ -223,22 +238,23 @@ jsPlumb.bind("connectionDetached", function(info, ev){
     // Called even if the connection didn't exist
     console.log("conn detached", info);
     var params = info.connection.getParameters();
+    console.log("detached", params);
     if(!_.isUndefined(params.id)){
         console.log('deleting', params.id);
-        $.post(BASE_URL + "/delete/connection", {
-            "id": params.id
-        }, function(response){
-            console.log(response);
-        });
+        var connection = connections.get(params.id);
+        connection.destroy();
     }
 });
 
 // Sync
 var sync = function(){
-    $.get(BASE_URL + "/status", function(response){
+    return $.get(BASE_URL + "/status", function(response){
         block_types = _.indexBy(response.blocks, 'class');
         type_types = _.indexBy(response.types, 'class');
-        blocks.set(response.block_instances);
-        connections.set(response.connection_instances);
+        //blocks.set(response.block_instances);
+        //connections.set(response.connection_instances);
+        blocks.fetch();
+        connections.fetch();
+        
     });
 }
