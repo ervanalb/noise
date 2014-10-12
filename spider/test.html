@@ -6,7 +6,6 @@
     <script type="text/javascript" src="js/jquery-ui.js"></script>
     <script type="text/javascript" src="js/underscore.js"></script>
     <script type="text/javascript" src="js/backbone.js"></script>
-    <script type="text/javascript" src="js/raphael.js"></script>
     <script type="text/javascript" src="js/jsPlumb.js"></script>
     <script type="text/javascript" src="js/bootstrap.js"></script>
 
@@ -18,6 +17,8 @@
 
     <script type="text/javascript">
         $(function(){
+
+                /*
             var createBlock = function(){
                 var b = new Block();
                 b.create();
@@ -25,6 +26,17 @@
                 //bv.$el.appendTo($("div.block-container"));
             }
             createBlock();
+            */
+            createBlock = function(bc, name, args){
+                b = blocks.add({block_class: bc, name: name, args: args});
+                b.save();
+            }
+            createBlockSystem = function(){ 
+                createBlock("ConstantBlock", "C440", [{__type__: "double", args: [440.]}]);
+                createBlock("ConstantBlock", "C2", [{__type__: "int", args: [2]}]);
+                createBlock("WaveBlock", "Wave", []);
+            };
+            sync();
         });
     </script>
 </head>

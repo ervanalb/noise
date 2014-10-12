@@ -287,10 +287,10 @@ class ConvolveBlock(c.Block):
 context.register_block('ConvolveBlock', ConvolveBlock)
 
 class UIBlock(c.Block):
+    num_inputs = 1
+    num_outputs = 0
     def __init__(self):
         # Super backwards block
-        self.num_inputs = 1
-        self.num_outputs = 1
 
         self.pull_fns = [clib_noise.constant_frequency]
         self.input_pull_fns = [None]
@@ -301,7 +301,6 @@ class UIBlock(c.Block):
         self.output = c.POINTER(c.c_double)()
 
     def set_input(self, input_idx, block, output_idx):
-        print block.node
         self.input_nodes[input_idx] = block.node
         self.input_pull_fns[input_idx] = block.pull_fns[output_idx]
 
