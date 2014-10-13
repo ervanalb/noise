@@ -270,16 +270,32 @@ jsPlumb.bind("connectionDetached", function(info, ev){
 });
 
 // Create new blocks
+BLOCK_FNS = {
+    "Constant<double>": {block_class: "ConstantBlock", args: [{"__type__": "double", args: [0.0]}]},
+    "Constant<int>": {block_class: "ConstantBlock", args: [{"__type__": "int", args: [0]}]},
+    "Accumulator": {block_class: "AccumulatorBlock", args: []},
+    "FunctionGenerator": {block_class: "FunctionGeneratorBlock", args: []},
+    "Sequencer": {block_class: "SequencerBlock", args: []},
+    //"Convolve<10>": {block_class: "ConvolveBlock", args: [10]}]},
+    "Plus": {block_class: "PlusBlock", args: []},
+    "Multiply": {block_class: "MultiplyBlock", args: []},
+    "Tee": {block_class: "TeeBlock", args: [{"__type__": "double", args: []}]},
+    "Wye": {block_class: "WyeBlock", args: [{"__type__": "double", args: []}]},
+}
 var setupBlockBtns = function(){
     var createBlock = function(bc, name, args){
         b = blocks.add({block_class: bc, name: name, args: args});
         b.save();
     }
-    _.map(block_types, function(btype, bname){
-        var button = $("<button>").text(bname).click(function(){
-            createBlock(bname, bname, []);
-        });
-        $(".new-blocks").append(button);
+    _.map(BLOCK_FNS, function(bargs, bname){
+        if(_.has(block_types, bargs.block_class)){
+            var button = $("<button>").text(bname).click(function(){
+                createBlock(bargs.block_class, bname, bargs.args);
+            });
+            $(".new-blocks").append(button);
+        }else{
+            console.warn("Server did not report block type '%s'", bname);
+        }
     });
 }
 

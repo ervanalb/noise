@@ -166,6 +166,12 @@ class UnionBlock(c.Block):
     num_inputs = 1
     num_outputs = 1
 
+    def __init__(self, datatype):
+        info = c.OBJECT_INFO_T()
+        datatype.populate_object_info(info)
+        self.block_info = c.cast(c.pointer(info),c.BLOCK_INFO_PT)
+        c.Block.__init__(self)
+
 context.register_block('UnionBlock',UnionBlock)
 
 class TeeBlock(c.Block):
@@ -174,8 +180,14 @@ class TeeBlock(c.Block):
     pull_fns = [clib_noise.union_pull, clib_noise.tee_pull_aux]
     num_inputs = 1
     num_outputs = 2
-    input_names = ["out"]
+    input_names = ["in"]
     output_names = ["left", "right"]
+
+    def __init__(self, datatype):
+        info = c.OBJECT_INFO_T()
+        datatype.populate_object_info(info)
+        self.block_info = c.cast(c.pointer(info),c.BLOCK_INFO_PT)
+        c.Block.__init__(self)
 
 context.register_block('TeeBlock',TeeBlock)
 
@@ -187,6 +199,12 @@ class WyeBlock(c.Block):
     num_outputs = 1
     input_names = ["left", "right"]
     output_names = ["out"]
+
+    def __init__(self, datatype):
+        info = c.OBJECT_INFO_T()
+        datatype.populate_object_info(info)
+        self.block_info = c.cast(c.pointer(info),c.BLOCK_INFO_PT)
+        c.Block.__init__(self)
 
 context.register_block('WyeBlock',WyeBlock)
 
