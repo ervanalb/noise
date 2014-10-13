@@ -55,6 +55,7 @@ if __name__ == "__main__":
     cb1 = context.blocks["ConstantBlock"](n_double.new(0.05))
     cba = context.blocks["ConstantBlock"](n_double.new(0.10))
     cbt = context.blocks["ConstantBlock"](n_double.new(0.012))
+    cnoct = context.blocks["ConstantBlock"](n_double.new(0.0))
     csaw = context.blocks["ConstantBlock"](n_int.new(1))
     cbsong = context.blocks["ConstantBlock"](song)
     ab = context.blocks["AccumulatorBlock"]()
@@ -74,7 +75,9 @@ if __name__ == "__main__":
     atime.set_input(0, cbt, 0)
     seq.set_input(0, atime, 0)
     seq.set_input(1, cbsong, 0)
-    nfb.set_input(0, seq, 0)
+    add2.set_input(0, seq, 0)
+    add2.set_input(1, cnoct, 0)
+    nfb.set_input(0, add2, 0)
     lpfnote.set_input(0, nfb, 0)
     lpfnote.set_input(1, cba, 0)
     wb2.set_input(0, lpfnote, 0)
@@ -98,6 +101,7 @@ if __name__ == "__main__":
     fb.set_input(0, wb2, 0)
     fb.set_input(1, filt, 0)
     ui.set_input(0, fb, 0)
+
 
     while True:
         try:

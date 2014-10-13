@@ -32,17 +32,17 @@ var Block = Backbone.Model.extend({
         }
         if(!this.has('inputs')){
             this.set('inputs', _.map(_.range(bclass.num_inputs), function(i){
-                return {name: "Input " + i, type: "int"};
+                return {name: bclass.input_names[i], type: "int"};
             }));
         }
         if(!this.has('outputs')){
             this.set('outputs', _.map(_.range(bclass.num_outputs), function(i){
-                return {name: "Output " + i, type: "int"};
+                return {name: bclass.output_names[i], type: "int"};
             }));
         }
     },
     toJSON: function(options){
-        return this.pick('block_class', 'x', 'y', 'name', 'args', 'kwargs');
+        return this.pick('block_class', 'x', 'y', 'name', 'args', 'kwargs', 'data');
     }
 });
 
@@ -106,7 +106,7 @@ var BlockView = Backbone.View.extend({
     setupPlumb: function(){
         var view = this;
         jsPlumb.draggable(this.$el, {
-            handle: "div.block-header",
+            //handle: "div.block-header",
             stop: _.bind(this.stopDrag, this)
         });
         var inSize = 0.8 / (this.model.get('inputs').length );
@@ -139,10 +139,18 @@ var BlockView = Backbone.View.extend({
         }));
 
     },
+    events: {
+        "click .block-close": "destroy",
+    },
+    destory: function(ev){
+        this.model.destroy();
+        this.remove();
+    },
     render: function(){
         var view = this;
         this.$divBox = $("<div>");
-        this.$divHeader = $("<div>").appendTo(this.$divBox).addClass("block-header").text(this.model.get('name'));
+        this.$divHeader = $("<div>").appendTo(this.$divBox).addClass("block-header");
+        this.$txtName = $("<input type='text'>").appendTo(this.$divHeader).val(this.model.get('name'));
 
         this.$inputUl = $("<ul>").appendTo(this.$divBox).addClass("block-inputs");
         this.$outputUl = $("<ul>").appendTo(this.$divBox).addClass("block-outputs");
@@ -156,13 +164,28 @@ var BlockView = Backbone.View.extend({
             return $outpLi;
         });
 
+        this.$txtData = $("<textarea>").appendTo(this.$divBox).val(JSON.stringify(this.model.get('data')));
+
         this.$divFooter = $("<div>").appendTo(this.$divBox).addClass("block-footer").text("Ready");
+        this.$aClose = $("<a>").appendTo(this.$divFooter).addClass("block-close ").html("&times;");
 
         this.$el.empty()
         this.$el.offset({left: this.model.get('x'), top: this.model.get('y')});
         this.$el.append(this.$divBox);
         this.renderPipes();
         jsPlumb.repaint(this.$el);
+        this.delegateEvents();
+
+        this.$txtName.change(function(ev){
+            view.model.set('name', $(this).val());
+            view.model.save();
+            console.log(view.model.get('name'));
+        });
+
+        this.$txtData.change(function(ev){
+            view.model.set('data', JSON.parse($(this).val()));
+            view.model.save();
+        });
         return this;
     },
     renderPipes: function(){
@@ -246,11 +269,28 @@ jsPlumb.bind("connectionDetached", function(info, ev){
     }
 });
 
+// Create new blocks
+var setupBlockBtns = function(){
+    var createBlock = function(bc, name, args){
+        b = blocks.add({block_class: bc, name: name, args: args});
+        b.save();
+    }
+    _.map(block_types, function(btype, bname){
+        var button = $("<button>").text(bname).click(function(){
+            createBlock(bname, bname, []);
+        });
+        $(".new-blocks").append(button);
+    });
+}
+
 // Sync
 var sync = function(){
     return $.get(BASE_URL + "/status", function(response){
         block_types = _.indexBy(response.blocks, 'class');
         type_types = _.indexBy(response.types, 'class');
+
+        setupBlockBtns();
+
         //blocks.set(response.block_instances);
         //connections.set(response.connection_instances);
         blocks.fetch();

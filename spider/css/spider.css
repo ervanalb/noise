@@ -11,6 +11,19 @@
     font-weight: 600;
 }
 
+.block-header input{
+    width: 100%;
+    border: none;
+    border-bottom: 1px solid black;
+}
+
+.block-base textarea{
+    width: 100%;
+    text-overflow: scroll;
+
+}
+
+
 .block-footer {
     border-top: 1px solid black;
     position: absolute;
@@ -19,6 +32,13 @@
     color: #888;
     font-size: 0.8em;
     font-style: italic;
+}
+
+.block-close {
+    display: float;
+    float: right;
+    padding-left: 0.5em;
+    padding-left: 0.5em;
 }
 
 ul.block-inputs {

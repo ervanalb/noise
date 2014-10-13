@@ -1,9 +1,10 @@
 import cnoise
+import json
 import ntype
 import threading
 
 from flask import Flask, request, jsonify, render_template
-from flask.ext.restful import reqparse, abort, Api, Resource, marshal_with, fields
+from flask.ext.restful import reqparse, abort, Api, Resource, marshal_with, marshal, fields
 
 context=cnoise.NoiseContext()
 context.chunk_size = 128
@@ -19,13 +20,13 @@ block_inventory = {}
 next_connection_id = 0
 connection_inventory = {}
 
-
 block_fields = {
     'x': fields.Float,
     'y': fields.Float,
     'block_id': fields.Integer,
     'args': fields.Raw,
     'kwargs': fields.Raw,
+    'data': fields.Raw,
     'block_class': fields.String,
     'name': fields.String,
 }
@@ -34,9 +35,16 @@ def parse_arg(arg):
     if isinstance(arg, dict):
         if "__type__" in arg:
             typename = arg["__type__"]
+            if typename == "array":
+                length = arg.get("length", 0)
+                subtype = arg.get("atype", "int")
+                ntype = context.types[typename](length, context.types[subtype])
+            else:
+                ntype = context.types[typename]
+
             args = arg.get("args", [])
             kwargs = arg.get("kwargs", {})
-            return context.types[typename].new(*args, **kwargs)
+            return ntype.new(*args, **kwargs)
     return arg
 
 
@@ -46,7 +54,9 @@ def list_available_blocks():
         {
             "class": name,
             "num_inputs": blk.num_inputs,
-            "num_outputs": blk.num_outputs
+            "num_outputs": blk.num_outputs,
+            "input_names": blk.input_names,
+            "output_names": blk.output_names
         } for name, blk in context.blocks.items()
     ]
 
@@ -96,6 +106,9 @@ class Block(Resource):
         data = request.get_json()
         block.x = float(data.get('x', block.x))
         block.y = float(data.get('y', block.y))
+        block.name = data.get('name', block.name)
+        if 'data' in data:
+            block.data = data['data']
         return block
 
 class BlockList(Resource):
@@ -104,10 +117,13 @@ class BlockList(Resource):
         return block_inventory.values()
 
     @marshal_with(block_fields)
-    def post(self):
+    def post(self, data=None):
         global next_block_id
-        data = request.get_json()
+        if data is None:
+            data = request.get_json()
         block_class = data["block_class"]
+        if block_class == "UIBlock": 
+            raise ValueError
         args = map(parse_arg, data.get("args", []))
         kwargs = data.get("kwargs", {})
 
@@ -121,9 +137,14 @@ class BlockList(Resource):
         block.name = data.get('name', block_class)
         block.args = data.get("args", [])
         block.kwargs = data.get("kwargs", {})
-        block.block_id = next_block_id 
+        #block.data = data.get("data", None)
 
-        block_inventory[next_block_id] = block
+        b_id = data.get("block_id", next_block_id)
+        while b_id in block_inventory:
+            b_id += 1
+
+        block.block_id = b_id
+        block_inventory[b_id] = block
         next_block_id += 1
 
         return block
@@ -155,9 +176,11 @@ class ConnectionList(Resource):
     def get(self):
         return connection_inventory.values()
 
-    def post(self):
+    @staticmethod
+    def post(data=None):
         global next_connection_id
-        data = request.get_json(force=True)
+        if data is None:
+            data = request.get_json(force=True)
 
         source_block_id = int(data["source_id"])
         target_block_id = int(data["target_id"])
@@ -176,8 +199,11 @@ class ConnectionList(Resource):
 
         target_block.set_input(target_idx, source_block, source_idx)
 
-        connection["connection_id"] = next_connection_id
-        connection_inventory[next_connection_id] = connection
+        c_id = data.get("connection_id", next_connection_id)
+        while c_id in connection_inventory:
+            c_id += 1
+        connection["connection_id"] = c_id
+        connection_inventory[c_id] = connection
         next_connection_id += 1
 
         return connection
@@ -186,6 +212,37 @@ api.add_resource(BlockList, '/blocks')
 api.add_resource(Block, '/blocks/<int:block_id>')
 api.add_resource(ConnectionList, '/connections')
 api.add_resource(Connection, '/connections/<int:connection_id>')
+
+def export_json(filename):
+    with open(filename, "w") as f:
+        json_blocks = {}
+        for bid, block in block_inventory.items():
+            json_blocks[bid] = marshal(block, block_fields)
+
+        json.dump({"blocks": json_blocks, "connections": connection_inventory}, f)
+
+def import_json(filename):
+    with open(filename) as f:
+        global next_block_id
+        global next_connection_id
+        global block_inventory
+        global connection_inventory
+        ui_block = block_inventory[0]
+        data = json.load(f)
+
+        block_inventory = {0: ui_block}
+        connection_inventory = {}
+        next_block_id = 1
+        next_connection_id = 0
+        for block in data["blocks"].values():
+            if block["block_id"] == 0:
+                ui_block.x = block["x"]
+                ui_block.y = block["y"]
+                continue
+            BlockList().post(data=block)
+        for connection in data["connections"].values():
+            ConnectionList.post(data=connection)
+
         
 
 def main():
@@ -204,6 +261,7 @@ def main():
     print stream.get_output_latency()
 
     thread = threading.Thread(target=app.run)
+    thread.daemon = True
     thread.start()
 
     ui_block = context.blocks["UIBlock"]()
@@ -215,15 +273,22 @@ def main():
     ui_block.kwargs = {}
     ui_block.block_id = 0 
     block_inventory[0] = ui_block
+
     global next_block_id
     next_block_id += 1
+
+    try:
+        import_json("data.json")
+    except ValueError:
+        print "Unable to load data.json"
 
     while True:
         try:
             #cb.cvalue.value += 10
-            if len(block_inventory) < 5:
+            if ui_block.input_nodes[0] is None:
                 print 'waiting'
                 time.sleep(1)
+                #export_json("data.json")
                 continue
             result = ui_block.pull()
             data=struct.pack('f'*context.chunk_size,*(ui_block.output[:context.chunk_size]))
