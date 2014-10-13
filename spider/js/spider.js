@@ -279,8 +279,8 @@ BLOCK_FNS = {
     //"Convolve<10>": {block_class: "ConvolveBlock", args: [10]}]},
     "Plus": {block_class: "PlusBlock", args: []},
     "Multiply": {block_class: "MultiplyBlock", args: []},
-    "Tee": {block_class: "TeeBlock", args: [{"__type__": "double", args: []}]},
-    "Wye": {block_class: "WyeBlock", args: [{"__type__": "double", args: []}]},
+    "Tee<double>": {block_class: "TeeBlock", args: [{"__type__": "double", args: []}]},
+    "Wye<double>": {block_class: "WyeBlock", args: [{"__type__": "double", args: []}]},
 }
 var setupBlockBtns = function(){
     var createBlock = function(bc, name, args){

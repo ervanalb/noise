@@ -1,3 +1,6 @@
+body{
+    background-color: #E6E6FF;
+}
 .block-base {
     border: 1px solid black;
     width: 150px;
@@ -9,12 +12,13 @@
 .block-header {
     border-bottom: 1px solid black;
     font-weight: 600;
+    overflow-y: hidden;
 }
 
 .block-header input{
     width: 100%;
     border: none;
-    border-bottom: 1px solid black;
+    /*border-bottom: 1px solid black;*/
 }
 
 .block-base textarea{
