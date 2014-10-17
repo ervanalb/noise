@@ -74,10 +74,10 @@ error_t wye_pull(node_t * node, output_pt * output)
 
 	output_pt result=0, garbage=0;
 
-	e=pull(node,0,result);
+	e=pull(node,0, &result);
 	if(e != SUCCESS) return e;
 	
-	e=pull(node,1,garbage);
+	e=pull(node,1, &garbage);
 	if(e != SUCCESS) return e;
 
 	if(!result)

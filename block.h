@@ -3,7 +3,7 @@
 #include "error.h"
 
 // Stuff relating to blocks
-#define pull(N,I,O) ((N)->input_pull[(I)]((N)->input_node[(I)],(O)))
+#define pull(N,I,O) ( ((N)->input_pull[(I)]) ? ((N)->input_pull[(I)]((N)->input_node[(I)],(O))) : ((*(O)=0), 0) )
 
 typedef void* state_pt;
 typedef void* output_pt;
