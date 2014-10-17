@@ -1,7 +1,7 @@
 import cnoise
 import ctypes
 import ntype
-#import pyaudio
+import pyaudio
 import struct
 #import nanokontrol
 import threading
@@ -16,19 +16,11 @@ context.load('blocks.py')
 if __name__ == "__main__":
 
 
-    #p = pyaudio.PyAudio()
     #try:
     #    nk = nanokontrol.NanoKontrol2()
     #except:
     #    nk = None
     #nkm = nanokontrol.Map
-    """
-    stream = p.open(format=pyaudio.paFloat32,
-        channels=1,
-        rate=context.frame_rate,
-        frames_per_buffer=context.chunk_size,
-        output=True)
-    """
 
     unison = [65, 75, None, 72, 67, 67, 68, None, 65, 70, 72, 70, 65, 65, None, None, 65, 75, None, 72, 67, 67, 68, 65, 72, 75, None, 72, 77, None, None, None]
     n=101
@@ -41,6 +33,7 @@ if __name__ == "__main__":
     f=lpf
 
     n_double=context.types['double']
+
     n_int=context.types['int']
     n_wave=context.types['wave']
 
@@ -98,24 +91,32 @@ if __name__ == "__main__":
     fb.set_input(1, filt, 0)
     ui.set_input(0, fb, 0)
 
-    context.libs['noise'].play(ctypes.byref(fb.node),fb.pull_fns[0])
 
-    """
+    #context.libs['noise'].play(ctypes.byref(fb.node),fb.pull_fns[0])
+
+
+    p = pyaudio.PyAudio()
+    stream = p.open(format=pyaudio.paFloat32,
+        channels=1,
+        rate=context.frame_rate,
+        frames_per_buffer=context.chunk_size,
+        output=True)
+ 
     while True:
         try:
             #cb.cvalue.value += 10
-            result = ui.pull()
+            result=ui.pull()
+            #print ui.output.contents
             data=struct.pack('f'*context.chunk_size,*(ui.output[:context.chunk_size]))
             #print ui.output[:context.chunk_size]
             stream.write(data)
-            if nk is not None:
-                nk.process_input()
-                cbt.cvalue.value = nk.state[nkm.SLIDERS[0]] / 30.
-                cba.cvalue.value = nk.state[nkm.SLIDERS[1]] / 5.
+            #if nk is not None:
+            #    nk.process_input()
+            #    cbt.cvalue.value = nk.state[nkm.SLIDERS[0]] / 30.
+            #    cba.cvalue.value = nk.state[nkm.SLIDERS[1]] / 5.
 
         except KeyboardInterrupt:
             break
     stream.stop_stream()
     stream.close()
-    """
     thread.join(1.0)

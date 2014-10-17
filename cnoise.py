@@ -66,14 +66,14 @@ class NoiseObject(object):
 
     @classmethod
     def populate_object_info(cls,object_info):
-        object_info.alloc_fn = OUTPUT_ALLOC_FN_PT(cls.alloc_fn)
-        object_info.free_fn = OUTPUT_FREE_FN_PT(cls.free_fn)
-        object_info.copy_fn = OUTPUT_COPY_FN_PT(cls.copy_fn)
+        object_info.alloc_fn = cls.alloc_fn
+        object_info.free_fn = cls.free_fn
+        object_info.copy_fn = cls.copy_fn
         object_info.type_info = cast(pointer(cls.type_info),TYPE_INFO_PT)
 
     @classmethod
     def alloc(cls):
-        out=OUTPUT_PT();
+        out=OUTPUT_PT()
         e=cls.alloc_fn(byref(cls.type_info),byref(out))
         if e != SUCCESS:
             raise Exception("noise error")
