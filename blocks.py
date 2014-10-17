@@ -6,11 +6,10 @@ clib_noise = context.load_so('noise','noise.so')
 c.c_int.in_dll(clib_noise, "global_chunk_size").value = context.chunk_size
 c.c_int.in_dll(clib_noise, "global_frame_rate").value = context.frame_rate
 
-
 class n_double(c.NoiseObject):
-    alloc_fn = c.OUTPUT_ALLOC_FN_PT(("simple_alloc",clib_noise))
-    free_fn = c.OUTPUT_FREE_FN_PT(("simple_free", clib_noise))
-    copy_fn = c.OUTPUT_COPY_FN_PT(("simple_copy", clib_noise))
+    alloc_fn = clib_noise.simple_alloc
+    free_fn = clib_noise.simple_free
+    copy_fn = clib_noise.simple_copy
     type_info = c.c_int(c.sizeof(c.c_double))
     string = 'double'
 
@@ -25,9 +24,9 @@ class n_double(c.NoiseObject):
 context.register_type('double',n_double)
 
 class n_int(c.NoiseObject):
-    alloc_fn = c.OUTPUT_ALLOC_FN_PT(("simple_alloc", clib_noise))
-    free_fn = c.OUTPUT_FREE_FN_PT(("simple_free", clib_noise))
-    copy_fn = c.OUTPUT_COPY_FN_PT(("simple_copy", clib_noise))
+    alloc_fn = clib_noise.simple_alloc
+    free_fn = clib_noise.simple_free
+    copy_fn = clib_noise.simple_copy
     type_info = c.c_int(c.sizeof(c.c_int))
     string = 'int'
 
@@ -42,9 +41,9 @@ class n_int(c.NoiseObject):
 context.register_type('int',n_int)
 
 class n_chunk(c.NoiseObject):
-    alloc_fn = c.OUTPUT_ALLOC_FN_PT(("simple_alloc", clib_noise))
-    free_fn = c.OUTPUT_FREE_FN_PT(("simple_free", clib_noise))
-    copy_fn = c.OUTPUT_COPY_FN_PT(("simple_copy", clib_noise))
+    alloc_fn = clib_noise.simple_alloc
+    free_fn = clib_noise.simple_free
+    copy_fn = clib_noise.simple_copy
     type_info = c.c_int(c.sizeof(c.c_double)*context.chunk_size)
     string = 'chunk'
 
@@ -64,9 +63,9 @@ context.register_type('chunk',n_chunk)
 
 def wave_factory(length):
     class n_wave(c.NoiseObject):
-        alloc_fn = c.OUTPUT_ALLOC_FN_PT(("simple_alloc", clib_noise))
-        free_fn = c.OUTPUT_FREE_FN_PT(("simple_free", clib_noise))
-        copy_fn = c.OUTPUT_COPY_FN_PT(("simple_copy", clib_noise))
+        alloc_fn = clib_noise.simple_alloc
+        free_fn = clib_noise.simple_free
+        copy_fn = clib_noise.simple_copy
         type_info = c.c_int(c.sizeof(c.c_double)*length)
         string='wave'
 
@@ -100,9 +99,9 @@ def array_factory(size,element_type):
     array_str = "{1}[{0}]".format(size,element_type.string)
 
     class n_array(c.NoiseObject):
-        alloc_fn = c.OUTPUT_ALLOC_FN_PT(("array_alloc", clib_noise))
-        free_fn = c.OUTPUT_FREE_FN_PT(("array_free", clib_noise))
-        copy_fn = c.OUTPUT_COPY_FN_PT(("array_copy", clib_noise))
+        alloc_fn = clib_noise.array_alloc
+        free_fn = clib_noise.array_free
+        copy_fn = clib_noise.array_copy
 
         type_info = array_info
         string = array_str
@@ -131,7 +130,7 @@ context.register_type('array',array_factory)
 class WaveBlock(c.Block):
     state_alloc = clib_noise.wave_state_alloc
     state_free = clib_noise.wave_state_free
-    pull_fns = [c.PULL_FN_PT(("wave_pull", clib_noise))]
+    pull_fns = [clib_noise.wave_pull]
     num_inputs = 2
     num_outputs = 1
     input_names = ["freq", "type"]
@@ -142,7 +141,7 @@ context.register_block('WaveBlock',WaveBlock)
 class LPFBlock(c.Block):
     state_alloc = clib_noise.lpf_state_alloc
     state_free = clib_noise.lpf_state_free
-    pull_fns = [c.PULL_FN_PT(("lpf_pull", clib_noise))]
+    pull_fns = [clib_noise.lpf_pull]
     num_inputs = 2
     num_outputs = 1
     input_names = ["wave", "alpha"]
@@ -153,7 +152,7 @@ context.register_block('LPFBlock',LPFBlock)
 class AccumulatorBlock(c.Block):
     state_alloc = clib_noise.accumulator_state_alloc
     state_free = clib_noise.accumulator_state_free
-    pull_fns = [c.PULL_FN_PT(("accumulator_pull", clib_noise))]
+    pull_fns = [clib_noise.accumulator_pull]
     num_inputs = 1
     num_outputs = 1
     input_names = ["x"]
@@ -164,7 +163,7 @@ context.register_block('AccumulatorBlock',AccumulatorBlock)
 class UnionBlock(c.Block):
     state_alloc = clib_noise.union_state_alloc
     state_free = clib_noise.union_state_free
-    pull_fns = [c.PULL_FN_PT(("union_pull", clib_noise))]
+    pull_fns = [clib_noise.union_pull]
     num_inputs = 1
     num_outputs = 1
 
@@ -179,7 +178,7 @@ context.register_block('UnionBlock',UnionBlock)
 class TeeBlock(c.Block):
     state_alloc = clib_noise.union_state_alloc
     state_free = clib_noise.union_state_free
-    pull_fns = [c.PULL_FN_PT(("union_pull", clib_noise)), c.PULL_FN_PT(("tee_pull_aux", clib_noise))]
+    pull_fns = [clib_noise.union_pull, clib_noise.tee_pull_aux]
     num_inputs = 1
     num_outputs = 2
     input_names = ["in"]
@@ -196,7 +195,7 @@ context.register_block('TeeBlock',TeeBlock)
 class WyeBlock(c.Block):
     state_alloc = clib_noise.union_state_alloc
     state_free = clib_noise.union_state_free
-    pull_fns = [c.PULL_FN_PT(("wye_pull", clib_noise))]
+    pull_fns = [clib_noise.wye_pull]
     num_inputs = 2
     num_outputs = 1
     input_names = ["left", "right"]
@@ -213,7 +212,7 @@ context.register_block('WyeBlock',WyeBlock)
 class ConstantBlock(c.Block):
     state_alloc = clib_noise.constant_state_alloc
     state_free = clib_noise.constant_state_free
-    pull_fns = [c.PULL_FN_PT(("constant_pull", clib_noise))]
+    pull_fns = [clib_noise.constant_pull]
     num_outputs = 1 
     input_names = []
     output_names = ["Const"]
@@ -246,7 +245,7 @@ context.register_block('ConstantBlock',ConstantBlock)
 class PlusBlock(c.Block):
     state_alloc = clib_noise.maths_state_alloc
     state_free = clib_noise.maths_state_free
-    pull_fns = [c.PULL_FN_PT(("plus_pull", clib_noise))]
+    pull_fns = [clib_noise.plus_pull]
     num_inputs = 2
     num_outputs = 1
     input_names = ["double", "double"]
@@ -257,7 +256,7 @@ context.register_block('PlusBlock', PlusBlock)
 class MinusBlock(c.Block):
     state_alloc = clib_noise.maths_state_alloc
     state_free = clib_noise.maths_state_free
-    pull_fns = [c.PULL_FN_PT(("minus_pull", clib_noise))]
+    pull_fns = [clib_noise.minus_pull]
     num_inputs = 2
     num_outputs = 1
     input_names = ["+ double", "- double"]
@@ -268,7 +267,7 @@ context.register_block('MinusBlock', MinusBlock)
 class MultiplyBlock(c.Block):
     state_alloc = clib_noise.maths_state_alloc
     state_free = clib_noise.maths_state_free
-    pull_fns = [c.PULL_FN_PT(("multiply_pull", clib_noise))]
+    pull_fns = [clib_noise.multiply_pull]
     num_inputs = 2
     num_outputs = 1
     input_names = ["double", "double"]
@@ -279,7 +278,7 @@ context.register_block('MultiplyBlock', MultiplyBlock)
 class DivideBlock(c.Block):
     state_alloc = clib_noise.maths_state_alloc
     state_free = clib_noise.maths_state_free
-    pull_fns = [c.PULL_FN_PT(("divide_pull", clib_noise))]
+    pull_fns = [clib_noise.divide_pull]
     num_inputs = 2
     num_outputs = 1
     input_names = ["N double", "D double"]
@@ -290,7 +289,7 @@ context.register_block('DivideBlock', DivideBlock)
 class NoteToFreqBlock(c.Block):
     state_alloc = clib_noise.maths_state_alloc
     state_free = clib_noise.maths_state_free
-    pull_fns = [c.PULL_FN_PT(("note_to_freq_pull", clib_noise))]
+    pull_fns = [clib_noise.note_to_freq_pull]
     num_inputs = 1
     num_outputs = 1
     input_names = ["MIDI Note (int)"]
@@ -301,7 +300,7 @@ context.register_block('NoteToFreqBlock', NoteToFreqBlock)
 class FunctionGeneratorBlock(c.Block):
     state_alloc = clib_noise.function_gen_state_alloc
     state_free = clib_noise.function_gen_state_free
-    pull_fns = [c.PULL_FN_PT(("function_gen_pull", clib_noise))]
+    pull_fns = [clib_noise.function_gen_pull]
     num_inputs = 1
     num_outputs = 1
     input_names = ["Frequency"]
@@ -315,7 +314,7 @@ class SEQUENCER_INFO_T(c.Structure):
 class SequencerBlock(c.Block):
     state_alloc = clib_noise.sequencer_state_alloc
     state_free = clib_noise.sequencer_state_free
-    pull_fns = [c.PULL_FN_PT(("sequencer_pull", clib_noise))]
+    pull_fns = [clib_noise.sequencer_pull]
     num_inputs = 2 # time, seq
     num_outputs = 1
     input_names = ["Time", "Sequence"]
@@ -332,7 +331,7 @@ context.register_block('SequencerBlock', SequencerBlock)
 class ConvolveBlock(c.Block):
     state_alloc = clib_noise.convolve_state_alloc
     state_free = clib_noise.convolve_state_free
-    pull_fns = [c.PULL_FN_PT(("convolve_pull", clib_noise))]
+    pull_fns = [clib_noise.convolve_pull]
     num_inputs = 2 # chunks, wave
     num_outputs = 1 # chunks
     input_names = ["Chunks In", "Wave In"]
@@ -370,6 +369,6 @@ class UIBlock(c.Block):
         self.input_pull_fns[input_idx] = block.pull_fns[output_idx]
 
     def pull(self):
-        return self.input_pull_fns[0](self.input_nodes[0], c.cast(c.byref(self.output),c.POINTER(c.OUTPUT_PT)))
+        return self.input_pull_fns[0](c.byref(self.input_nodes[0]), c.cast(c.byref(self.output),c.POINTER(c.OUTPUT_PT)))
 
 context.register_block('UIBlock', UIBlock)

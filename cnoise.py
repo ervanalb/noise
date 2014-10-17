@@ -1,4 +1,5 @@
 from ctypes import *
+from ctypes import _CFuncPtr
 import os
 
 STATE_PT = c_void_p
@@ -66,9 +67,9 @@ class NoiseObject(object):
 
     @classmethod
     def populate_object_info(cls,object_info):
-        object_info.alloc_fn = cls.alloc_fn
-        object_info.free_fn = cls.free_fn
-        object_info.copy_fn = cls.copy_fn
+        object_info.alloc_fn = cast(cls.alloc_fn,OUTPUT_ALLOC_FN_PT)
+        object_info.free_fn = cast(cls.free_fn,OUTPUT_FREE_FN_PT)
+        object_info.copy_fn = cast(cls.copy_fn,OUTPUT_COPY_FN_PT)
         object_info.type_info = cast(pointer(cls.type_info),TYPE_INFO_PT)
 
     @classmethod
@@ -140,7 +141,7 @@ class Block(object):
 
     def set_input(self, input_idx, block, output_idx):
         self.node.input_node[input_idx] = block.node_ptr
-        self.node.input_pull[input_idx] = PULL_FN_PT(block.pull_fns[output_idx])
+        self.node.input_pull[input_idx] = cast(block.pull_fns[output_idx],PULL_FN_PT)
         self.input_blocks[input_idx] = (id(block), output_idx)
 
     def __str__(self):
