@@ -1,7 +1,7 @@
 import cnoise
 import ctypes
 import ntype
-import pyaudio
+#import pyaudio
 import struct
 #import nanokontrol
 import threading
@@ -16,20 +16,19 @@ context.load('blocks.py')
 if __name__ == "__main__":
 
 
-    p = pyaudio.PyAudio()
-    try:
-        nk = nanokontrol.NanoKontrol2()
-    except:
-        nk = None
+    #p = pyaudio.PyAudio()
+    #try:
+    #    nk = nanokontrol.NanoKontrol2()
+    #except:
+    #    nk = None
     #nkm = nanokontrol.Map
-
+    """
     stream = p.open(format=pyaudio.paFloat32,
         channels=1,
         rate=context.frame_rate,
         frames_per_buffer=context.chunk_size,
         output=True)
-
-    print stream.get_output_latency()
+    """
 
     unison = [65, 75, None, 72, 67, 67, 68, None, 65, 70, 72, 70, 65, 65, None, None, 65, 75, None, 72, 67, 67, 68, 65, 72, 75, None, 72, 77, None, None, None]
     n=101
@@ -55,7 +54,6 @@ if __name__ == "__main__":
     cb1 = context.blocks["ConstantBlock"](n_double.new(0.05))
     cba = context.blocks["ConstantBlock"](n_double.new(0.10))
     cbt = context.blocks["ConstantBlock"](n_double.new(0.012))
-    cnoct = context.blocks["ConstantBlock"](n_double.new(0.0))
     csaw = context.blocks["ConstantBlock"](n_int.new(1))
     cbsong = context.blocks["ConstantBlock"](song)
     ab = context.blocks["AccumulatorBlock"]()
@@ -74,15 +72,10 @@ if __name__ == "__main__":
     fb = context.blocks["ConvolveBlock"](len(f))
     ui = context.blocks["UIBlock"]()
 
-    tee.set_input(0, cbt, 0)
-    add3.set_input(0, tee, 0)
-    add3.set_input(1, tee, 1)
-    atime.set_input(0, add3, 0)
+    atime.set_input(0, cbt, 0)
     seq.set_input(0, atime, 0)
     seq.set_input(1, cbsong, 0)
-    add2.set_input(0, seq, 0)
-    add2.set_input(1, cnoct, 0)
-    nfb.set_input(0, add2, 0)
+    nfb.set_input(0, seq, 0)
     lpfnote.set_input(0, nfb, 0)
     lpfnote.set_input(1, cba, 0)
     wb2.set_input(0, lpfnote, 0)
@@ -107,7 +100,9 @@ if __name__ == "__main__":
     fb.set_input(1, filt, 0)
     ui.set_input(0, fb, 0)
 
+    context.libs['noise'].play(ctypes.byref(fb.node),fb.pull_fns[0])
 
+    """
     while True:
         try:
             #cb.cvalue.value += 10
@@ -122,7 +117,7 @@ if __name__ == "__main__":
 
         except KeyboardInterrupt:
             break
- 
     stream.stop_stream()
     stream.close()
+    """
     thread.join(1.0)
