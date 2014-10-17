@@ -32,7 +32,7 @@ error_t union_pull(node_t * node, output_pt * output)
 
 	output_pt result=0;
 
-	e=pull(node,0,result);
+	e=pull(node,0,&result);
 	if(e != SUCCESS) return e;
 
 	if(!result)

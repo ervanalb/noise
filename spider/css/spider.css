@@ -1,3 +1,6 @@
+body{
+    background-color: #E6E6FF;
+}
 .block-base {
     border: 1px solid black;
     width: 150px;
@@ -9,7 +12,21 @@
 .block-header {
     border-bottom: 1px solid black;
     font-weight: 600;
+    overflow-y: hidden;
 }
+
+.block-header input{
+    width: 100%;
+    border: none;
+    /*border-bottom: 1px solid black;*/
+}
+
+.block-base textarea{
+    width: 100%;
+    text-overflow: scroll;
+
+}
+
 
 .block-footer {
     border-top: 1px solid black;
@@ -19,6 +36,13 @@
     color: #888;
     font-size: 0.8em;
     font-style: italic;
+}
+
+.block-close {
+    display: float;
+    float: right;
+    padding-left: 0.5em;
+    padding-left: 0.5em;
 }
 
 ul.block-inputs {

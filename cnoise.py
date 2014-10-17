@@ -104,11 +104,15 @@ class NoiseObject(object):
 class Block(object):
     num_inputs=0
     num_outputs=0
+    input_names = []
+    output_names = []
     block_info=BLOCK_INFO_PT()
     pull_fns=[]
+    data = None
 
     def __init__(self):
         self.block_type = type(self).__name__
+
         # Allocate space for node
         self.node = NODE_T()
         self.node_ptr = pointer(self.node)
@@ -138,6 +142,9 @@ class Block(object):
         self.node.input_node[input_idx] = block.node_ptr
         self.node.input_pull[input_idx] = PULL_FN_PT(block.pull_fns[output_idx])
         self.input_blocks[input_idx] = (id(block), output_idx)
+
+    def __str__(self):
+        return self.block_type
 
 class OBJECT_STATE_T(Structure):
     _fields_=[

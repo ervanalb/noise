@@ -132,6 +132,8 @@ class WaveBlock(c.Block):
     pull_fns = [clib_noise.wave_pull]
     num_inputs = 2
     num_outputs = 1
+    input_names = ["freq", "type"]
+    output_names = ["wave"]
 
 context.register_block('WaveBlock',WaveBlock)
 
@@ -141,6 +143,8 @@ class LPFBlock(c.Block):
     pull_fns = [clib_noise.lpf_pull]
     num_inputs = 2
     num_outputs = 1
+    input_names = ["wave", "alpha"]
+    output_names = ["wave"]
 
 context.register_block('LPFBlock',LPFBlock)
 
@@ -150,6 +154,8 @@ class AccumulatorBlock(c.Block):
     pull_fns = [clib_noise.accumulator_pull]
     num_inputs = 1
     num_outputs = 1
+    input_names = ["x"]
+    output_names = ["Sum[x]"]
 
 context.register_block('AccumulatorBlock',AccumulatorBlock)
 
@@ -160,6 +166,12 @@ class UnionBlock(c.Block):
     num_inputs = 1
     num_outputs = 1
 
+    def __init__(self, datatype):
+        info = c.OBJECT_INFO_T()
+        datatype.populate_object_info(info)
+        self.block_info = c.cast(c.pointer(info),c.BLOCK_INFO_PT)
+        c.Block.__init__(self)
+
 context.register_block('UnionBlock',UnionBlock)
 
 class TeeBlock(c.Block):
@@ -168,6 +180,14 @@ class TeeBlock(c.Block):
     pull_fns = [clib_noise.union_pull, clib_noise.tee_pull_aux]
     num_inputs = 1
     num_outputs = 2
+    input_names = ["in"]
+    output_names = ["left", "right"]
+
+    def __init__(self, datatype):
+        info = c.OBJECT_INFO_T()
+        datatype.populate_object_info(info)
+        self.block_info = c.cast(c.pointer(info),c.BLOCK_INFO_PT)
+        c.Block.__init__(self)
 
 context.register_block('TeeBlock',TeeBlock)
 
@@ -177,6 +197,14 @@ class WyeBlock(c.Block):
     pull_fns = [clib_noise.wye_pull]
     num_inputs = 2
     num_outputs = 1
+    input_names = ["left", "right"]
+    output_names = ["out"]
+
+    def __init__(self, datatype):
+        info = c.OBJECT_INFO_T()
+        datatype.populate_object_info(info)
+        self.block_info = c.cast(c.pointer(info),c.BLOCK_INFO_PT)
+        c.Block.__init__(self)
 
 context.register_block('WyeBlock',WyeBlock)
 
@@ -184,11 +212,15 @@ class ConstantBlock(c.Block):
     state_alloc = clib_noise.constant_state_alloc
     state_free = clib_noise.constant_state_free
     pull_fns = [clib_noise.constant_pull]
-    num_outputs = 1
+    num_outputs = 1 
+    input_names = []
+    output_names = ["Const"]
+
 
     def __init__(self,noise_obj=None):
         c.Block.__init__(self)
         if noise_obj is not None:
+            self.noise_obj = noise_obj
             self.pointer=noise_obj.o
 
     @property
@@ -199,6 +231,14 @@ class ConstantBlock(c.Block):
     def pointer(self,ptr):
         self.node.state=c.cast(ptr,c.BLOCK_INFO_PT)
 
+    @property
+    def data(self):
+        return self.noise_obj.value
+
+    @data.setter
+    def data(self, val):
+        self.noise_obj.value = val
+
 context.register_block('ConstantBlock',ConstantBlock)
 
 class PlusBlock(c.Block):
@@ -207,6 +247,8 @@ class PlusBlock(c.Block):
     pull_fns = [clib_noise.plus_pull]
     num_inputs = 2
     num_outputs = 1
+    input_names = ["double", "double"]
+    output_names = ["double"]
 
 context.register_block('PlusBlock', PlusBlock)
 
@@ -216,6 +258,8 @@ class MinusBlock(c.Block):
     pull_fns = [clib_noise.minus_pull]
     num_inputs = 2
     num_outputs = 1
+    input_names = ["+ double", "- double"]
+    output_names = ["double"]
 
 context.register_block('MinusBlock', MinusBlock)
 
@@ -225,6 +269,8 @@ class MultiplyBlock(c.Block):
     pull_fns = [clib_noise.multiply_pull]
     num_inputs = 2
     num_outputs = 1
+    input_names = ["double", "double"]
+    output_names = ["double"]
 
 context.register_block('MultiplyBlock', MultiplyBlock)
 
@@ -234,6 +280,8 @@ class DivideBlock(c.Block):
     pull_fns = [clib_noise.divide_pull]
     num_inputs = 2
     num_outputs = 1
+    input_names = ["N double", "D double"]
+    output_names = ["double"]
 
 context.register_block('DivideBlock', DivideBlock)
 
@@ -243,6 +291,8 @@ class NoteToFreqBlock(c.Block):
     pull_fns = [clib_noise.note_to_freq_pull]
     num_inputs = 1
     num_outputs = 1
+    input_names = ["MIDI Note (int)"]
+    output_names = ["Freq"]
 
 context.register_block('NoteToFreqBlock', NoteToFreqBlock)
 
@@ -252,6 +302,8 @@ class FunctionGeneratorBlock(c.Block):
     pull_fns = [clib_noise.function_gen_pull]
     num_inputs = 1
     num_outputs = 1
+    input_names = ["Frequency"]
+    output_names = ["Chunks"]
 
 context.register_block('FunctionGeneratorBlock', FunctionGeneratorBlock)
 
@@ -264,6 +316,8 @@ class SequencerBlock(c.Block):
     pull_fns = [clib_noise.sequencer_pull]
     num_inputs = 2 # time, seq
     num_outputs = 1
+    input_names = ["Time", "Sequence"]
+    output_names = ["Seq Item"]
 
     def __init__(self,array_type):
         seq_info = SEQUENCER_INFO_T()
@@ -279,6 +333,8 @@ class ConvolveBlock(c.Block):
     pull_fns = [clib_noise.convolve_pull]
     num_inputs = 2 # chunks, wave
     num_outputs = 1 # chunks
+    input_names = ["Chunks In", "Wave In"]
+    output_names = ["Chunks Out"]
 
     def __init__(self,length):
         self.block_info = c.cast(c.pointer(c.c_int(length)),c.BLOCK_INFO_PT)
@@ -289,6 +345,8 @@ context.register_block('ConvolveBlock', ConvolveBlock)
 class UIBlock(c.Block):
     num_inputs = 1
     num_outputs = 0
+    input_names = ["Audio In"]
+    output_names = []
     def __init__(self):
         # Super backwards block
 
@@ -299,6 +357,11 @@ class UIBlock(c.Block):
         self.node = c.NODE_T()
 
         self.output = c.POINTER(c.c_double)()
+
+    def alloc(self):
+        pass
+    def free(self):
+        pass
 
     def set_input(self, input_idx, block, output_idx):
         self.input_nodes[input_idx] = block.node
