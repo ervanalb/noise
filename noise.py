@@ -64,7 +64,7 @@ if __name__ == "__main__":
     add = context.blocks["PlusBlock"]()
     add2 = context.blocks["PlusBlock"]()
     add3 = context.blocks["PlusBlock"]()
-    tee = context.blocks["TeeBlock"](n_double.new(0.0))
+    tee = context.blocks["TeeBlock"](n_double.new())
     lpf = context.blocks["LPFBlock"]()
     lpfnote = context.blocks["LPFBlock"]()
     fgen = context.blocks["FunctionGeneratorBlock"]()

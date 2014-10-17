@@ -271,7 +271,7 @@ jsPlumb.bind("connectionDetached", function(info, ev){
 
 // Create new blocks
 BLOCK_FNS = {
-    "Constant<double>": {block_class: "ConstantBlock", args: [{"__type__": "double", args: [0.0]}]},
+    "Constant<double>": {block_class: "ConstantBlock", args: [{"__type__": "double", args: [0]}]},
     "Constant<int>": {block_class: "ConstantBlock", args: [{"__type__": "int", args: [0]}]},
     "Accumulator": {block_class: "AccumulatorBlock", args: []},
     "FunctionGenerator": {block_class: "FunctionGeneratorBlock", args: []},
@@ -279,8 +279,9 @@ BLOCK_FNS = {
     //"Convolve<10>": {block_class: "ConvolveBlock", args: [10]}]},
     "Plus": {block_class: "PlusBlock", args: []},
     "Multiply": {block_class: "MultiplyBlock", args: []},
-    "Tee<double>": {block_class: "TeeBlock", args: [{"__type__": "double", args: []}]},
-    "Wye<double>": {block_class: "WyeBlock", args: [{"__type__": "double", args: []}]},
+    "Wave": {block_class: "WaveBlock", args: []},
+    "Tee<double>": {block_class: "TeeBlock", args: [{"__type__": "double", args: [0]}]},
+    "Wye<double>": {block_class: "WyeBlock", args: [{"__type__": "double", args: [0]}]},
 }
 var setupBlockBtns = function(){
     var createBlock = function(bc, name, args){
