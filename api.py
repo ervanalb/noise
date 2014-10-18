@@ -285,23 +285,10 @@ def main():
 
     global next_block_id
     next_block_id += 1
-    
-
-    #try:
-    #    import_json("data.json")
-    #except ValueError:
-    #    print "Unable to load data.json"
 
     while True:
         try:
-            #cb.cvalue.value += 10
-            if ui_block.input_nodes[0] is None:
-                print 'waiting'
-                time.sleep(1)
-                #export_json("data.json")
-                continue
             if not ui_block.data:
-                print 'no ui'
                 time.sleep(1)
                 continue
             result = ui_block.pull()

@@ -3,6 +3,7 @@ var block_types = {};
 var type_types = {};
 
 // Blocks
+var Views = {};
 
 var Block = Backbone.Model.extend({
     idAttribute: "block_id",
@@ -20,7 +21,8 @@ var Block = Backbone.Model.extend({
         x: 150,
         y: 150,
         args: [],
-        kwargs: {}
+        kwargs: {},
+        view: "BlockView"
     },
     initialize: function(options){
         var bclass = block_types[this.get('block_class')];
@@ -192,6 +194,7 @@ var BlockView = Backbone.View.extend({
         var view = this;
     }
 });
+Views.BlockView = BlockView;
 
 var BlocksView = Backbone.View.extend({
     initialize: function(options){
@@ -200,7 +203,8 @@ var BlocksView = Backbone.View.extend({
         //this.listenTo(this.collection, 'all', this.render);
     },
     addOne: function(block) {
-        var view = new BlockView({model: block});
+        console.log(block.attributes.view);
+        var view = new (Views[block.get('view')])({model: block});
         console.log(view);
         this.$el.append(view.render().el);
     },
@@ -271,27 +275,27 @@ jsPlumb.bind("connectionDetached", function(info, ev){
 
 // Create new blocks
 BLOCK_FNS = {
-    "Constant<double>": {block_class: "ConstantBlock", args: [{"__type__": "double", args: [0]}]},
-    "Constant<int>": {block_class: "ConstantBlock", args: [{"__type__": "int", args: [0]}]},
-    "Accumulator": {block_class: "AccumulatorBlock", args: []},
-    "FunctionGenerator": {block_class: "FunctionGeneratorBlock", args: []},
-    "Sequencer": {block_class: "SequencerBlock", args: []},
+    "Constant<double>": {block_class: "ConstantBlock", args: [{"__type__": "double", args: [0]}], view: BlockView},
+    "Constant<int>": {block_class: "ConstantBlock", args: [{"__type__": "int", args: [0]}], view: BlockView},
+    "Accumulator": {block_class: "AccumulatorBlock", args: [], view: BlockView},
+    "FunctionGenerator": {block_class: "FunctionGeneratorBlock", args: [], view: BlockView},
+    "Sequencer": {block_class: "SequencerBlock", args: [], view: BlockView},
     //"Convolve<10>": {block_class: "ConvolveBlock", args: [10]}]},
-    "Plus": {block_class: "PlusBlock", args: []},
-    "Multiply": {block_class: "MultiplyBlock", args: []},
-    "Wave": {block_class: "WaveBlock", args: []},
-    "Tee<double>": {block_class: "TeeBlock", args: [{"__type__": "double", args: [0]}]},
-    "Wye<double>": {block_class: "WyeBlock", args: [{"__type__": "double", args: [0]}]},
+    "Plus": {block_class: "PlusBlock", args: [], view: BlockView},
+    "Multiply": {block_class: "MultiplyBlock", args: [], view: BlockView},
+    "Wave": {block_class: "WaveBlock", args: [], view: BlockView},
+    "Tee<double>": {block_class: "TeeBlock", args: [{"__type__": "double", args: [0]}], view: BlockView},
+    "Wye<double>": {block_class: "WyeBlock", args: [{"__type__": "double", args: [0]}], view: BlockView},
 }
 var setupBlockBtns = function(){
-    var createBlock = function(bc, name, args){
-        b = blocks.add({block_class: bc, name: name, args: args});
+    var createBlock = function(bc, name, args, view){
+        b = blocks.add({block_class: bc, name: name, args: args, view: view});
         b.save();
     }
     _.map(BLOCK_FNS, function(bargs, bname){
         if(_.has(block_types, bargs.block_class)){
             var button = $("<button>").text(bname).click(function(){
-                createBlock(bargs.block_class, bname, bargs.args);
+                createBlock(bargs.block_class, bname, bargs.args, bargs.view);
             });
             $(".new-blocks").append(button);
         }else{
