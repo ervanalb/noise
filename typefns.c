@@ -33,9 +33,9 @@ void simple_free(type_info_pt type_info, output_pt output)
 	free(output);
 }
 
-error_t simple_copy(type_info_pt type_info, output_pt src, output_pt dest)
+error_t simple_copy(type_info_pt type_info, output_pt dest, output_pt src)
 {
-	memcpy(src,dest,*(int*)type_info);
+	memcpy(dest,src,*(int*)type_info);
 	return SUCCESS;
 }
 

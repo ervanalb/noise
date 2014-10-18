@@ -213,13 +213,22 @@ api.add_resource(Block, '/blocks/<int:block_id>')
 api.add_resource(ConnectionList, '/connections')
 api.add_resource(Connection, '/connections/<int:connection_id>')
 
+@app.route("/json/save/<filename>")
+def save_json(filename):
+    #TODO: lolol security
+    export_json(filename)
+
 def export_json(filename):
     with open(filename, "w") as f:
         json_blocks = {}
         for bid, block in block_inventory.items():
             json_blocks[bid] = marshal(block, block_fields)
 
-        json.dump({"blocks": json_blocks, "connections": connection_inventory}, f)
+        json.dump({"blocks": json_blocks, "connections": connection_inventory}, f, indent=4, sort_keys=True)
+
+@app.route("/json/load/<filename>")
+def load_json(filename):
+    import_json(filename) 
 
 def import_json(filename):
     with open(filename) as f:
@@ -277,18 +286,10 @@ def main():
     global next_block_id
     next_block_id += 1
 
-    try:
-        import_json("data.json")
-    except ValueError:
-        print "Unable to load data.json"
-
     while True:
         try:
-            #cb.cvalue.value += 10
-            if ui_block.input_nodes[0] is None:
-                print 'waiting'
+            if not ui_block.data:
                 time.sleep(1)
-                #export_json("data.json")
                 continue
             result = ui_block.pull()
             data=struct.pack('f'*context.chunk_size,*(ui_block.output[:context.chunk_size]))

@@ -182,7 +182,7 @@ class TeeBlock(c.Block):
     num_inputs = 1
     num_outputs = 2
     input_names = ["in"]
-    output_names = ["left", "right"]
+    output_names = ["pull", "sync"]
 
     def __init__(self, datatype):
         info = c.OBJECT_INFO_T()
@@ -198,7 +198,7 @@ class WyeBlock(c.Block):
     pull_fns = [clib_noise.wye_pull]
     num_inputs = 2
     num_outputs = 1
-    input_names = ["left", "right"]
+    input_names = ["take", "garbage"]
     output_names = ["out"]
 
     def __init__(self, datatype):
@@ -358,6 +358,8 @@ class UIBlock(c.Block):
         self.node = c.NODE_T()
 
         self.output = c.POINTER(c.c_double)()
+
+        self.data = None
 
     def alloc(self):
         pass

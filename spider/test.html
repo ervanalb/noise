@@ -58,12 +58,32 @@
             };
             sync();
         });
+
+        $(function(){
+            $(".json-save").click(function(){
+                $.get("/json/save/" + $("input.filename").val()).done(function(){
+                    console.log("Saved file");  
+                });
+            });
+            $(".json-load").click(function(){
+                $.get("/json/load/" + $("input.filename").val()).done(function(){
+                    window.location.reload();
+                });
+            });
+
+        });
     </script>
 </head>
 <body>
     <div class="block-container">
     </div>
     <div class="new-blocks">
+        <div class="save-load">
+            <input type="text" class="filename" value="data.json">
+            <button class="json-save">Save</button>
+            <button class="json-load">Load</button>
+            <!-- <button class="json-export">Export</button> -->
+        </div>
     </div>
 </body>
 </html>
