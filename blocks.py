@@ -343,6 +343,22 @@ class ConvolveBlock(c.Block):
 
 context.register_block('ConvolveBlock', ConvolveBlock)
 
+class MixerBlock(c.Block):
+    state_alloc = clib_noise.mixer_state_alloc
+    state_free = clib_noise.mixer_state_free
+    pull_fns = [clib_noise.mixer_pull]
+
+    output_names = ["Audio Out"]
+    num_outputs = 1
+
+    def __init__(self,num_channels):
+        self.num_inputs = 2*num_channels
+        self.input_names = [inp for i in range(num_channels) for inp in ["Audio In {0}".format(i+1),"Gain {0}".format(i+1)]]
+        self.block_info = c.cast(c.pointer(c.c_int(num_channels)),c.BLOCK_INFO_PT)
+        c.Block.__init__(self)
+
+context.register_block('MixerBlock', MixerBlock)
+
 class UIBlock(c.Block):
     num_inputs = 1
     num_outputs = 0

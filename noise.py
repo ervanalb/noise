@@ -3,9 +3,6 @@ import ctypes
 import ntype
 import pyaudio
 import struct
-#import nanokontrol
-import threading
-import scipy.signal
 
 context=cnoise.NoiseContext()
 context.chunk_size = 128
@@ -14,87 +11,61 @@ context.frame_rate = 48000
 context.load('blocks.py')
 
 if __name__ == "__main__":
+    heap=[]
 
+    def instrument(notes,tb,tbout,wave_shape):
+        # Build melody
+        global heap
+        melody_array = context.types['array'](len(notes),n_double).new(notes)
+        melody_notes = context.blocks["ConstantBlock"](melody_array)
+        melody_seq = context.blocks["SequencerBlock"](melody_array) # could also call this with a type
+        melody_seq.set_input(0,tb,tbout)
+        melody_seq.set_input(1,melody_notes,0)
+        melody_freqs = context.blocks["NoteToFreqBlock"]()
+        melody_freqs.set_input(0,melody_seq,0)
+        melody_wave_shape = context.blocks["ConstantBlock"](n_int.new(wave_shape))
+        melody_voice = context.blocks["WaveBlock"]()
+        melody_voice.set_input(0,melody_freqs,0)
+        melody_voice.set_input(1,melody_wave_shape,0)
+        heap.append(melody_notes)
+        heap.append(melody_seq)
+        heap.append(melody_freqs)
+        heap.append(melody_wave_shape)
+        return melody_voice
 
-    #try:
-    #    nk = nanokontrol.NanoKontrol2()
-    #except:
-    #    nk = None
-    #nkm = nanokontrol.Map
-
-    unison = [65, 75, None, 72, 67, 67, 68, None, 65, 70, 72, 70, 65, 65, None, None, 65, 75, None, 72, 67, 67, 68, 65, 72, 75, None, 72, 77, None, None, None]
-    n=101
-    lpf = scipy.signal.firwin(101,.05)
-    hpf = -lpf
-    hpf[n/2]+=1
-
-    echo = [.7]+[0]*500+[.3]
-
-    f=lpf
+    unison =         [65, 75, None, 72, 67, 67, 68, None, 65, 70, 72, 70, 65, 65, None, None, 65, 75, None, 72, 67, 67, 68, 65, 72, 75, None, 72, 77, None, None, None]
+    unison_harmony = [61, 61, None, 61, 63, 63, 63, None, 63, 58, 58, 58, 65, 65, None, None, 65, 65, None, 65, 63, 63, 63, 63, 63, 68, None, 68, 61, None, None, None]
 
     n_double=context.types['double']
 
     n_int=context.types['int']
     n_wave=context.types['wave']
 
-    song=context.types['array'](len(unison),n_double).new(unison)
+    # Build a timebase
+    dt = context.blocks["ConstantBlock"](n_double.new(0.01))
+    timebase = context.blocks["AccumulatorBlock"]()
+    timebase.set_input(0,dt,0)
 
-    wb = context.blocks["WaveBlock"]()
-    wb2 = context.blocks["WaveBlock"]()
-    wb3 = context.blocks["WaveBlock"]()
-    cb440 = context.blocks["ConstantBlock"](n_double.new(440))
-    cb200 = context.blocks["ConstantBlock"](n_double.new(20))
-    cb1 = context.blocks["ConstantBlock"](n_double.new(0.05))
-    cba = context.blocks["ConstantBlock"](n_double.new(0.10))
-    cbt = context.blocks["ConstantBlock"](n_double.new(0.012))
-    csaw = context.blocks["ConstantBlock"](n_int.new(1))
-    cbsong = context.blocks["ConstantBlock"](song)
-    ab = context.blocks["AccumulatorBlock"]()
-    atime = context.blocks["AccumulatorBlock"]()
-    mult = context.blocks["MultiplyBlock"]()
-    add = context.blocks["PlusBlock"]()
-    add2 = context.blocks["PlusBlock"]()
-    add3 = context.blocks["PlusBlock"]()
-    tee = context.blocks["TeeBlock"](n_double.new())
-    lpf = context.blocks["LPFBlock"]()
-    lpfnote = context.blocks["LPFBlock"]()
-    fgen = context.blocks["FunctionGeneratorBlock"]()
-    seq = context.blocks["SequencerBlock"](song) # could also call this with a type
-    nfb = context.blocks["NoteToFreqBlock"]()
-    filt = context.blocks["ConstantBlock"](n_wave(len(f)).new(f))
-    fb = context.blocks["ConvolveBlock"](len(f))
-    ui = context.blocks["UIBlock"]()
+    timebase_splitter=context.blocks["TeeBlock"](n_double)
+    timebase_splitter.set_input(0,timebase,0)
 
-    atime.set_input(0, cbt, 0)
-    seq.set_input(0, atime, 0)
-    seq.set_input(1, cbsong, 0)
-    nfb.set_input(0, seq, 0)
-    lpfnote.set_input(0, nfb, 0)
-    lpfnote.set_input(1, cba, 0)
-    wb2.set_input(0, lpfnote, 0)
-    wb2.set_input(1, csaw, 0)
-    mult.set_input(0, wb2, 0)
+    def down_octave(n):
+        if n is None:
+            return None
+        return n-12
+    mel=instrument(unison,timebase_splitter,0,1)
+    cm=instrument(map(down_octave,unison_harmony),timebase_splitter,1,2)
 
-    ab.set_input(0, cb1, 0)
-    fgen.set_input(0, ab, 0)
-    #mult.set_input(0, fgen, 0)
-    mult.set_input(1, cb200, 0)
-    add.set_input(0, mult, 0)
-    add.set_input(1, cb440, 0)
-    wb.set_input(0, add, 0)
-    wb.set_input(1, csaw, 0)
-    lpf.set_input(0, wb, 0)
-    lpf.set_input(1, cba, 0)
-    #wb2.set_input(0, wb, 0)
-    wb3.set_input(0, cb440, 0)
-    wb3.set_input(1, csaw, 0)
+    mixer=context.blocks["MixerBlock"](2)
+    mel_vol = context.blocks["ConstantBlock"](n_double.new(0.7))
+    cm_vol = context.blocks["ConstantBlock"](n_double.new(0.5))
+    mixer.set_input(0,mel,0)
+    mixer.set_input(1,mel_vol,0)
+    mixer.set_input(2,cm,0)
+    mixer.set_input(3,cm_vol,0)
 
-    fb.set_input(0, wb2, 0)
-    fb.set_input(1, filt, 0)
-    ui.set_input(0, fb, 0)
-
-
-    #context.libs['noise'].play(ctypes.byref(fb.node),fb.pull_fns[0])
+    ui=context.blocks["UIBlock"]()
+    ui.set_input(0,mixer,0)
 
 
     p = pyaudio.PyAudio()
@@ -108,17 +79,12 @@ if __name__ == "__main__":
         try:
             #cb.cvalue.value += 10
             result=ui.pull()
-            #print ui.output.contents
-            data=struct.pack('f'*context.chunk_size,*(ui.output[:context.chunk_size]))
+            chunk=ui.output[:context.chunk_size]
+            data=struct.pack('f'*context.chunk_size,*chunk)
             #print ui.output[:context.chunk_size]
             stream.write(data)
-            #if nk is not None:
-            #    nk.process_input()
-            #    cbt.cvalue.value = nk.state[nkm.SLIDERS[0]] / 30.
-            #    cba.cvalue.value = nk.state[nkm.SLIDERS[1]] / 5.
 
         except KeyboardInterrupt:
             break
     stream.stop_stream()
     stream.close()
-    thread.join(1.0)
