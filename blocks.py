@@ -181,7 +181,7 @@ class TeeBlock(c.Block):
     num_inputs = 1
     input_names = ["In"]
 
-    def __init__(self, datatype, num_aux_outputs):
+    def __init__(self, num_aux_outputs, datatype):
         self.num_outputs = num_aux_outputs+1
         self.output_names = ["Main"]+["Aux {0}".format(i+1) for i in range(num_aux_outputs)]
         self.pull_fns = [clib_noise.union_pull]+[clib_noise.tee_pull_aux]*(num_aux_outputs)
@@ -193,18 +193,25 @@ class TeeBlock(c.Block):
 
 context.register_block('TeeBlock',TeeBlock)
 
+class WYE_INFO_T(c.Structure):
+    _fields_=[
+        ('num_aux_inputs',c.c_int),
+        ('object_info',c.OBJECT_INFO_T)
+    ]
+
 class WyeBlock(c.Block):
     state_alloc = clib_noise.union_state_alloc
     state_free = clib_noise.union_state_free
     pull_fns = [clib_noise.wye_pull]
-    num_inputs = 2
     num_outputs = 1
-    input_names = ["take", "garbage"]
     output_names = ["out"]
 
-    def __init__(self, datatype):
-        info = c.OBJECT_INFO_T()
-        datatype.populate_object_info(info)
+    def __init__(self, num_aux_inputs, datatype):
+        info = c.WYE_INFO_T()
+        datatype.populate_object_info(info.object_info)
+        info.num_aux_inputs.value=num_aux_inputs
+        num_inputs = num_aux_inputs+1
+        self.input_names = ["Main"]+["Aux {0}".format(i+1) for i in range(num_aux_inputs)]
         self.block_info = c.cast(c.pointer(info),c.BLOCK_INFO_PT)
         c.Block.__init__(self)
 
