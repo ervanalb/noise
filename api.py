@@ -33,6 +33,7 @@ block_fields = {
     'num_outputs': fields.Integer,
     'input_names': fields.Raw,
     'output_names': fields.Raw,
+    'viewclass': fields.String,
 }
 
 def parse_arg(arg):
@@ -142,6 +143,7 @@ class BlockList(Resource):
         block.args = data.get("args", [])
         block.kwargs = data.get("kwargs", {})
         #block.data = data.get("data", None)
+        block.viewclass = data.get("viewclass", "BlockView")
 
         b_id = data.get("block_id", next_block_id)
         while b_id in block_inventory:

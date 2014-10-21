@@ -22,7 +22,7 @@ var Block = Backbone.Model.extend({
         y: 150,
         args: [],
         kwargs: {},
-        view: "BlockView"
+        viewclass: "BlockView"
     },
     initialize: function(options){
         var model = this;
@@ -53,7 +53,7 @@ var Block = Backbone.Model.extend({
         }
     },
     toJSON: function(options){
-        return this.pick('block_class', 'x', 'y', 'name', 'args', 'kwargs', 'data');
+        return this.pick('block_class', 'x', 'y', 'name', 'args', 'kwargs', 'data', 'viewclass');
     }
 });
 
@@ -183,7 +183,6 @@ var BlockView = Backbone.View.extend({
         this.$el.empty()
         this.$el.offset({left: this.model.get('x'), top: this.model.get('y')});
         this.$el.append(this.$divBox);
-        this.renderPipes();
         jsPlumb.repaint(this.$el);
         this.delegateEvents();
 
@@ -199,11 +198,42 @@ var BlockView = Backbone.View.extend({
         });
         return this;
     },
-    renderPipes: function(){
-        var view = this;
-    }
 });
 Views.BlockView = BlockView;
+
+Views.ConstantBlockView = BlockView.extend({
+    render: function(){
+        var view = this;
+        this.$divBox = $("<div>");
+        this.$el.css({width: "100px", height: "100px"});
+        this.$divHeader = $("<div>").appendTo(this.$divBox).addClass("block-header");
+        this.$txtName = $("<input type='text'>").appendTo(this.$divHeader).val(this.model.get('name'));
+
+        this.$txtData = $("<textarea>").appendTo(this.$divBox).val(JSON.stringify(this.model.get('data')));
+
+        this.$divFooter = $("<div>").appendTo(this.$divBox).addClass("block-footer").text("Ready");
+        this.$aClose = $("<a>").appendTo(this.$divFooter).addClass("block-close ").html("&times;");
+
+        this.$el.empty()
+        this.$el.offset({left: this.model.get('x'), top: this.model.get('y')});
+        this.$el.append(this.$divBox);
+        jsPlumb.repaint(this.$el);
+        this.delegateEvents();
+
+        this.$txtName.change(function(ev){
+            view.model.set('name', $(this).val());
+            view.model.save();
+            console.log(view.model.get('name'));
+        });
+
+        this.$txtData.change(function(ev){
+            view.model.set('data', JSON.parse($(this).val()));
+            view.model.save();
+        });
+        return this;
+    },
+
+});
 
 var BlocksView = Backbone.View.extend({
     initialize: function(options){
@@ -213,7 +243,9 @@ var BlocksView = Backbone.View.extend({
     },
     addOne: function(block) {
         console.log(block.attributes.view);
-        var view = new (Views[block.get('view')])({model: block});
+        console.log(block.attributes.viewclass);
+        var Viewclass = Views[block.get('viewclass') || "BlockView"];
+        var view = new Viewclass({model: block});
         console.log(view);
         this.$el.append(view.render().el);
     },
@@ -284,18 +316,19 @@ jsPlumb.bind("connectionDetached", function(info, ev){
 
 // Create new blocks
 BLOCK_FNS = {
-    "Constant<double>": {block_class: "ConstantBlock", args: [{"__type__": "double", args: [0]}], view: BlockView},
-    "Constant<int>": {block_class: "ConstantBlock", args: [{"__type__": "int", args: [0]}], view: BlockView},
-    "Accumulator": {block_class: "AccumulatorBlock", args: [], view: BlockView},
-    "FunctionGenerator": {block_class: "FunctionGeneratorBlock", args: [], view: BlockView},
-    "Sequencer": {block_class: "SequencerBlock", args: [], view: BlockView},
+    "Constant<double>": {block_class: "ConstantBlock", args: [{"__type__": "double", args: [0]}], view: "ConstantBlockView"},
+    "Constant<int>": {block_class: "ConstantBlock", args: [{"__type__": "int", args: [0]}], view: "ConstantBlockView"},
+    "Accumulator": {block_class: "AccumulatorBlock", args: [], view: "BlockView"},
+    "FunctionGenerator": {block_class: "FunctionGeneratorBlock", args: [], view: "BlockView"},
+    "Sequencer": {block_class: "SequencerBlock", args: [], view: "BlockView"},
     //"Convolve<10>": {block_class: "ConvolveBlock", args: [10]}]},
-    "Plus": {block_class: "PlusBlock", args: [], view: BlockView},
-    "Multiply": {block_class: "MultiplyBlock", args: [], view: BlockView},
-    "Wave": {block_class: "WaveBlock", args: [], view: BlockView},
-    "Tee<double>": {block_class: "TeeBlock", args: [{"__type__": "double", args: [0]}], view: BlockView},
-    "Wye<double>": {block_class: "WyeBlock", args: [{"__type__": "double", args: [0]}], view: BlockView},
-    "Mixer<4>": {block_class: "MixerBlock", args: [4], view: BlockView, options: {num_inputs: 8}},
+    "Plus": {block_class: "PlusBlock", args: [], view: "BlockView"},
+    "Multiply": {block_class: "MultiplyBlock", args: [], view: "BlockView"},
+    "Wave": {block_class: "WaveBlock", args: [], view: "BlockView"},
+    "Tee<double, 2>": {block_class: "TeeBlock", args: [2, {"__type__": "double", args: [0]}], view: "BlockView"},
+    "Wye<double, 2>": {block_class: "WyeBlock", args: [2, {"__type__": "double", args: [0]}], view: "BlockView"},
+    "Mixer<2>": {block_class: "MixerBlock", args: [2], view: "BlockView", options: {num_inputs: 4}},
+    "Mixer<4>": {block_class: "MixerBlock", args: [4], view: "BlockView", options: {num_inputs: 8}},
 }
 var setupBlockBtns = function(){
     var createBlock = function(bc, name, bargs){
