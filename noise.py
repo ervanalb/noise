@@ -46,7 +46,7 @@ if __name__ == "__main__":
     timebase = context.blocks["AccumulatorBlock"]()
     timebase.set_input(0,dt,0)
 
-    timebase_splitter=context.blocks["TeeBlock"](n_double)
+    timebase_splitter=context.blocks["TeeBlock"](n_double,1)
     timebase_splitter.set_input(0,timebase,0)
 
     def down_octave(n):

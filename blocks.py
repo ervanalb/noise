@@ -178,13 +178,14 @@ context.register_block('UnionBlock',UnionBlock)
 class TeeBlock(c.Block):
     state_alloc = clib_noise.union_state_alloc
     state_free = clib_noise.union_state_free
-    pull_fns = [clib_noise.union_pull, clib_noise.tee_pull_aux]
     num_inputs = 1
-    num_outputs = 2
-    input_names = ["in"]
-    output_names = ["pull", "sync"]
+    input_names = ["In"]
 
-    def __init__(self, datatype):
+    def __init__(self, datatype, num_aux_outputs):
+        self.num_outputs = num_aux_outputs+1
+        self.output_names = ["Main"]+["Aux {0}".format(i+1) for i in range(num_aux_outputs)]
+        self.pull_fns = [clib_noise.union_pull]+[clib_noise.tee_pull_aux]*(num_aux_outputs)
+
         info = c.OBJECT_INFO_T()
         datatype.populate_object_info(info)
         self.block_info = c.cast(c.pointer(info),c.BLOCK_INFO_PT)
