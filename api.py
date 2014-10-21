@@ -29,6 +29,10 @@ block_fields = {
     'data': fields.Raw,
     'block_class': fields.String,
     'name': fields.String,
+    'num_inputs': fields.Integer,
+    'num_outputs': fields.Integer,
+    'input_names': fields.Raw,
+    'output_names': fields.Raw,
 }
 
 def parse_arg(arg):

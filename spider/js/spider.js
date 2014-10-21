@@ -25,6 +25,7 @@ var Block = Backbone.Model.extend({
         view: "BlockView"
     },
     initialize: function(options){
+        var model = this;
         var bclass = block_types[this.get('block_class')];
         console.log('nm', this.get('name'));
         //this.set("name", this.get("block_class"));
@@ -33,14 +34,22 @@ var Block = Backbone.Model.extend({
             throw "Unknown class: " + this.get('block_class');
         }
         if(!this.has('inputs')){
-            this.set('inputs', _.map(_.range(bclass.num_inputs), function(i){
-                return {name: bclass.input_names[i], type: "int"};
+            var names = this.get('input_names') || bclass.input_names;
+            var num = this.get('num_inputs') || bclass.num_inputs;
+            this.set('inputs', _.map(_.range(num), function(i){
+                return {name: names[i] || "Input", type: "int"};
             }));
+            this.set('input_names', names);
+            this.set('num_inputs', num);
         }
         if(!this.has('outputs')){
-            this.set('outputs', _.map(_.range(bclass.num_outputs), function(i){
-                return {name: bclass.output_names[i], type: "int"};
+            var names = this.get('output_names') || bclass.output_names;
+            var num = this.get('num_outputs') || bclass.num_outputs;
+            this.set('outputs', _.map(_.range(num), function(i){
+                return {name: names[i] || "Output", type: "int"};
             }));
+            this.set('output_names', names);
+            this.set('num_outputs', num);
         }
     },
     toJSON: function(options){
@@ -286,16 +295,20 @@ BLOCK_FNS = {
     "Wave": {block_class: "WaveBlock", args: [], view: BlockView},
     "Tee<double>": {block_class: "TeeBlock", args: [{"__type__": "double", args: [0]}], view: BlockView},
     "Wye<double>": {block_class: "WyeBlock", args: [{"__type__": "double", args: [0]}], view: BlockView},
+    "Mixer<4>": {block_class: "MixerBlock", args: [4], view: BlockView, options: {num_inputs: 8}},
 }
 var setupBlockBtns = function(){
-    var createBlock = function(bc, name, args, view){
-        b = blocks.add({block_class: bc, name: name, args: args, view: view});
+    var createBlock = function(bc, name, bargs){
+        var args = bargs.args;
+        var view = bargs.view;
+        var opt = bargs.options || {};
+        b = blocks.add(_.extend(opt, {block_class: bc, name: name, args: args, viewclass: view}));
         b.save();
     }
     _.map(BLOCK_FNS, function(bargs, bname){
         if(_.has(block_types, bargs.block_class)){
             var button = $("<button>").text(bname).click(function(){
-                createBlock(bargs.block_class, bname, bargs.args, bargs.view);
+                createBlock(bargs.block_class, bname, bargs);
             });
             $(".new-blocks").append(button);
         }else{
