@@ -51,6 +51,7 @@ if __name__ == "__main__":
     unison =         [None, None, None, 65, 75, None, 72, 67, 67, 68, None, 65, 70, 72, 70, 65, 65, None, None, 65, 75, None, 72, 67, 67, 68, 65, 72, 75, None, 72, 77]
     unison_harmony = [None, None, None, 61, 61, None, 61, 63, 63, 63, None, 63, 58, 58, 58, 65, 65, None, None, 65, 65, None, 65, 63, 63, 63, 63, 63, 68, None, 68, 61]
     unison_snare = [None, None, 1, 1]*8
+    unison_kick = [1, 1, None, None]*8
 
     n_double=context.types['double']
 
@@ -62,7 +63,7 @@ if __name__ == "__main__":
     timebase = context.blocks["AccumulatorBlock"]()
     timebase.set_input(0,dt,0)
 
-    timebase_splitter=context.blocks["TeeBlock"](2,n_double)
+    timebase_splitter=context.blocks["TeeBlock"](3,n_double)
     timebase_splitter.set_input(0,timebase,0)
 
     def down_octave(n):
@@ -72,15 +73,20 @@ if __name__ == "__main__":
 
     tau=.0001
     snare_waveform=[random.uniform(-1,1)*math.exp(-i*tau) for i in range(50000)]
+    tau1=.0001
+    freq=60
+    kick_waveform=[math.cos(2*math.pi*i*freq/48000)*math.exp(-i*tau1) for i in range(50000)]
 
     mel=instrument(unison,timebase_splitter,0,1)
     cm=instrument(map(down_octave,unison_harmony),timebase_splitter,1,2)
     snare=drum(snare_waveform,unison_snare,timebase_splitter,2)
+    kick=drum(kick_waveform,unison_kick,timebase_splitter,3)
 
-    mixer=context.blocks["MixerBlock"](3)
-    mel_vol = context.blocks["ConstantBlock"](n_double.new(0.3))
-    cm_vol = context.blocks["ConstantBlock"](n_double.new(0.2))
-    snare_vol = context.blocks["ConstantBlock"](n_double.new(0.5))
+    mixer=context.blocks["MixerBlock"](4)
+    mel_vol = context.blocks["ConstantBlock"](n_double.new(0.1))
+    cm_vol = context.blocks["ConstantBlock"](n_double.new(0.1))
+    snare_vol = context.blocks["ConstantBlock"](n_double.new(0.1))
+    kick_vol = context.blocks["ConstantBlock"](n_double.new(0.8))
 
     mixer.set_input(0,mel,0)
     mixer.set_input(1,mel_vol,0)
@@ -88,6 +94,8 @@ if __name__ == "__main__":
     mixer.set_input(3,cm_vol,0)
     mixer.set_input(4,snare,0)
     mixer.set_input(5,snare_vol,0)
+    mixer.set_input(6,kick,0)
+    mixer.set_input(7,kick_vol,0)
 
     ui=context.blocks["UIBlock"]()
     ui.set_input(0,mixer,0)
