@@ -3,6 +3,8 @@ import ctypes
 import ntype
 import pyaudio
 import struct
+import random
+import math
 
 context=cnoise.NoiseContext()
 context.chunk_size = 128
@@ -33,8 +35,22 @@ if __name__ == "__main__":
         heap.append(melody_wave_shape)
         return melody_voice
 
-    unison =         [65, 75, None, 72, 67, 67, 68, None, 65, 70, 72, 70, 65, 65, None, None, 65, 75, None, 72, 67, 67, 68, 65, 72, 75, None, 72, 77, None, None, None]
-    unison_harmony = [61, 61, None, 61, 63, 63, 63, None, 63, 58, 58, 58, 65, 65, None, None, 65, 65, None, 65, 63, 63, 63, 63, 63, 68, None, 68, 61, None, None, None]
+    def drum(waveform,hits,tb,tbout):
+        global heap
+        hits_array = context.types['array'](len(hits),n_int).new(hits)
+        hits_const = context.blocks["ConstantBlock"](hits_array)
+        hits_seq = context.blocks["SequencerBlock"](hits_array)
+        hits_seq.set_input(0,tb,tbout)
+        hits_seq.set_input(1,hits_const,0)
+        voice = context.blocks["SampleBlock"](waveform)
+        voice.set_input(0,hits_seq,0)
+        heap.append(hits_const)
+        heap.append(hits_seq)
+        return voice
+
+    unison =         [None, None, None, 65, 75, None, 72, 67, 67, 68, None, 65, 70, 72, 70, 65, 65, None, None, 65, 75, None, 72, 67, 67, 68, 65, 72, 75, None, 72, 77]
+    unison_harmony = [None, None, None, 61, 61, None, 61, 63, 63, 63, None, 63, 58, 58, 58, 65, 65, None, None, 65, 65, None, 65, 63, 63, 63, 63, 63, 68, None, 68, 61]
+    unison_snare = [None, None, 1, 1]*8
 
     n_double=context.types['double']
 
@@ -46,27 +62,35 @@ if __name__ == "__main__":
     timebase = context.blocks["AccumulatorBlock"]()
     timebase.set_input(0,dt,0)
 
-    timebase_splitter=context.blocks["TeeBlock"](1,n_double)
+    timebase_splitter=context.blocks["TeeBlock"](2,n_double)
     timebase_splitter.set_input(0,timebase,0)
 
     def down_octave(n):
         if n is None:
             return None
         return n-12
+
+    tau=.0001
+    snare_waveform=[random.uniform(-1,1)*math.exp(-i*tau) for i in range(50000)]
+
     mel=instrument(unison,timebase_splitter,0,1)
     cm=instrument(map(down_octave,unison_harmony),timebase_splitter,1,2)
+    snare=drum(snare_waveform,unison_snare,timebase_splitter,2)
 
-    mixer=context.blocks["MixerBlock"](2)
-    mel_vol = context.blocks["ConstantBlock"](n_double.new(0.7))
-    cm_vol = context.blocks["ConstantBlock"](n_double.new(0.5))
+    mixer=context.blocks["MixerBlock"](3)
+    mel_vol = context.blocks["ConstantBlock"](n_double.new(0.3))
+    cm_vol = context.blocks["ConstantBlock"](n_double.new(0.2))
+    snare_vol = context.blocks["ConstantBlock"](n_double.new(0.5))
+
     mixer.set_input(0,mel,0)
     mixer.set_input(1,mel_vol,0)
     mixer.set_input(2,cm,0)
     mixer.set_input(3,cm_vol,0)
+    mixer.set_input(4,snare,0)
+    mixer.set_input(5,snare_vol,0)
 
     ui=context.blocks["UIBlock"]()
     ui.set_input(0,mixer,0)
-
 
     p = pyaudio.PyAudio()
     stream = p.open(format=pyaudio.paFloat32,

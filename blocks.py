@@ -138,6 +138,30 @@ class WaveBlock(c.Block):
 
 context.register_block('WaveBlock',WaveBlock)
 
+class SampleBlock(c.Block):
+    class SAMPLE_INFO_T(c.Structure):
+        _fields_=[
+            ('length',c.c_int),
+            ('sample',c.POINTER(c.c_double)),
+        ]
+
+    state_alloc = clib_noise.sample_state_alloc
+    state_free = clib_noise.sample_state_free
+    pull_fns = [clib_noise.sample_pull]
+    num_inputs = 1
+    num_outputs = 1
+    input_names = ["play"]
+    output_names = ["sample"]
+
+    def __init__(self, sample):
+        info = self.SAMPLE_INFO_T()
+        info.length=len(sample)
+        info.sample=(c.c_double*len(sample))(*sample)
+        self.block_info = c.cast(c.pointer(info),c.BLOCK_INFO_PT)
+        c.Block.__init__(self)
+
+context.register_block('SampleBlock',SampleBlock)
+
 class LPFBlock(c.Block):
     state_alloc = clib_noise.lpf_state_alloc
     state_free = clib_noise.lpf_state_free
