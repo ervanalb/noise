@@ -125,7 +125,15 @@ def array_factory(size,element_type):
 
     return n_array
 
+def array_builder_factory(t):
+    def build(data):
+        return array_factory(len(data), t).new(data)
+    build.new = build
+    return build
+
 context.register_type('array',array_factory)
+context.register_type('array_double', array_builder_factory(n_double))
+context.register_type('array_int', array_builder_factory(n_int))
 
 class WaveBlock(c.Block):
     state_alloc = clib_noise.wave_state_alloc
@@ -186,6 +194,8 @@ class TeeBlock(c.Block):
         self.output_names = ["Main"]+["Aux {0}".format(i+1) for i in range(num_aux_outputs)]
         self.pull_fns = [clib_noise.union_pull]+[clib_noise.tee_pull_aux]*(num_aux_outputs)
 
+        datatype = context.resolve_type(datatype)
+
         info = c.OBJECT_INFO_T()
         datatype.populate_object_info(info)
         self.block_info = c.cast(c.pointer(info),c.BLOCK_INFO_PT)
@@ -208,6 +218,7 @@ class WyeBlock(c.Block):
 
     def __init__(self, num_aux_inputs, datatype):
         info = c.WYE_INFO_T()
+        datatype = context.resolve_type(datatype)
         datatype.populate_object_info(info.object_info)
         info.num_aux_inputs.value=num_aux_inputs
         num_inputs = num_aux_inputs+1
@@ -226,9 +237,11 @@ class ConstantBlock(c.Block):
     output_names = ["Const"]
 
 
-    def __init__(self,noise_obj=None):
+    def __init__(self,noise_obj=None, noise_type=None):
         c.Block.__init__(self)
         if noise_obj is not None:
+            if noise_type is not None:
+                noise_obj = context.types[noise_type].new(noise_obj)
             self.noise_obj = noise_obj
             self.pointer=noise_obj.o
 
@@ -328,7 +341,11 @@ class SequencerBlock(c.Block):
     input_names = ["Time", "Sequence"]
     output_names = ["Seq Item"]
 
-    def __init__(self,array_type):
+    def __init__(self,array_type=None,noise_obj=None,noise_type=None):
+        if noise_obj is not None and noise_type is not None:
+            array_type = context.types[noise_type].new(noise_obj)
+        if array_type is None:
+            raise ValueError
         seq_info = SEQUENCER_INFO_T()
         seq_info.array_info = c.cast(c.pointer(array_type.type_info),c.POINTER(ARRAY_INFO_T))
         self.block_info = c.cast(c.pointer(seq_info),c.BLOCK_INFO_PT)

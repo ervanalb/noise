@@ -42,6 +42,11 @@ class NoiseContext(object):
         self.libs[name]=l
         return l
 
+    def resolve_type(self, type_or_name):
+        if isinstance(type_or_name, str) or isinstance(type_or_name, unicode):
+            return self.types[type_or_name]
+        return type_or_name
+
     def register_type(self,typename,typefn):
         self.types[typename]=typefn
 
