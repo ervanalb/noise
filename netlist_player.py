@@ -5,6 +5,7 @@ import ntype
 import pyaudio
 import struct
 import sys
+import netlist.netlist_parser
 
 context=cnoise.NoiseContext()
 context.chunk_size = 1024
@@ -12,9 +13,10 @@ context.frame_rate = 48000
 
 context.load('blocks.py')
 
-def play_json_netlist(json_filename):
-    with open(json_filename) as f:
-        data = json.load(f)
+def play_netlist(filename):
+    with open(filename) as f:
+        data = netlist.netlist_parser.parse(f.read())
+    print data
 
     blocks = {}
 
@@ -38,7 +40,7 @@ if __name__ == "__main__":
         rate=context.frame_rate,
         frames_per_buffer=context.chunk_size,
         output=True)
-    blocks = play_json_netlist("netlist/output.json")
+    blocks = play_netlist("netlist/example_netlist.net")
  
     output_block = blocks["AUDIO"]
     
