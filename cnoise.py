@@ -31,7 +31,7 @@ class NoiseContext(object):
     def __init__(self):
         self.libs={}
         self.blocks={}
-        self.types={}
+        self.types=[]
 
     def load(self,py_file):
         vars_dict={'context':self}
@@ -47,8 +47,8 @@ class NoiseContext(object):
             return self.types[type_or_name]
         return type_or_name
 
-    def register_type(self,typename,typefn):
-        self.types[typename]=typefn
+    def register_type(self,typefn):
+        self.types.append(typefn)
 
     def register_block(self,blockname,blockfn):
         self.blocks[blockname]=blockfn
@@ -56,6 +56,13 @@ class NoiseContext(object):
     def set_global_vars(self,lib):
         for (t,k,v) in self.global_vars:
             t.in_dll(lib,k).value=v
+
+    def get_type(self,string):
+        for t in self.types:
+            ti=t.fromstring(string,self.get_type)
+            if ti is not None:
+                return ti
+        raise TypeError(string)
 
     def __getitem__(self,index):
         return self.libs[index]
@@ -84,6 +91,13 @@ class NoiseObject(object):
         if e != SUCCESS:
             raise Exception("noise error")
         return out
+
+    # Override me for more complicated behaviour!
+    @classmethod
+    def fromstring(cls,string,lkup):
+        if string == cls.string:
+            return cls
+        return None
 
     @classmethod
     def new(cls,val=None):
