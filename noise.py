@@ -18,7 +18,8 @@ if __name__ == "__main__":
     def instrument(notes,tb,tbout,wave_shape):
         # Build melody
         global heap
-        melody_array = context.types['array'](len(notes),n_double).new(notes)
+        melody_array = context.get_type('double[{0}]'.format(len(notes))).new(notes)
+
         melody_notes = context.blocks["ConstantBlock"](melody_array)
         melody_seq = context.blocks["SequencerBlock"](melody_array) # could also call this with a type
         melody_seq.set_input(0,tb,tbout)
@@ -37,7 +38,7 @@ if __name__ == "__main__":
 
     def drum(waveform,hits,tb,tbout):
         global heap
-        hits_array = context.types['array'](len(hits),n_int).new(hits)
+        hits_array = context.get_type('int[{0}]'.format(len(hits))).new(hits)
         hits_const = context.blocks["ConstantBlock"](hits_array)
         hits_seq = context.blocks["SequencerBlock"](hits_array)
         hits_seq.set_input(0,tb,tbout)
@@ -53,10 +54,8 @@ if __name__ == "__main__":
     unison_snare = [None, None, 1, 1]*8
     unison_kick = [1, 1, None, None]*8
 
-    n_double=context.types['double']
-
-    n_int=context.types['int']
-    n_wave=context.types['wave']
+    n_double=context.get_type('double')
+    n_int=context.get_type('int')
 
     # Build a timebase
     dt = context.blocks["ConstantBlock"](n_double.new(0.01))

@@ -1,5 +1,6 @@
 import struct
 import cnoise as c
+import re
 
 clib_noise = context.load_so('noise','noise.so')
 
@@ -21,7 +22,7 @@ class n_double(c.NoiseObject):
     def value(self,val):
         c.cast(self.o,c.POINTER(c.c_double)).contents.value=val
 
-context.register_type('double',n_double)
+context.register_type(n_double)
 
 class n_int(c.NoiseObject):
     alloc_fn = clib_noise.simple_alloc
@@ -38,7 +39,7 @@ class n_int(c.NoiseObject):
     def value(self,val):
         c.cast(self.o,c.POINTER(c.c_int)).contents.value=val
 
-context.register_type('int',n_int)
+context.register_type(n_int)
 
 class n_chunk(c.NoiseObject):
     alloc_fn = clib_noise.simple_alloc
@@ -58,8 +59,7 @@ class n_chunk(c.NoiseObject):
         for i in range(context.chunk_size):
             array[i]=val[i]
 
-
-context.register_type('chunk',n_chunk)
+context.register_type(n_chunk)
 
 def wave_factory(length):
     class n_wave(c.NoiseObject):
@@ -67,7 +67,7 @@ def wave_factory(length):
         free_fn = clib_noise.simple_free
         copy_fn = clib_noise.simple_copy
         type_info = c.c_int(c.sizeof(c.c_double)*length)
-        string='wave'
+        string='wave({0})'.format(length)
 
         @property
         def value(self):
@@ -82,7 +82,16 @@ def wave_factory(length):
 
     return n_wave
 
-context.register_type('wave',wave_factory)
+def wave_factory_fromstring(string,lkup):
+    m=re.match(r'wave\[(\d+)\]',string)
+    if not m:
+        return None
+    length=int(m.group(1))
+    return wave_factory(length)
+
+wave_factory.fromstring = wave_factory_fromstring
+
+context.register_type(wave_factory)
 
 class ARRAY_INFO_T(c.Structure):
     _fields_=[
@@ -125,15 +134,17 @@ def array_factory(size,element_type):
 
     return n_array
 
-def array_builder_factory(t):
-    def build(data):
-        return array_factory(len(data), t).new(data)
-    build.new = build
-    return build
+def array_factory_fromstring(string,lkup):
+    m=re.match(r'(.+)\[(\d+)\]',string)
+    if not m:
+        return None
+    size=int(m.group(2))
+    element_type=lkup(m.group(1))
+    return array_factory(size,element_type)
 
-context.register_type('array',array_factory)
-context.register_type('array_double', array_builder_factory(n_double))
-context.register_type('array_int', array_builder_factory(n_int))
+array_factory.fromstring = array_factory_fromstring
+
+context.register_type(array_factory)
 
 class WaveBlock(c.Block):
     state_alloc = clib_noise.wave_state_alloc
@@ -413,6 +424,7 @@ class UIBlock(c.Block):
     num_outputs = 0
     input_names = ["Audio In"]
     output_names = []
+
     def __init__(self):
         # Super backwards block
 
