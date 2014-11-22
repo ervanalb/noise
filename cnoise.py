@@ -59,7 +59,7 @@ class NoiseContext(object):
 
     def get_type(self,string):
         for t in self.types:
-            ti=t.fromstring(string,self.get_type)
+            ti=t(string,self.get_type)
             if ti is not None:
                 return ti
         raise TypeError(string)

@@ -22,7 +22,7 @@ class n_double(c.NoiseObject):
     def value(self,val):
         c.cast(self.o,c.POINTER(c.c_double)).contents.value=val
 
-context.register_type(n_double)
+context.register_type(n_double.fromstring)
 
 class n_int(c.NoiseObject):
     alloc_fn = clib_noise.simple_alloc
@@ -39,7 +39,7 @@ class n_int(c.NoiseObject):
     def value(self,val):
         c.cast(self.o,c.POINTER(c.c_int)).contents.value=val
 
-context.register_type(n_int)
+context.register_type(n_int.fromstring)
 
 class n_chunk(c.NoiseObject):
     alloc_fn = clib_noise.simple_alloc
@@ -59,7 +59,7 @@ class n_chunk(c.NoiseObject):
         for i in range(context.chunk_size):
             array[i]=val[i]
 
-context.register_type(n_chunk)
+context.register_type(n_chunk.fromstring)
 
 def wave_factory(length):
     class n_wave(c.NoiseObject):
@@ -83,15 +83,13 @@ def wave_factory(length):
     return n_wave
 
 def wave_factory_fromstring(string,lkup):
-    m=re.match(r'wave\[(\d+)\]',string)
+    m=re.match(r'wave\((\d+)\)',string)
     if not m:
         return None
     length=int(m.group(1))
     return wave_factory(length)
 
-wave_factory.fromstring = wave_factory_fromstring
-
-context.register_type(wave_factory)
+context.register_type(wave_factory_fromstring)
 
 class ARRAY_INFO_T(c.Structure):
     _fields_=[
@@ -142,9 +140,7 @@ def array_factory_fromstring(string,lkup):
     element_type=lkup(m.group(1))
     return array_factory(size,element_type)
 
-array_factory.fromstring = array_factory_fromstring
-
-context.register_type(array_factory)
+context.register_type(array_factory_fromstring)
 
 class WaveBlock(c.Block):
     state_alloc = clib_noise.wave_state_alloc
@@ -415,6 +411,37 @@ class MixerBlock(c.Block):
         self.num_inputs = 2*num_channels
         self.input_names = [inp for i in range(num_channels) for inp in ["Audio In {0}".format(i+1),"Gain {0}".format(i+1)]]
         self.block_info = c.cast(c.pointer(c.c_int(num_channels)),c.BLOCK_INFO_PT)
+        c.Block.__init__(self)
+
+context.register_block('MixerBlock', MixerBlock)
+
+class SYNTH_INFO_T(c.Structure):
+    _fields_=[
+        ('attack_t',c.c_double),
+        ('attack_amp',c.c_double),
+        ('decay_t',c.c_double),
+        ('release_t',c.c_double),
+        ('num_notes',c.c_int)
+    ]
+
+class SynthBlock(c.Block):
+    state_alloc = clib_noise.synth_state_alloc
+    state_free = clib_noise.synth_state_free
+    pull_fns = [clib_noise.synth_pull]
+
+    output_names = ["Audio Out"]
+    input_names = ["Notes In"]
+    num_outputs = 1
+    num_inputs = 1
+
+    def __init__(self,attack_t,attack_amp,decay_t,release_t,num_notes=32):
+        info=SYNTH_INFO_T()
+        info.attack_t=attack_t
+        info.attack_amp=attack_amp
+        info.decay_t=decay_t
+        info.release_t=release_t
+        info.num_notes=num_notes
+        self.block_info = c.cast(c.pointer(info),c.BLOCK_INFO_PT)
         c.Block.__init__(self)
 
 context.register_block('MixerBlock', MixerBlock)
