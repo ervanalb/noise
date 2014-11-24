@@ -446,6 +446,24 @@ class SynthBlock(c.Block):
 
 context.register_block('MixerBlock', MixerBlock)
 
+# For testing
+class PyBlock(c.Block):
+    num_inputs = 1
+    num_outputs = 1
+    input_names = ["t"]
+    output_names = ["events_out"]
+
+    @c.Block.pull_fn
+    def pull(self):
+        a=self.input_pull(0,c.c_double)
+        return c.c_double(a.value+1)
+
+    def __init__(self):
+        self.pull_fns=[c.PULL_FN_PT(self.pull)]
+        c.Block.__init__(self)
+
+context.register_block('PyBlock', PyBlock)
+
 class UIBlock(c.Block):
     num_inputs = 1
     num_outputs = 0

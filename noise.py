@@ -96,9 +96,6 @@ if __name__ == "__main__":
     mixer.set_input(6,kick,0)
     mixer.set_input(7,kick_vol,0)
 
-    ui=context.blocks["UIBlock"]()
-    ui.set_input(0,mixer,0)
-
     p = pyaudio.PyAudio()
     stream = p.open(format=pyaudio.paFloat32,
         channels=1,
@@ -108,11 +105,8 @@ if __name__ == "__main__":
  
     while True:
         try:
-            #cb.cvalue.value += 10
-            result=ui.pull()
-            chunk=ui.output[:context.chunk_size]
-            data=struct.pack('f'*context.chunk_size,*chunk)
-            #print ui.output[:context.chunk_size]
+            result=mixer.output_pull(0,ctypes.c_double*context.chunk_size)
+            data=struct.pack('f'*context.chunk_size,*result)
             stream.write(data)
 
         except KeyboardInterrupt:
