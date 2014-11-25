@@ -56,6 +56,17 @@ static double sine(double t)
     return sin(t*2*M_PI);
 }
 
+static double saw(double t)
+{
+	return 2*fmod(t,1)-1;
+}
+
+static double square(double t)
+{
+	return 2*(fmod(t,1)<.5)-1;
+}
+
+
 static double note2freq(int note)
 {
 	return pow(2,(double)(note-69)/12)*440;
@@ -127,16 +138,17 @@ error_t synth_pull(node_t * node, output_pt * output)
                 {
                     envelope = (state->attack_amp - (state->attack_amp - 1) * (state->t - slot->start_t - state->attack_t) / state->decay_t);
                 }
-                else if(slot->stop_t > 0 && state->t > slot->stop_t)
+
+                if(slot->stop_t > 0 && state->t > slot->stop_t)
                 {
-                    envelope = (slot->stop_t + state->release_t - state->t) / state->release_t;
+                    envelope *= (slot->stop_t + state->release_t - state->t) / state->release_t;
                     if(envelope < 0)
                     {
                         slot->active = 0;
                         continue;
                     }
                 }
-                state->chunk[i] += sine((state->t - slot->start_t) * note2freq(slot->note)) * envelope * slot->velocity;
+                state->chunk[i] += saw((state->t - slot->start_t) * note2freq(slot->note)) * envelope * slot->velocity;
             }
         }
         state->t += 1 / global_frame_rate;

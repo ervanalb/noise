@@ -2,7 +2,7 @@ import struct
 import cnoise as c
 import re
 
-clib_noise = context.load_so('noise','noise.so')
+clib_noise = c.load_so('noise.so')
 
 c.c_int.in_dll(clib_noise, "global_chunk_size").value = context.chunk_size
 c.c_int.in_dll(clib_noise, "global_frame_rate").value = context.frame_rate
@@ -22,8 +22,6 @@ class n_double(c.NoiseObject):
     def value(self,val):
         c.cast(self.o,c.POINTER(c.c_double)).contents.value=val
 
-context.register_type(n_double.fromstring)
-
 class n_int(c.NoiseObject):
     alloc_fn = clib_noise.simple_alloc
     free_fn = clib_noise.simple_free
@@ -38,8 +36,6 @@ class n_int(c.NoiseObject):
     @value.setter
     def value(self,val):
         c.cast(self.o,c.POINTER(c.c_int)).contents.value=val
-
-context.register_type(n_int.fromstring)
 
 class n_chunk(c.NoiseObject):
     alloc_fn = clib_noise.simple_alloc
@@ -58,8 +54,6 @@ class n_chunk(c.NoiseObject):
         array=c.cast(self.o,c.POINTER(c.c_double*context.chunk_size)).contents
         for i in range(context.chunk_size):
             array[i]=val[i]
-
-context.register_type(n_chunk.fromstring)
 
 def wave_factory(length):
     class n_wave(c.NoiseObject):
@@ -88,8 +82,6 @@ def wave_factory_fromstring(string,lkup):
         return None
     length=int(m.group(1))
     return wave_factory(length)
-
-context.register_type(wave_factory_fromstring)
 
 class ARRAY_INFO_T(c.Structure):
     _fields_=[
@@ -140,8 +132,6 @@ def array_factory_fromstring(string,lkup):
     element_type=lkup(m.group(1))
     return array_factory(size,element_type)
 
-context.register_type(array_factory_fromstring)
-
 class WaveBlock(c.Block):
     state_alloc = clib_noise.wave_state_alloc
     state_free = clib_noise.wave_state_free
@@ -150,8 +140,6 @@ class WaveBlock(c.Block):
     num_outputs = 1
     input_names = ["freq", "type"]
     output_names = ["wave"]
-
-context.register_block('WaveBlock',WaveBlock)
 
 class SampleBlock(c.Block):
     class SAMPLE_INFO_T(c.Structure):
@@ -175,8 +163,6 @@ class SampleBlock(c.Block):
         self.block_info = c.cast(c.pointer(info),c.BLOCK_INFO_PT)
         c.Block.__init__(self)
 
-context.register_block('SampleBlock',SampleBlock)
-
 class LPFBlock(c.Block):
     state_alloc = clib_noise.lpf_state_alloc
     state_free = clib_noise.lpf_state_free
@@ -186,8 +172,6 @@ class LPFBlock(c.Block):
     input_names = ["wave", "alpha"]
     output_names = ["wave"]
 
-context.register_block('LPFBlock',LPFBlock)
-
 class AccumulatorBlock(c.Block):
     state_alloc = clib_noise.accumulator_state_alloc
     state_free = clib_noise.accumulator_state_free
@@ -196,8 +180,6 @@ class AccumulatorBlock(c.Block):
     num_outputs = 1
     input_names = ["x"]
     output_names = ["Sum[x]"]
-
-context.register_block('AccumulatorBlock',AccumulatorBlock)
 
 class UnionBlock(c.Block):
     state_alloc = clib_noise.union_state_alloc
@@ -211,8 +193,6 @@ class UnionBlock(c.Block):
         datatype.populate_object_info(info)
         self.block_info = c.cast(c.pointer(info),c.BLOCK_INFO_PT)
         c.Block.__init__(self)
-
-context.register_block('UnionBlock',UnionBlock)
 
 class TeeBlock(c.Block):
     state_alloc = clib_noise.union_state_alloc
@@ -231,8 +211,6 @@ class TeeBlock(c.Block):
         datatype.populate_object_info(info)
         self.block_info = c.cast(c.pointer(info),c.BLOCK_INFO_PT)
         c.Block.__init__(self)
-
-context.register_block('TeeBlock',TeeBlock)
 
 class WYE_INFO_T(c.Structure):
     _fields_=[
@@ -256,8 +234,6 @@ class WyeBlock(c.Block):
         self.input_names = ["Main"]+["Aux {0}".format(i+1) for i in range(num_aux_inputs)]
         self.block_info = c.cast(c.pointer(info),c.BLOCK_INFO_PT)
         c.Block.__init__(self)
-
-context.register_block('WyeBlock',WyeBlock)
 
 class ConstantBlock(c.Block):
     state_alloc = clib_noise.constant_state_alloc
@@ -292,8 +268,6 @@ class ConstantBlock(c.Block):
     def data(self, val):
         self.noise_obj.value = val
 
-context.register_block('ConstantBlock',ConstantBlock)
-
 class PlusBlock(c.Block):
     state_alloc = clib_noise.maths_state_alloc
     state_free = clib_noise.maths_state_free
@@ -302,8 +276,6 @@ class PlusBlock(c.Block):
     num_outputs = 1
     input_names = ["double", "double"]
     output_names = ["double"]
-
-context.register_block('PlusBlock', PlusBlock)
 
 class MinusBlock(c.Block):
     state_alloc = clib_noise.maths_state_alloc
@@ -314,8 +286,6 @@ class MinusBlock(c.Block):
     input_names = ["+ double", "- double"]
     output_names = ["double"]
 
-context.register_block('MinusBlock', MinusBlock)
-
 class MultiplyBlock(c.Block):
     state_alloc = clib_noise.maths_state_alloc
     state_free = clib_noise.maths_state_free
@@ -324,8 +294,6 @@ class MultiplyBlock(c.Block):
     num_outputs = 1
     input_names = ["double", "double"]
     output_names = ["double"]
-
-context.register_block('MultiplyBlock', MultiplyBlock)
 
 class DivideBlock(c.Block):
     state_alloc = clib_noise.maths_state_alloc
@@ -336,8 +304,6 @@ class DivideBlock(c.Block):
     input_names = ["N double", "D double"]
     output_names = ["double"]
 
-context.register_block('DivideBlock', DivideBlock)
-
 class NoteToFreqBlock(c.Block):
     state_alloc = clib_noise.maths_state_alloc
     state_free = clib_noise.maths_state_free
@@ -347,8 +313,6 @@ class NoteToFreqBlock(c.Block):
     input_names = ["MIDI Note (int)"]
     output_names = ["Freq"]
 
-context.register_block('NoteToFreqBlock', NoteToFreqBlock)
-
 class FunctionGeneratorBlock(c.Block):
     state_alloc = clib_noise.function_gen_state_alloc
     state_free = clib_noise.function_gen_state_free
@@ -357,8 +321,6 @@ class FunctionGeneratorBlock(c.Block):
     num_outputs = 1
     input_names = ["Frequency"]
     output_names = ["Chunks"]
-
-context.register_block('FunctionGeneratorBlock', FunctionGeneratorBlock)
 
 class SEQUENCER_INFO_T(c.Structure):
     _fields_=[('array_info',c.POINTER(ARRAY_INFO_T))]
@@ -382,8 +344,6 @@ class SequencerBlock(c.Block):
         self.block_info = c.cast(c.pointer(seq_info),c.BLOCK_INFO_PT)
         c.Block.__init__(self)
 
-context.register_block('SequencerBlock', SequencerBlock)
-
 class ConvolveBlock(c.Block):
     state_alloc = clib_noise.convolve_state_alloc
     state_free = clib_noise.convolve_state_free
@@ -396,8 +356,6 @@ class ConvolveBlock(c.Block):
     def __init__(self,length):
         self.block_info = c.cast(c.pointer(c.c_int(length)),c.BLOCK_INFO_PT)
         c.Block.__init__(self)
-
-context.register_block('ConvolveBlock', ConvolveBlock)
 
 class MixerBlock(c.Block):
     state_alloc = clib_noise.mixer_state_alloc
@@ -412,8 +370,6 @@ class MixerBlock(c.Block):
         self.input_names = [inp for i in range(num_channels) for inp in ["Audio In {0}".format(i+1),"Gain {0}".format(i+1)]]
         self.block_info = c.cast(c.pointer(c.c_int(num_channels)),c.BLOCK_INFO_PT)
         c.Block.__init__(self)
-
-context.register_block('MixerBlock', MixerBlock)
 
 class SYNTH_INFO_T(c.Structure):
     _fields_=[
@@ -444,10 +400,21 @@ class SynthBlock(c.Block):
         self.block_info = c.cast(c.pointer(info),c.BLOCK_INFO_PT)
         c.Block.__init__(self)
 
-context.register_block('SynthBlock', SynthBlock)
+class NOTE_T(c.Structure):
+    _fields_=[
+        ('event',c.c_int),
+        ('note',c.c_int),
+        ('velocity',c.c_double)
+    ]
 
-# For testing
-class PyBlock(c.Block):
+    def __init__(self,note,event=1,velocity=1):
+        self.event=event
+        self.note=note
+        self.velocity=velocity
+
+from collections import deque
+
+class SchedulerBlock(c.Block):
     num_inputs = 1
     num_outputs = 1
     input_names = ["t"]
@@ -455,14 +422,57 @@ class PyBlock(c.Block):
 
     @c.Block.pull_fn
     def pull(self):
-        a=self.input_pull(0,c.c_double)
-        return c.c_double(a.value+1)
+        if len(self.schedule) == 0:
+            return None
+        (et,e)=self.schedule[0]
+        t=self.input_pull(0,c.c_double)
+        if t is None:
+            return None
+        if t.value > et:
+            self.schedule.popleft()
+            return e
+        return None
 
-    def __init__(self):
+    def __init__(self,schedule):
         self.pull_fns=[c.PULL_FN_PT(self.pull)]
+        self.schedule=deque(schedule)
         c.Block.__init__(self)
 
-context.register_block('PyBlock', PyBlock)
+class MidiInBlock(c.Block):
+    num_inputs = 0
+    num_outputs = 1
+    output_names = ["events_out"]
+
+    @c.Block.pull_fn
+    def pull(self):
+        ev=self.midi_in.read(1)
+        if len(ev) == 0:
+            return None
+        (event,note,velocity,extra)=tuple(ev[0][0])
+        if event == 128 or event == 144 and velocity == 0:
+            return NOTE_T(note,0)
+        if event == 144:
+            return NOTE_T(note,1,float(velocity)/127)
+        return None
+
+    def __init__(self,search=None):
+        import pygame.midi
+        pygame.midi.init()
+
+        input_id = None
+        for i in range( pygame.midi.get_count() ):
+            r = pygame.midi.get_device_info(i)
+            (interf, name, input, output, opened) = r
+
+            if search is not None and search in name and input:
+                input_id = i
+
+        if input_id is None:
+            input_id = pygame.midi.get_default_input_id()
+        self.midi_in = pygame.midi.Input( input_id )
+
+        self.pull_fns=[c.PULL_FN_PT(self.pull)]
+        c.Block.__init__(self)
 
 class UIBlock(c.Block):
     num_inputs = 1
@@ -495,4 +505,34 @@ class UIBlock(c.Block):
     def pull(self):
         return self.input_pull_fns[0](c.byref(self.input_nodes[0]), c.cast(c.byref(self.output),c.POINTER(c.OUTPUT_PT)))
 
-context.register_block('UIBlock', UIBlock)
+__types__ = [
+    n_double.fromstring,
+    n_int.fromstring,
+    n_chunk.fromstring,
+    wave_factory_fromstring,
+    array_factory_fromstring,
+]
+
+__blocks__ = [
+    WaveBlock,
+    SampleBlock,
+    LPFBlock,
+    AccumulatorBlock,
+    UnionBlock,
+    TeeBlock,
+    WyeBlock,
+    ConstantBlock,
+    PlusBlock,
+    MinusBlock,
+    MultiplyBlock,
+    DivideBlock,
+    NoteToFreqBlock,
+    FunctionGeneratorBlock,
+    SequencerBlock,
+    ConvolveBlock,
+    MixerBlock,
+    SynthBlock,
+    SchedulerBlock,
+    MidiInBlock,
+    UIBlock,
+]

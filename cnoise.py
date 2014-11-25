@@ -29,6 +29,13 @@ OUTPUT_ALLOC_FN_PT = CFUNCTYPE(ERROR_T,TYPE_INFO_PT, POINTER(OUTPUT_PT))
 OUTPUT_FREE_FN_PT = CFUNCTYPE(ERROR_T,TYPE_INFO_PT, OUTPUT_PT)
 OUTPUT_COPY_FN_PT = CFUNCTYPE(ERROR_T,TYPE_INFO_PT, OUTPUT_PT, OUTPUT_PT)
 
+def load_so(soname):
+    return cdll.LoadLibrary(os.path.join(os.path.abspath(os.path.dirname(__file__)),soname))
+
+class NoiseLibrary:
+    def __init__(self, entries): 
+        self.__dict__.update(entries)
+
 class NoiseContext(object):
     def __init__(self):
         self.libs={}
@@ -36,28 +43,21 @@ class NoiseContext(object):
         self.types=[]
 
     def load(self,py_file):
-        vars_dict={'context':self}
-        execfile(py_file,vars_dict)
+        module={'context':self}
+        with open(py_file) as f:
+            code = compile(f.read(), py_file, 'exec')
+        exec code in module
+        noiselib=NoiseLibrary(module)
+        
+        self.blocks.update(dict([(c.__name__,c) for c in noiselib.__blocks__]))
+        self.types += noiselib.__types__
+        return noiselib
 
-    def load_so(self,name,soname):
-        l=cdll.LoadLibrary(os.path.join(os.path.abspath(os.path.dirname(__file__)),soname))
-        self.libs[name]=l
-        return l
-
+    # wtf is this
     def resolve_type(self, type_or_name):
         if isinstance(type_or_name, str) or isinstance(type_or_name, unicode):
             return self.types[type_or_name]
         return type_or_name
-
-    def register_type(self,typefn):
-        self.types.append(typefn)
-
-    def register_block(self,blockname,blockfn):
-        self.blocks[blockname]=blockfn
-
-    def set_global_vars(self,lib):
-        for (t,k,v) in self.global_vars:
-            t.in_dll(lib,k).value=v
 
     def get_type(self,string):
         for t in self.types:
@@ -65,9 +65,6 @@ class NoiseContext(object):
             if ti is not None:
                 return ti
         raise TypeError(string)
-
-    def __getitem__(self,index):
-        return self.libs[index]
 
 class MetaNoiseObject(type):
     def __str__(self):

@@ -5,49 +5,15 @@ import pyaudio
 import struct
 import random
 import math
-from collections import deque
 
 context=cnoise.NoiseContext()
 context.chunk_size = 128
 context.frame_rate = 48000
 
-context.load('blocks.py')
+blocks=context.load('blocks.py')
 
-class SchedulerBlock(cnoise.Block):
-    num_inputs = 1
-    num_outputs = 1
-    input_names = ["t"]
-    output_names = ["events_out"]
-
-    @cnoise.Block.pull_fn
-    def pull(self):
-        if len(self.schedule) == 0:
-            return None
-        (et,e)=self.schedule[0]
-        t=self.input_pull(0,ctypes.c_double)
-        if t is None:
-            return None
-        if t.value > et:
-            self.schedule.popleft()
-            return e
-        return None
-
-    def __init__(self,schedule):
-        self.pull_fns=[cnoise.PULL_FN_PT(self.pull)]
-        self.schedule=deque(schedule)
-        cnoise.Block.__init__(self)
-
-class NOTE_T(ctypes.Structure):
-    _fields_=[
-        ('event',ctypes.c_int),
-        ('note',ctypes.c_int),
-        ('velocity',ctypes.c_double)
-    ]
-
-    def __init__(self,note,event=1,velocity=1):
-        self.event=event
-        self.note=note
-        self.velocity=velocity
+"""
+NOTE_T = blocks.NOTE_T
 
 n_chunk=context.get_type('chunk')
 n_double=context.get_type('double')
@@ -60,10 +26,11 @@ timebase.set_input(0,dt,0)
 timebase_splitter=context.blocks["TeeBlock"](2,n_double)
 timebase_splitter.set_input(0,timebase,0)
 
-sb=SchedulerBlock([(1,NOTE_T(69)),(2,NOTE_T(73)),(3,NOTE_T(76)),(6,NOTE_T(69,0)),(6,NOTE_T(73,0)),(6,NOTE_T(76,0))])
+sb=context.blocks['SchedulerBlock']([(1,NOTE_T(69)),(2,NOTE_T(73)),(3,NOTE_T(76)),(6,NOTE_T(69,0)),(6,NOTE_T(73,0)),(6,NOTE_T(76,0))])
 sb.set_input(0,timebase_splitter,1)
+#sb=context.blocks['MidiInBlock']('USB')
 
-syn=context.blocks["SynthBlock"](.05,2,.2,.4)
+syn=context.blocks["SynthBlock"](0.05,1.5,.05,.2)
 syn.set_input(0,sb,0)
 
 audio_joiner=context.blocks["WyeBlock"](2,n_chunk)
@@ -96,6 +63,7 @@ stream.close()
 
 import sys
 sys.exit()
+"""
 
 if __name__ == "__main__":
     heap=[]
