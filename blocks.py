@@ -241,18 +241,18 @@ class WYE_INFO_T(c.Structure):
     ]
 
 class WyeBlock(c.Block):
-    state_alloc = clib_noise.union_state_alloc
-    state_free = clib_noise.union_state_free
+    state_alloc = clib_noise.wye_state_alloc
+    state_free = clib_noise.wye_state_free
     pull_fns = [clib_noise.wye_pull]
     num_outputs = 1
     output_names = ["out"]
 
     def __init__(self, num_aux_inputs, datatype):
-        info = c.WYE_INFO_T()
+        info = WYE_INFO_T()
         datatype = context.resolve_type(datatype)
         datatype.populate_object_info(info.object_info)
-        info.num_aux_inputs.value=num_aux_inputs
-        num_inputs = num_aux_inputs+1
+        info.num_aux_inputs=num_aux_inputs
+        self.num_inputs = num_aux_inputs+1
         self.input_names = ["Main"]+["Aux {0}".format(i+1) for i in range(num_aux_inputs)]
         self.block_info = c.cast(c.pointer(info),c.BLOCK_INFO_PT)
         c.Block.__init__(self)
@@ -444,7 +444,7 @@ class SynthBlock(c.Block):
         self.block_info = c.cast(c.pointer(info),c.BLOCK_INFO_PT)
         c.Block.__init__(self)
 
-context.register_block('MixerBlock', MixerBlock)
+context.register_block('SynthBlock', SynthBlock)
 
 # For testing
 class PyBlock(c.Block):

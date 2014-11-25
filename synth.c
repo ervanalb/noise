@@ -8,6 +8,8 @@
 
 error_t synth_state_alloc(block_info_pt block_info, state_pt* state)
 {
+    int i;
+
     synth_info_t* synth_info = block_info;
 
     synth_state_t* synth_state;
@@ -34,6 +36,11 @@ error_t synth_state_alloc(block_info_pt block_info, state_pt* state)
     synth_state->notes=malloc(synth_info->num_notes * sizeof(synth_note_t));
     if(!synth_state->notes) return e;
 
+    for(i=0;i<synth_info->num_notes;i++)
+    {
+        synth_state->notes[i].active=0;
+    }
+
     return SUCCESS;
 }
 
@@ -51,7 +58,7 @@ static double sine(double t)
 
 static double note2freq(int note)
 {
-	return pow(2,(note-69)/12)*440;
+	return pow(2,(double)(note-69)/12)*440;
 }
 
 error_t synth_pull(node_t * node, output_pt * output)
@@ -82,6 +89,7 @@ error_t synth_pull(node_t * node, output_pt * output)
                         slot->velocity = note_event->velocity;
                         slot->start_t = state->t;
                         slot->stop_t = -1;
+                        slot->active = 1;
                         break;
                     }
                 }
@@ -110,15 +118,16 @@ error_t synth_pull(node_t * node, output_pt * output)
             slot = &state->notes[j];
             if(slot->active)
             {
+                envelope = 1;
                 if(state->t - slot->start_t < state->attack_t)
                 {
                     envelope = state->attack_amp * (state->t - slot->start_t) / state->attack_t;
                 }
                 else if(state->t - slot->start_t - state->attack_t < state->decay_t)
                 {
-                    envelope = 1 + (state->attack_amp - (state->attack_amp - 1) * (state->t - slot->start_t - state->attack_t) / state->attack_t);
+                    envelope = (state->attack_amp - (state->attack_amp - 1) * (state->t - slot->start_t - state->attack_t) / state->decay_t);
                 }
-                else if(state->t > slot->stop_t)
+                else if(slot->stop_t > 0 && state->t > slot->stop_t)
                 {
                     envelope = (slot->stop_t + state->release_t - state->t) / state->release_t;
                     if(envelope < 0)

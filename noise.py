@@ -5,12 +5,97 @@ import pyaudio
 import struct
 import random
 import math
+from collections import deque
 
 context=cnoise.NoiseContext()
 context.chunk_size = 128
 context.frame_rate = 48000
 
 context.load('blocks.py')
+
+class SchedulerBlock(cnoise.Block):
+    num_inputs = 1
+    num_outputs = 1
+    input_names = ["t"]
+    output_names = ["events_out"]
+
+    @cnoise.Block.pull_fn
+    def pull(self):
+        if len(self.schedule) == 0:
+            return None
+        (et,e)=self.schedule[0]
+        t=self.input_pull(0,ctypes.c_double)
+        if t is None:
+            return None
+        if t.value > et:
+            self.schedule.popleft()
+            return e
+        return None
+
+    def __init__(self,schedule):
+        self.pull_fns=[cnoise.PULL_FN_PT(self.pull)]
+        self.schedule=deque(schedule)
+        cnoise.Block.__init__(self)
+
+class NOTE_T(ctypes.Structure):
+    _fields_=[
+        ('event',ctypes.c_int),
+        ('note',ctypes.c_int),
+        ('velocity',ctypes.c_double)
+    ]
+
+    def __init__(self,note,event=1,velocity=1):
+        self.event=event
+        self.note=note
+        self.velocity=velocity
+
+n_chunk=context.get_type('chunk')
+n_double=context.get_type('double')
+n_int=context.get_type('int')
+
+dt = context.blocks["ConstantBlock"](n_double.new(0.002))
+timebase = context.blocks["AccumulatorBlock"]()
+timebase.set_input(0,dt,0)
+
+timebase_splitter=context.blocks["TeeBlock"](2,n_double)
+timebase_splitter.set_input(0,timebase,0)
+
+sb=SchedulerBlock([(1,NOTE_T(69)),(2,NOTE_T(73)),(3,NOTE_T(76)),(6,NOTE_T(69,0)),(6,NOTE_T(73,0)),(6,NOTE_T(76,0))])
+sb.set_input(0,timebase_splitter,1)
+
+syn=context.blocks["SynthBlock"](.05,2,.2,.4)
+syn.set_input(0,sb,0)
+
+audio_joiner=context.blocks["WyeBlock"](2,n_chunk)
+audio_joiner.set_input(0,syn,0)
+audio_joiner.set_input(1,timebase_splitter,0)
+
+cb_vol=context.blocks["ConstantBlock"](n_double.new(0.1))
+
+mixer=context.blocks["MixerBlock"](1)
+mixer.set_input(0,audio_joiner,0)
+mixer.set_input(1,cb_vol,0)
+
+p = pyaudio.PyAudio()
+stream = p.open(format=pyaudio.paFloat32,
+    channels=1,
+    rate=context.frame_rate,
+    frames_per_buffer=context.chunk_size,
+    output=True)
+
+while True:
+    try:
+        result=mixer.output_pull(0,ctypes.c_double*context.chunk_size)
+        data=struct.pack('f'*context.chunk_size,*result)
+        stream.write(data)
+
+    except KeyboardInterrupt:
+        break
+stream.stop_stream()
+stream.close()
+
+import sys
+sys.exit()
 
 if __name__ == "__main__":
     heap=[]
