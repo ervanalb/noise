@@ -200,7 +200,7 @@ class TeeBlock(c.Block):
     num_inputs = 1
     input_names = ["In"]
 
-    def __init__(self, num_aux_outputs, dtype):
+    def __init__(self, num_aux_outputs, datatype):
         self.num_outputs = num_aux_outputs+1
         self.output_names = ["Main"]+["Aux {0}".format(i+1) for i in range(num_aux_outputs)]
         self.pull_fns = [clib_noise.union_pull]+[clib_noise.tee_pull_aux]*(num_aux_outputs)
@@ -244,11 +244,12 @@ class ConstantBlock(c.Block):
     output_names = ["Const"]
 
 
-    def __init__(self,noise_obj=None, dtype=None):
+    def __init__(self, noise_obj=None, datatype=None):
         c.Block.__init__(self)
         if noise_obj is not None:
-            if noise_type is not None:
-                noise_obj = context.types[noise_type].new(noise_obj)
+            if datatype is not None:
+                datatype = context.resolve_type(datatype)
+                noise_obj = datatype.new(noise_obj)
             self.noise_obj = noise_obj
             self.pointer=noise_obj.o
 
@@ -334,11 +335,8 @@ class SequencerBlock(c.Block):
     input_names = ["Time", "Sequence"]
     output_names = ["Seq Item"]
 
-    def __init__(self,array_type=None,noise_obj=None,noise_type=None):
-        if noise_obj is not None and noise_type is not None:
-            array_type = context.types[noise_type].new(noise_obj)
-        if array_type is None:
-            raise ValueError
+    def __init__(self, datatype):
+        datatype = context.resolve_type(datatype)
         seq_info = SEQUENCER_INFO_T()
         seq_info.array_info = c.cast(c.pointer(array_type.type_info),c.POINTER(ARRAY_INFO_T))
         self.block_info = c.cast(c.pointer(seq_info),c.BLOCK_INFO_PT)
@@ -370,8 +368,6 @@ class MixerBlock(c.Block):
         self.input_names = [inp for i in range(num_channels) for inp in ["Audio In {0}".format(i+1),"Gain {0}".format(i+1)]]
         self.block_info = c.cast(c.pointer(c.c_int(num_channels)),c.BLOCK_INFO_PT)
         c.Block.__init__(self)
-
-context.register_block('MixerBlock', MixerBlock)
 
 class SYNTH_INFO_T(c.Structure):
     _fields_=[
