@@ -1,123 +1,161 @@
-/* This was copied from peebles. Not ready yet. */
-
-#include <stdio.h>
+#include "synth.h"
 #include <math.h>
+#include <stdlib.h>
+#include <string.h>
+#include "typefns.h"
+#include "globals.h"
+#include "note.h"
 
-int rate;
-int chunksize;
-double attack=0.0000001; // attack exponent base
-double sustain=.5; // sustain exponent base
-double release=0.0001; // release exponent base
-double ttl=1; // seconds to live after release
-
-typedef struct
+error_t synth_state_alloc(block_info_pt block_info, state_pt* state)
 {
-	char active;
-	int note;
-	double velocity;
-	double t;
-	double hit;
-	double release;
-} note_t;
+    int i;
 
-double reduce(double cur,double new)
-{
-	return cur+new;
+    synth_info_t* synth_info = block_info;
+
+    synth_state_t* synth_state;
+
+    synth_state = malloc(sizeof(synth_state_t));
+
+    *state = synth_state;
+
+    if(!synth_state) return raise_error(ERR_MALLOC,"");
+
+    synth_state->t = 0;
+
+    synth_state->attack_t = synth_info->attack_t;
+    synth_state->attack_amp = synth_info->attack_amp;
+    synth_state->decay_t = synth_info->decay_t;
+    synth_state->release_t = synth_info->release_t;
+    synth_state->num_notes = synth_info->num_notes;
+
+    error_t e;
+
+    e=chunk_alloc(0,(output_pt*)(&(synth_state->chunk)));
+    if(e != SUCCESS) return e;
+
+    synth_state->notes=malloc(synth_info->num_notes * sizeof(synth_note_t));
+    if(!synth_state->notes) return e;
+
+    for(i=0;i<synth_info->num_notes;i++)
+    {
+        synth_state->notes[i].active=0;
+    }
+
+    return SUCCESS;
 }
 
-double f(double t)
+void synth_state_free(block_info_pt block_info, state_pt state)
 {
-	//return sin(t*3.14159*2);
-	if(fmod(t,1)<0.5)
-	{
-		return -1;
-	}
-	return 1;
+    chunk_free(0,((synth_state_t*)state)->chunk);
+    free(((synth_state_t*)state)->notes);
+    free(state);
 }
 
-double gen(note_t* note)
+static double sine(double t)
 {
-	double freq=pow(2,(note->note-69)/12.)*440.;
-	double base;
-	double t_hold;
-	double t_release;
-	base=f(freq*note->t)*note->velocity;
-	t_hold=note->t-note->hit;
-	t_release=note->t-note->release;
-	if(note->release < note->hit || t_release < 0)
-	{
-		t_release=0;
-	}
-	return base*(1-pow(attack,t_hold))*pow(sustain,t_hold)*pow(release,t_release);
+    return sin(t*2*M_PI);
 }
 
-char still_active(note_t* note)
+static double saw(double t)
 {
-	if(note->release > note->hit && (note->t - note->release) > ttl)
-	{
-		return 0;
-	}
-	return 1;
+	return 2*fmod(t,1)-1;
 }
 
-void synth(double* buffer,note_t* notes,int num_notes)
+static double square(double t)
 {
-	int i,j;
-	double delta_t=1./rate;
-
-	for(j=0;j<chunksize;j++)
-	{
-		buffer[j]=0;
-	}
-
-	for(i=0;i<num_notes;i++)
-	{
-		if(!notes[i].active)
-		{
-			continue;
-		}
-
-		for(j=0;j<chunksize;j++)
-		{
-			buffer[j]=reduce(buffer[j],gen(&(notes[i])));
-			notes[i].t+=delta_t;
-		}
-
-		notes[i].active=still_active(&(notes[i]));
-	}
+	return 2*(fmod(t,1)<.5)-1;
 }
-/*
-int main()
+
+
+static double note2freq(int note)
 {
-	rate=48000;
-	chunksize=2048;
-
-	note_t note[2];
-
-	double buffer[chunksize];
-
-	int i;
-
-	note[0].active=1;
-	note[0].note=69;
-	note[0].velocity=.1;
-	note[0].t=0;
-	note[0].hit=0;
-	note[0].release=-1;
-
-	note[1].active=1;
-	note[1].note=72;
-	note[1].velocity=.1;
-	note[1].t=0;
-	note[1].hit=0;
-	note[1].release=-1;
-
-	synth(buffer,note,2);
-
-	for(i=0;i<chunksize;i++)
-	{
-		printf("%f, ",buffer[i]);
-	}
-	printf("\n");
+	return pow(2,(double)(note-69)/12)*440;
 }
-*/
+
+error_t synth_pull(node_t * node, output_pt * output)
+{
+    note_event_t* note_event;
+
+    error_t e;
+
+    int i,j;
+
+    synth_state_t* state = (synth_state_t*)(node->state);
+    synth_note_t* slot;
+
+    for(;;)
+    {
+        e=pull(node,0,(output_pt*)(&note_event));
+        if(e != SUCCESS) return e;
+        if(!note_event) break;
+        switch(note_event->event)
+        {
+            case NOTE_ON:
+                for(i=0;i<state->num_notes;i++)
+                {
+                    slot=&state->notes[i];
+                    if(!slot->active)
+                    {
+                        slot->note = note_event->note;
+                        slot->velocity = note_event->velocity;
+                        slot->start_t = state->t;
+                        slot->stop_t = -1;
+                        slot->active = 1;
+                        break;
+                    }
+                }
+                break;
+            case NOTE_OFF:
+                for(i=0;i<state->num_notes;i++)
+                {
+                    slot = &state->notes[i];
+                    if(slot->note == note_event->note && slot->active && slot->stop_t < 0)
+                    {
+                        slot->stop_t = state->t;
+                        break;
+                    }
+                }
+                break;
+        }
+    }
+
+    double envelope;
+
+    for(i=0;i<global_chunk_size;i++)
+    {
+        state->chunk[i]=0;
+        for(j=0;j<state->num_notes;j++)
+        {
+            slot = &state->notes[j];
+            if(slot->active)
+            {
+                envelope = 1;
+                if(state->t - slot->start_t < state->attack_t)
+                {
+                    envelope = state->attack_amp * (state->t - slot->start_t) / state->attack_t;
+                }
+                else if(state->t - slot->start_t - state->attack_t < state->decay_t)
+                {
+                    envelope = (state->attack_amp - (state->attack_amp - 1) * (state->t - slot->start_t - state->attack_t) / state->decay_t);
+                }
+
+                if(slot->stop_t > 0 && state->t > slot->stop_t)
+                {
+                    envelope *= (slot->stop_t + state->release_t - state->t) / state->release_t;
+                    if(envelope < 0)
+                    {
+                        slot->active = 0;
+                        continue;
+                    }
+                }
+                state->chunk[i] += saw((state->t - slot->start_t) * note2freq(slot->note)) * envelope * slot->velocity;
+            }
+        }
+        state->t += 1 / global_frame_rate;
+    }
+
+    *output = ((void *) (state->chunk));
+
+    return SUCCESS;
+}
+

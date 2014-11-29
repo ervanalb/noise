@@ -10,7 +10,60 @@ context=cnoise.NoiseContext()
 context.chunk_size = 128
 context.frame_rate = 48000
 
-context.load('blocks.py')
+blocks=context.load('blocks.py')
+
+"""
+NOTE_T = blocks.NOTE_T
+
+n_chunk=context.get_type('chunk')
+n_double=context.get_type('double')
+n_int=context.get_type('int')
+
+dt = context.blocks["ConstantBlock"](n_double.new(0.002))
+timebase = context.blocks["AccumulatorBlock"]()
+timebase.set_input(0,dt,0)
+
+timebase_splitter=context.blocks["TeeBlock"](2,n_double)
+timebase_splitter.set_input(0,timebase,0)
+
+sb=context.blocks['SchedulerBlock']([(1,NOTE_T(69)),(2,NOTE_T(73)),(3,NOTE_T(76)),(6,NOTE_T(69,0)),(6,NOTE_T(73,0)),(6,NOTE_T(76,0))])
+sb.set_input(0,timebase_splitter,1)
+#sb=context.blocks['MidiInBlock']('USB')
+
+syn=context.blocks["SynthBlock"](0.05,1.5,.05,.2)
+syn.set_input(0,sb,0)
+
+audio_joiner=context.blocks["WyeBlock"](2,n_chunk)
+audio_joiner.set_input(0,syn,0)
+audio_joiner.set_input(1,timebase_splitter,0)
+
+cb_vol=context.blocks["ConstantBlock"](n_double.new(0.1))
+
+mixer=context.blocks["MixerBlock"](1)
+mixer.set_input(0,audio_joiner,0)
+mixer.set_input(1,cb_vol,0)
+
+p = pyaudio.PyAudio()
+stream = p.open(format=pyaudio.paFloat32,
+    channels=1,
+    rate=context.frame_rate,
+    frames_per_buffer=context.chunk_size,
+    output=True)
+
+while True:
+    try:
+        result=mixer.output_pull(0,ctypes.c_double*context.chunk_size)
+        data=struct.pack('f'*context.chunk_size,*result)
+        stream.write(data)
+
+    except KeyboardInterrupt:
+        break
+stream.stop_stream()
+stream.close()
+
+import sys
+sys.exit()
+"""
 
 if __name__ == "__main__":
     heap=[]
@@ -96,9 +149,6 @@ if __name__ == "__main__":
     mixer.set_input(6,kick,0)
     mixer.set_input(7,kick_vol,0)
 
-    ui=context.blocks["UIBlock"]()
-    ui.set_input(0,mixer,0)
-
     p = pyaudio.PyAudio()
     stream = p.open(format=pyaudio.paFloat32,
         channels=1,
@@ -108,11 +158,8 @@ if __name__ == "__main__":
  
     while True:
         try:
-            #cb.cvalue.value += 10
-            result=ui.pull()
-            chunk=ui.output[:context.chunk_size]
-            data=struct.pack('f'*context.chunk_size,*chunk)
-            #print ui.output[:context.chunk_size]
+            result=mixer.output_pull(0,ctypes.c_double*context.chunk_size)
+            data=struct.pack('f'*context.chunk_size,*result)
             stream.write(data)
 
         except KeyboardInterrupt:

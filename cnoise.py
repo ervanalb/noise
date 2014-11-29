@@ -13,6 +13,8 @@ class NODE_T(Structure):
     pass
 
 PULL_FN_PT = CFUNCTYPE(c_int, POINTER(NODE_T), POINTER(OUTPUT_PT))
+STATE_ALLOC_FN_PT = CFUNCTYPE(ERROR_T,BLOCK_INFO_PT, POINTER(STATE_PT))
+STATE_FREE_FN_PT = CFUNCTYPE(ERROR_T,BLOCK_INFO_PT, STATE_PT)
 
 NODE_T._fields_ = [
     ('input_node',POINTER(POINTER(NODE_T))),
@@ -27,6 +29,13 @@ OUTPUT_ALLOC_FN_PT = CFUNCTYPE(ERROR_T,TYPE_INFO_PT, POINTER(OUTPUT_PT))
 OUTPUT_FREE_FN_PT = CFUNCTYPE(ERROR_T,TYPE_INFO_PT, OUTPUT_PT)
 OUTPUT_COPY_FN_PT = CFUNCTYPE(ERROR_T,TYPE_INFO_PT, OUTPUT_PT, OUTPUT_PT)
 
+def load_so(soname):
+    return cdll.LoadLibrary(os.path.join(os.path.abspath(os.path.dirname(__file__)),soname))
+
+class NoiseLibrary:
+    def __init__(self, entries): 
+        self.__dict__.update(entries)
+
 class NoiseContext(object):
     def __init__(self):
         self.libs={}
@@ -34,38 +43,28 @@ class NoiseContext(object):
         self.types=[]
 
     def load(self,py_file):
-        vars_dict={'context':self}
-        execfile(py_file,vars_dict)
+        module={'context':self}
+        with open(py_file) as f:
+            code = compile(f.read(), py_file, 'exec')
+        exec code in module
+        noiselib=NoiseLibrary(module)
+        
+        self.blocks.update(dict([(c.__name__,c) for c in noiselib.__blocks__]))
+        self.types += noiselib.__types__
+        return noiselib
 
-    def load_so(self,name,soname):
-        l=cdll.LoadLibrary(os.path.join(os.path.abspath(os.path.dirname(__file__)),soname))
-        self.libs[name]=l
-        return l
-
+    # wtf is this
     def resolve_type(self, type_or_name):
         if isinstance(type_or_name, str) or isinstance(type_or_name, unicode):
             return self.types[type_or_name]
         return type_or_name
 
-    def register_type(self,typefn):
-        self.types.append(typefn)
-
-    def register_block(self,blockname,blockfn):
-        self.blocks[blockname]=blockfn
-
-    def set_global_vars(self,lib):
-        for (t,k,v) in self.global_vars:
-            t.in_dll(lib,k).value=v
-
     def get_type(self,string):
         for t in self.types:
-            ti=t.fromstring(string,self.get_type)
+            ti=t(string,self.get_type)
             if ti is not None:
                 return ti
         raise TypeError(string)
-
-    def __getitem__(self,index):
-        return self.libs[index]
 
 class MetaNoiseObject(type):
     def __str__(self):
@@ -128,7 +127,8 @@ class Block(object):
     output_names = []
     block_info=BLOCK_INFO_PT()
     pull_fns=[]
-    data = None
+    state_alloc=None
+    state_free=None
 
     def __init__(self):
         self.block_type = type(self).__name__
@@ -138,7 +138,7 @@ class Block(object):
         self.node_ptr = pointer(self.node)
 
         # Allocate space for upstream pull fns
-        self.input_pull_fns = (PULL_FN_PT * self.num_inputs)()
+        self.input_pull_fns = (PULL_FN_PT * self.num_inputs)() # TODO Populate this with null pointers
     
         self.node.input_pull = cast(self.input_pull_fns, POINTER(PULL_FN_PT))
         # Allocate space for upstream nodes
@@ -150,10 +150,12 @@ class Block(object):
         self.alloc()
 
     def alloc(self):
-        self.state_alloc(self.block_info, byref(self.node, NODE_T.state.offset))
+        if self.state_alloc:
+            self.state_alloc(self.block_info, cast(byref(self.node, NODE_T.state.offset),POINTER(STATE_PT)))
 
     def free(self):
-        self.state_free(self.block_info, self.node.state)
+        if self.state_free:
+            self.state_free(self.block_info, self.node.state)
 
     def __del__(self):
         self.free()
@@ -165,6 +167,46 @@ class Block(object):
 
     def __str__(self):
         return self.block_type
+
+    def input_pull(self,n,otype=None):
+        output_p = OUTPUT_PT()
+        e=self.input_pull_fns[n](self.input_nodes[n], byref(output_p))
+        if e:
+            raise Exception("noise error {0}".format(e))
+        if not otype:
+            return output_p
+        if not output_p:
+            return None
+        return cast(output_p,POINTER(otype)).contents
+
+    def output_pull(self,n,otype=None):
+        output_p = OUTPUT_PT()
+        e=self.pull_fns[n](self.node_ptr, byref(output_p))
+        if e:
+            raise Exception("noise error {0}".format(e))
+        if not otype:
+            return output_p
+        if not output_p:
+            return None
+        return cast(output_p,POINTER(otype)).contents
+
+    # decorator
+    @staticmethod
+    def pull_fn(fn):
+        def _pull_fn(self,node_p,output_pp):
+            try:
+                self.output_value=fn(self)
+            except Exception:
+                # TODO make this nicer
+                print "exception!"
+                raise
+                return 1
+            if self.output_value is None:
+                output_pp[0]=OUTPUT_PT()
+            else:
+                output_pp[0]=cast(pointer(self.output_value),OUTPUT_PT)
+            return 0
+        return _pull_fn
 
 class OBJECT_STATE_T(Structure):
     _fields_=[
