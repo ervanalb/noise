@@ -224,12 +224,12 @@ class TeeBlock(c.Block):
     num_inputs = 1
     input_names = ["In"]
 
-    def __init__(self, num_aux_outputs, datatype):
+    def __init__(self, num_aux_outputs, dtype):
         self.num_outputs = num_aux_outputs+1
         self.output_names = ["Main"]+["Aux {0}".format(i+1) for i in range(num_aux_outputs)]
         self.pull_fns = [clib_noise.union_pull]+[clib_noise.tee_pull_aux]*(num_aux_outputs)
 
-        datatype = context.resolve_type(datatype)
+        datatype = context.get_type(dtype)
 
         info = c.OBJECT_INFO_T()
         datatype.populate_object_info(info)
@@ -251,9 +251,9 @@ class WyeBlock(c.Block):
     num_outputs = 1
     output_names = ["out"]
 
-    def __init__(self, num_aux_inputs, datatype):
+    def __init__(self, num_aux_inputs, dtype):
         info = c.WYE_INFO_T()
-        datatype = context.resolve_type(datatype)
+        datatype = context.get_type(dtype)
         datatype.populate_object_info(info.object_info)
         info.num_aux_inputs.value=num_aux_inputs
         num_inputs = num_aux_inputs+1
@@ -272,11 +272,11 @@ class ConstantBlock(c.Block):
     output_names = ["Const"]
 
 
-    def __init__(self,noise_obj=None, noise_type=None):
+    def __init__(self,noise_obj=None, dtype=None):
         c.Block.__init__(self)
         if noise_obj is not None:
-            if noise_type is not None:
-                noise_obj = context.types[noise_type].new(noise_obj)
+            if dtype is not None:
+                noise_obj = context.get_type(dtype).new(noise_obj)
             self.noise_obj = noise_obj
             self.pointer=noise_obj.o
 
@@ -376,11 +376,8 @@ class SequencerBlock(c.Block):
     input_names = ["Time", "Sequence"]
     output_names = ["Seq Item"]
 
-    def __init__(self,array_type=None,noise_obj=None,noise_type=None):
-        if noise_obj is not None and noise_type is not None:
-            array_type = context.types[noise_type].new(noise_obj)
-        if array_type is None:
-            raise ValueError
+    def __init__(self, dtype):
+        array_type = context.get_type(dtype)
         seq_info = SEQUENCER_INFO_T()
         seq_info.array_info = c.cast(c.pointer(array_type.type_info),c.POINTER(ARRAY_INFO_T))
         self.block_info = c.cast(c.pointer(seq_info),c.BLOCK_INFO_PT)

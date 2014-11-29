@@ -1,25 +1,37 @@
-#C440 ConstantBlock >>c440 noise_obj: 340.0 noise_type: "double"
+#C440 ConstantBlock >>c440 noise_obj: 340.0 dtype: "double"
 
 .subckt SawInstrument <<seq >>wav 
-    C1 ConstantBlock >>c1 noise_obj: 1 noise_type: "int"
-    Note2Freq NoteToFreqBlock <<seq >>freq
-    UnisonWav WaveBlock <<freq <<c1 >>wav
+    C1 ConstantBlock >>c1 noise_obj: 1 dtype: "int"
+    Note2Freq NoteToFreqBlock <<seq >>?
+    UnisonWav WaveBlock <<? <<c1 >>wav
 .ends
 
-CUnison ConstantBlock >>unison_notes noise_obj: [65, 75, null, 72, 67, 67, 68, null, 65, 70, 72, 70, 65, 65, null, null, 65, 75, null, 72, 67, 67, 68, 65, 72, 75, null, 72, 77, null, null, null] noise_type: "array_double"
-SeqUnison SequencerBlock >>unison_seq <<time0 <<unison_notes noise_obj: [65, 75, null, 72, 67, 67, 68, null, 65, 70, 72, 70, 65, 65, null, null, 65, 75, null, 72, 67, 67, 68, 65, 72, 75, null, 72, 77, null, null, null] noise_type: "array_double"
+.subckt SawReverbInstrument <<seq >>wav 
+    C1 ConstantBlock >>c1 noise_obj: 1 dtype: "int"
+    Note2Freq NoteToFreqBlock <<seq >>freq
+    #C0 ConstantBlock >>c0 noise_obj: 0 dtype: "int"
+    C50 ConstantBlock >>c20 noise_obj: 20 dtype: "double"
+    C20 ConstantBlock >>camp noise_obj: 60 dtype: "double"
+    WarbleWav FunctionGeneratorBlock <<c20 >>warble
+    WMul MultiplyBlock <<warble >>warblemag <<camp
+    WAdd PlusBlock <<freq <<warblemag >>wfreq
+    UnisonWav WaveBlock <<wfreq <<c1 >>wav
+.ends
+
+CUnison ConstantBlock >>unison_notes dtype: "double[32]" noise_obj: [65, 75, null, 72, 67, 67, 68, null, 65, 70, 72, 70, 65, 65, null, null, 65, 75, null, 72, 67, 67, 68, 65, 72, 75, null, 72, 77, null, null, null] 
+SeqUnison SequencerBlock >>unison_seq <<time0 <<unison_notes dtype: "double[32]"
 MainInstrument SawInstrument <<unison_seq >>unison_main_wav
 
-CUnisonHarm ConstantBlock >>unison_harm_notes noise_obj: [61, 61, null, 61, 63, 63, 63, null, 63, 58, 58, 58, 65, 65, null, null, 65, 65, null, 65, 63, 63, 63, 63, 63, 68, null, 68, 61, null, null, null] noise_type: "array_double"
-SeqUnisonHarm SequencerBlock >>unison_harm_seq <<time1 <<unison_harm_notes noise_obj: [61, 61, null, 61, 63, 63, 63, null, 63, 58, 58, 58, 65, 65, null, null, 65, 65, null, 65, 63, 63, 63, 63, 63, 68, null, 68, 61, null, null, null] noise_type: "array_double"
+CUnisonHarm ConstantBlock >>unison_harm_notes dtype: "double[32]" noise_obj: [61, 61, null, 61, 63, 63, 63, null, 63, 58, 58, 58, 65, 65, null, null, 65, 65, null, 65, 63, 63, 63, 63, 63, 68, null, 68, 61, null, null, null] 
+SeqUnisonHarm SequencerBlock >>unison_harm_seq <<time1 <<unison_harm_notes dtype: "double[32]"
 HarmInstrument SawInstrument <<unison_harm_seq >>unison_harm_wav
 
-Dt ConstantBlock >>dt noise_obj: 0.07 noise_type: "double"
+Dt ConstantBlock >>dt noise_obj: 0.10 dtype: "double"
 Timebase AccumulatorBlock >>timebase <<dt
-TimebaseSplitter TeeBlock <<timebase >>time0 >>time1 num_aux_outputs: 1 datatype: "double"
+TimebaseSplitter TeeBlock <<timebase >>time0 >>time1 num_aux_outputs: 1 dtype: "double"
 
-CV0 ConstantBlock >>unison_harm_vol noise_obj: 0.3 noise_type: "double"
-CV1 ConstantBlock >>unison_main_vol noise_obj: 0.7 noise_type: "double"
+CV0 ConstantBlock >>unison_harm_vol noise_obj: 0.3 dtype: "double"
+CV1 ConstantBlock >>unison_main_vol noise_obj: 0.7 dtype: "double"
 
 Mixer MixerBlock <<unison_main_wav <<unison_main_vol <<unison_harm_wav <<unison_harm_vol >>wavout num_channels: 2
 
