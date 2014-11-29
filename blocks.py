@@ -338,7 +338,7 @@ class SequencerBlock(c.Block):
     def __init__(self, datatype):
         datatype = context.resolve_type(datatype)
         seq_info = SEQUENCER_INFO_T()
-        seq_info.array_info = c.cast(c.pointer(array_type.type_info),c.POINTER(ARRAY_INFO_T))
+        seq_info.array_info = c.cast(c.pointer(datatype.type_info),c.POINTER(ARRAY_INFO_T))
         self.block_info = c.cast(c.pointer(seq_info),c.BLOCK_INFO_PT)
         c.Block.__init__(self)
 
