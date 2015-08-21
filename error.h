@@ -1,7 +1,7 @@
 #ifndef __ERROR_H
 #define __ERROR_H
 
-typedef enum error_t {SUCCESS = 0, ERR_MALLOC = 1} error_t;
+typedef enum error_t {SUCCESS = 0, ERR_MALLOC = 1, ERR_INVALID = 2} error_t;
 
 typedef struct error_info_t {
 	error_t type;

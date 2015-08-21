@@ -1,6 +1,9 @@
-#ifndef __NODE_H
-#define __NODE_H
+#ifndef __BLOCK_H
+#define __BLOCK_H
+
 #include "error.h"
+#include "typefns.h"
+#include <stddef.h>
 
 // Stuff relating to blocks
 #define pull(N,I,O) ( ((N)->input_pull[(I)]) ? ((N)->input_pull[(I)]((N)->input_node[(I)],(O))) : ((*(O)=0), 0) )
@@ -12,41 +15,29 @@ typedef void* block_info_pt;
 struct node_t;
 
 typedef error_t (*pull_fn_pt)(struct node_t* node, output_pt* output);
+typedef struct node_t * (*block_create_fn_pt)(block_info_pt block_info);
+typedef void (*block_destroy_fn_pt)(struct node_t * node);
 
-typedef error_t (*state_alloc_fn_pt)(block_info_pt type, state_pt * state);
-typedef void (*state_free_fn_pt)(block_info_pt type, state_pt state);
+// Block instances are nodes
 
 typedef struct node_t
 {
+    block_destroy_fn_pt destroy;
+
+	object_t * state;
+
+    size_t n_inputs;
 	struct node_t** input_node;
 	pull_fn_pt* input_pull;
-	state_pt state;
+    // * input_types;
+    // const char ** input_names;
+
+    size_t n_outputs;
+    pull_fn_pt * output_pull;
+    // * output_types;
+    // const char ** output_names;
 } node_t;
 
-
-// Stuff relating to types
-typedef void* type_info_pt;
-typedef error_t (*output_alloc_fn_pt)(type_info_pt type, output_pt * output);
-typedef error_t (*output_free_fn_pt)(type_info_pt type, output_pt output);
-typedef error_t (*output_copy_fn_pt)(type_info_pt type, output_pt dest, output_pt src);
-
-typedef struct
-{
-	type_info_pt type_info;
-	output_copy_fn_pt copy_fn;
-	output_pt object;
-} object_state_t;
-
-typedef struct
-{
-	type_info_pt type_info;
-	output_alloc_fn_pt alloc_fn;
-	output_copy_fn_pt copy_fn;
-	output_free_fn_pt free_fn;
-} object_info_t;
-
-error_t object_alloc(object_info_t* object_info, object_state_t* object_state);
-void object_free(object_info_t* object_info, object_state_t* object_state);
-error_t object_copy(object_state_t* object_state, output_pt src);
+void generic_block_destroy(node_t * node);
 
 #endif

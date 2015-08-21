@@ -51,20 +51,24 @@ void synth_state_free(block_info_pt block_info, state_pt state)
     free(state);
 }
 
+/*
 static double sine(double t)
 {
     return sin(t*2*M_PI);
 }
+*/
 
 static double saw(double t)
 {
 	return 2*fmod(t,1)-1;
 }
 
+/*
 static double square(double t)
 {
 	return 2*(fmod(t,1)<.5)-1;
 }
+*/
 
 
 static double note2freq(int note)

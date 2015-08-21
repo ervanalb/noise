@@ -9,7 +9,7 @@ INC = -I
 LIB = -L/usr/local/lib
 
 # Assembler, compiler, and linker flags
-override CFLAGS += $(INC) -O0 -g -Wall -fPIC
+override CFLAGS += $(INC) -O0 -g -Wall -Wextra -Werror -Wno-unused-parameter -fPIC -std=c99
 override LFLAGS += $(LIB) $(CFLAGS) -shared
 LIBS = -lm -lportaudio
 
