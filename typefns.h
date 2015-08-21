@@ -58,6 +58,12 @@ typedef struct
 
 type_t * make_array_type(size_t length, const type_t * element_type);
 
+//
+#define CAST_OBJECT(type, obj) (*(type *)(obj)->object_type)
+
+extern type_t double_type;
+extern type_t long_type;
+
 // nb: there is no way to 'destroy' or 'free' types once created.
 
 #endif

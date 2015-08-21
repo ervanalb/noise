@@ -180,3 +180,21 @@ type_t * get_chunk_type()
     chunk_type.data_size = global_chunk_size * sizeof(double);
     return &chunk_type;
 }
+
+// ---
+
+type_t double_type = {
+    .parameters = NULL,
+    .data_size = sizeof(double),
+    .alloc = &simple_alloc,
+    .copy = &simple_copy,
+    .free = &simple_free,
+};
+
+type_t long_type = {
+    .parameters = NULL,
+    .data_size = sizeof(long),
+    .alloc = &simple_alloc,
+    .copy = &simple_copy,
+    .free = &simple_free,
+};
