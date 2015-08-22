@@ -23,19 +23,19 @@ struct endpoint
     struct node * node;
     pull_fn_pt pull;
     const type_t * type;
-    const char * name;
+    char * name;
 };
 
 struct node_input
 {
     const type_t * type;
-    const char * name;
+    char * name;
     struct endpoint * connected_input;
 };
 
 typedef struct node
 {
-    const char * name;
+    char * name;
     block_destroy_fn_pt destroy;
 
     object_t * state;
@@ -50,6 +50,11 @@ typedef struct node
 void node_destroy_generic(node_t * node);
 node_t * node_alloc(size_t n_inputs, size_t n_outputs, const type_t * state_type);
 node_t * node_dup(node_t * src); // XXX: Maybe we shouldn't use this? 
+
+static inline void node_destroy(node_t * node) 
+{
+    node->destroy(node);
+}
 
 // Connect blocks & pull
 

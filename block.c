@@ -32,8 +32,18 @@ fail:
 
 void node_destroy_generic(node_t * node)
 {
+    for (size_t i = 0; i < node->n_inputs; i++) {
+        free(node->inputs[i].name); 
+    }
+
+    for (size_t i = 0; i < node->n_outputs; i++) {
+        free(node->outputs[i].name); 
+    }
+
     object_free(node->state);
+
     free(node->inputs);
+    free(node->name);
     free(node);
 }
 
@@ -59,6 +69,8 @@ node_t * node_dup(node_t * src)
 
     return dst;
 }
+
+// 
 
 error_t connect(struct node * dst, size_t dst_idx, struct node * src, size_t src_idx)
 {

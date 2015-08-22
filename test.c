@@ -30,7 +30,19 @@ int main(void) {
     connect(debug, 0, wye, 0);
 
     debug_print_graph(debug);
-    debug_run(debug);
+    printf("\n\nRunning:\n");
+
+    //debug_run(debug);
+
+    node_destroy(one);
+    node_destroy(acc);
+    node_destroy(math);
+    node_destroy(fungen);
+    node_destroy(tee);
+    node_destroy(wye);
+    node_destroy(debug);
+
+    printf("Successfully destroyed everything!\n");
 
     return 0;
 }

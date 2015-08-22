@@ -4,10 +4,7 @@
 #include "error.h"
 #include "block.h"
 #include "blockdef.h"
-
-#ifndef M_PI
-    #define M_PI 3.14159265358979323846
-#endif
+#include "util.h"
 
 static double f(double t)
 {
@@ -34,13 +31,13 @@ static error_t fungen_pull(node_t * node, object_t ** output)
 node_t * fungen_create()
 {
     node_t * node = node_alloc(1, 1, double_type);
-    node->name = "Sine";
+    node->name = strdup("Sine");
     node->destroy = &node_destroy_generic;
 
     // Define inputs
     node->inputs[0] = (struct node_input) {
         .type = double_type,
-        .name = "time",
+        .name = strdup("time"),
     };
     
     // Define outputs
@@ -48,7 +45,7 @@ node_t * fungen_create()
         .node = node,
         .pull = &fungen_pull,
         .type = double_type,
-        .name = "sin(t)",
+        .name = strdup("sin(t)"),
     };
 
     return node;

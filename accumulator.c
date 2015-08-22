@@ -2,6 +2,7 @@
 #include "error.h"
 #include "block.h"
 #include "blockdef.h"
+#include "util.h"
 
 static error_t accumulator_pull(node_t * node, object_t ** output)
 {
@@ -20,13 +21,13 @@ static error_t accumulator_pull(node_t * node, object_t ** output)
 node_t * accumulator_create()
 {
     node_t * node = node_alloc(1, 1, double_type);
-    node->name = "Accumulator";
+    node->name = strdup("Accumulator");
     node->destroy = &node_destroy_generic;
 
     // Define inputs
     node->inputs[0] = (struct node_input) {
         .type = double_type,
-        .name = "delta",
+        .name = strdup("delta"),
     };
     
     // Define outputs
@@ -34,7 +35,7 @@ node_t * accumulator_create()
         .node = node,
         .pull = &accumulator_pull,
         .type = double_type,
-        .name = "sum",
+        .name = strdup("sum"),
     };
 
     // Initialize state

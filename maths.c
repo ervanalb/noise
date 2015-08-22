@@ -3,6 +3,7 @@
 #include "block.h"
 #include "blockdef.h"
 #include "error.h"
+#include "util.h"
 
 static error_t add_pull(node_t * node, object_t ** output)
 {
@@ -165,23 +166,23 @@ node_t * math_create(enum math_op op)
     }
 
     node_t * node = node_alloc(n_inputs, 1, double_type);
-    node->name = name;
+    node->name = strdup(name);
     node->destroy = &node_destroy_generic;
     
     // Define inputs
     if (n_inputs == 1) {
         node->inputs[0] = (struct node_input) {
             .type = double_type,
-            .name = "freq",
+            .name = strdup("freq"),
         };
     } else {
         node->inputs[0] = (struct node_input) {
             .type = double_type,
-            .name = "x",
+            .name = strdup("x"),
         };
         node->inputs[1] = (struct node_input) {
             .type = double_type,
-            .name = "y",
+            .name = strdup("y"),
         };
     }
 
@@ -190,7 +191,7 @@ node_t * math_create(enum math_op op)
         .node = node,
         .pull = pull_fn,
         .type = double_type,
-        .name = "result",
+        .name = strdup("result"),
     };
 
     return node;

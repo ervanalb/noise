@@ -3,6 +3,7 @@
 #include "error.h"
 #include "block.h"
 #include "blockdef.h"
+#include "util.h"
 
 
 static error_t wye_pull(node_t * node, object_t ** output)
@@ -31,14 +32,14 @@ node_t * wye_create(const type_t * type, size_t n_inputs)
     if (n_inputs < 1) return NULL;
 
     node_t * node = node_alloc(n_inputs, 1, type);
-    node->name = "Wye";
+    node->name = strdup("Wye");
     node->destroy = &node_destroy_generic;
 
     // Define inputs
     for (size_t i = 0; i < n_inputs; i++) {
         node->inputs[i] = (struct node_input) {
             .type = type,
-            .name = (i == 0) ? "main" : "aux",
+            .name = (i == 0) ? strdup("main") : strdup("aux"),
         };
     }
     
@@ -47,7 +48,7 @@ node_t * wye_create(const type_t * type, size_t n_inputs)
         .node = node,
         .pull = &wye_pull,
         .type = type,
-        .name = "first",
+        .name = strdup("first"),
     };
 
     return node;
@@ -82,13 +83,13 @@ node_t * tee_create(const type_t * type, size_t n_outputs)
     if (n_outputs < 1) return NULL;
 
     node_t * node = node_alloc(1, n_outputs, type);
-    node->name = "Tee";
+    node->name = strdup("Tee");
     node->destroy = &node_destroy_generic;
 
     // Define inputs
     node->inputs[0] = (struct node_input) {
         .type = type,
-        .name = "tee in",
+        .name = strdup("tee in"),
     };
     
     // Define outputs 
@@ -96,7 +97,7 @@ node_t * tee_create(const type_t * type, size_t n_outputs)
         .node = node,
         .pull = &tee_pull_main,
         .type = type,
-        .name = "tee main",
+        .name = strdup("tee main"),
     };
     
     for (size_t i = 1; i < n_outputs; i++) {
@@ -104,7 +105,7 @@ node_t * tee_create(const type_t * type, size_t n_outputs)
             .node = node,
             .pull = &tee_pull_aux,
             .type = type,
-            .name = "tee aux",
+            .name = strdup("tee aux"),
         };
     }
 

@@ -3,6 +3,7 @@
 #include "block.h"
 #include "blockdef.h"
 #include "globals.h"
+#include "util.h"
 
 static error_t mixer_pull(node_t * node, object_t ** output)
 {
@@ -35,7 +36,7 @@ node_t * mixer_create(size_t n_channels)
 {
     type_t * chunk_type = get_chunk_type();
     node_t * node = node_alloc(n_channels * 2, 1, chunk_type);
-    node->name = "Mixer";
+    node->name = strdup("Mixer");
     node->destroy = &node_destroy_generic;
     
     // Define output 
@@ -43,7 +44,7 @@ node_t * mixer_create(size_t n_channels)
         .node = node,
         .pull = &mixer_pull,
         .type = double_type,
-        .name = "mixout",
+        .name = strdup("mixout"),
     };
 
     // Initialize state
