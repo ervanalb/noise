@@ -36,6 +36,11 @@ void debug_run(node_t * debug_block)
 void debug_print_graph(node_t * node)
 {
     printf("%p %s:\n", node, node->name);
+
+    char * state_value = object_str(node->state);
+    printf("    [s] %s\n", state_value);
+    free(state_value);
+
     for (size_t i = 0; i < node->n_inputs; i++) {
         if (node->inputs[i].connected_input != NULL) {
             printf("    [i] '%s' %s.'%s' (%p)\n",

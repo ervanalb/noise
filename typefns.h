@@ -13,6 +13,7 @@ typedef void * type_parameters_pt;
 typedef error_t (*type_copy_fn_pt)(struct object * dst, const struct object * src);
 typedef struct object * (*type_alloc_fn_pt)(const struct type * type);
 typedef void (*type_free_fn_pt)(struct object * obj);
+typedef char * (*type_str_fn_pt)(struct object * obj);
 
 #define VARIABLE_SIZE 0
 
@@ -23,6 +24,7 @@ typedef struct type
     type_alloc_fn_pt alloc;
     type_copy_fn_pt copy;
     type_free_fn_pt free;
+    type_str_fn_pt str;
 } type_t;
 
 typedef struct object
@@ -38,6 +40,7 @@ object_t * object_alloc(const type_t * type);
 error_t object_copy(object_t * dst, const object_t * src);
 object_t * object_dup(const object_t * src);
 void object_free(object_t * obj);
+char * object_str(object_t * obj);
 
 static inline const type_t * object_type(object_t * object) {
     return object->object_type;

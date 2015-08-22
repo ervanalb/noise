@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include "block.h"
 #include "typefns.h"
+#include "util.h"
 
 node_t * node_alloc(size_t n_inputs, size_t n_outputs, const type_t * state_type)
 {

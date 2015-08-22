@@ -1,8 +1,10 @@
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "globals.h"
 #include "typefns.h"
+#include "util.h"
 
 object_t * object_alloc(const type_t * type)
 {
@@ -40,6 +42,16 @@ void object_free(object_t * obj)
     if (obj == NULL) return;
 
     obj->object_type->free(obj);
+}
+
+char * object_str(object_t * object) {
+    if (object->object_type->str) {
+        return object->object_type->str(object);
+    } else {
+        char * rstr;
+        asprintf(&rstr, "<%p instance %p>", object->object_type, object);
+        return rstr;
+    }
 }
 
 // ---
@@ -184,15 +196,28 @@ type_t * get_chunk_type()
 
 // ---
 
+static char * double_str (object_t * obj)
+{
+    return rsprintf("%f", CAST_OBJECT(double, obj));
+}
+
 static type_t _double_type = {
     .parameters = NULL,
     .data_size = sizeof(double),
     .alloc = &simple_alloc,
     .copy = &simple_copy,
     .free = &simple_free,
+    .str = &double_str,
 };
 
 type_t * double_type = &_double_type;
+
+// -
+
+static char * long_str (object_t * obj)
+{
+    return rsprintf("%ld", CAST_OBJECT(long, obj));
+}
 
 static type_t _long_type = {
     .parameters = NULL,
@@ -200,6 +225,7 @@ static type_t _long_type = {
     .alloc = &simple_alloc,
     .copy = &simple_copy,
     .free = &simple_free,
+    .str = &long_str,
 };
 
 type_t * long_type = &_long_type;
