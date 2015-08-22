@@ -3,7 +3,7 @@
 #include "block.h"
 #include "typefns.h"
 
-node_t * allocate_node(size_t n_inputs, size_t n_outputs, type_t * state_type)
+node_t * allocate_node(size_t n_inputs, size_t n_outputs, const type_t * state_type)
 {
     node_t * node = calloc(1, sizeof(node_t) + n_outputs * sizeof(struct endpoint));
     if (node == NULL) return NULL;

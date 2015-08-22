@@ -40,11 +40,13 @@ typedef struct node
 } node_t;
 
 void generic_block_destroy(node_t * node);
-node_t * allocate_node(size_t n_inputs, size_t n_outputs, type_t * state_type);
+node_t * allocate_node(size_t n_inputs, size_t n_outputs, const type_t * state_type);
 
 // Connect blocks & pull
 
 //#define pull(N,I,O) ( ((N)->input_pull[(I)]) ? ((N)->input_pull[(I)]((N)->input_node[(I)],(O))) : ((*(O)=0), 0) )
+
+#include <stdio.h>
 
 static inline error_t pull(struct node * node, size_t index, object_t ** output)
 {
@@ -52,6 +54,7 @@ static inline error_t pull(struct node * node, size_t index, object_t ** output)
         *output = NULL;
         return SUCCESS;
     } else {
+        printf("pull: %s\n", node->inputs[index]->name);
         return node->inputs[index]->pull(node->inputs[index]->node, output);
     }
 }

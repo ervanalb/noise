@@ -1,3 +1,6 @@
+#ifndef __BLOCKDEF_H__
+#define __BLOCKDEF_H__
+
 #include "block.h"
 
 enum math_op {
@@ -24,3 +27,11 @@ node_t * fungen_create();
 
 // Math<math_op> :: (double x[, double y]) -> (double result); Performs a basic math op on inputs (see enum math_op)
 node_t * math_create(enum math_op op);
+
+// Tee<type_t type, int n_inputs> :: (type val) -> (type val[, type copy, type copy, ...]); Pulls from input, duplicates
+node_t * tee_create(const type_t * type, size_t n_inputs);
+
+// Wye<type_t type, int n_inputs> :: (type val[, type discard, type discard, ...]) -> (type val); Pulls from all inputs, returning the first
+node_t * wye_create(const type_t * type, size_t n_inputs);
+
+#endif

@@ -10,6 +10,7 @@ OBJECTS = \
 		  maths.o \
 		  test.o \
 		  function_gen.o \
+		  fittings.o \
 		  typefns.o
 
 TARGET = noise

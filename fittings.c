@@ -1,129 +1,96 @@
-#include "fittings.h"
 #include <stdlib.h>
 
-error_t union_state_alloc(block_info_pt block_info, state_pt* state)
+#include "error.h"
+#include "block.h"
+#include "blockdef.h"
+
+
+static error_t wye_pull(node_t * node, object_t ** output)
 {
-    union_state_t* union_state;
-    object_info_t* object_info = (object_info_t*)block_info;
+    error_t e = SUCCESS;
+    object_t * input0;
+    e = pull(node, 0, &input0);
 
-    union_state = malloc(sizeof(union_state_t));
-
-    *state = union_state;
-
-    if(!union_state) return raise_error(ERR_MALLOC,"");
-
-    union_state->active=0;
-    return object_alloc(object_info,&union_state->object_state);
-}
-
-void union_state_free(block_info_pt block_info, state_pt state)
-{
-    object_info_t* object_info = (object_info_t*)block_info;
-    union_state_t* union_state = (union_state_t*)state;
-
-    object_free(object_info,&union_state->object_state);
-    free(state);
-}
-
-error_t union_pull(node_t * node, output_pt * output)
-{
-    error_t e;
-    union_state_t* union_state = (union_state_t*)(node->state);
-
-    output_pt result=0;
-
-    e=pull(node,0,&result);
-    if(e != SUCCESS) return e;
-
-    if(!result)
-    {
-        union_state->active = 0;
-        *output = 0;
-        return SUCCESS;
+    if (input0 != NULL) {
+        e |= object_copy(node->state, input0);
+        *output = node->state;
+    } else {
+        *output = NULL;
     }
 
-    union_state->active = 1;
+    for (size_t i = 1; i < node->n_inputs; i++) {
+        object_t * inputx;
+        e |= pull(node, i, &inputx);
+    }
 
-    object_copy(&union_state->object_state,result);
-    if(e != SUCCESS) return e;
+    return e;
+}
 
-    *output = union_state->object_state.object;
+node_t * wye_create(const type_t * type, size_t n_inputs)
+{
+    if (n_inputs < 1) return NULL;
+
+    node_t * node = allocate_node(n_inputs, 1, type);
+    node->destroy = &generic_block_destroy;
+    
+    // Define outputs 
+    node->outputs[0] = (struct endpoint) {
+        .node = node,
+        .pull = &wye_pull,
+        .type = type,
+        .name = "first",
+    };
+
+    return node;
+}
+
+//
+
+static error_t tee_pull_main(node_t * node, object_t ** output)
+{
+    error_t e = SUCCESS;
+    object_t * input0;
+    e = pull(node, 0, &input0);
+
+    if (input0 != NULL) {
+        e |= object_copy(node->state, input0);
+        *output = node->state;
+    } else {
+        *output = NULL;
+    }
+
+    return e;
+}
+
+static error_t tee_pull_aux(node_t * node, object_t ** output)
+{
+    *output = node->state;
     return SUCCESS;
 }
 
-error_t wye_state_alloc(block_info_pt block_info, state_pt* state)
+node_t * tee_create(const type_t * type, size_t n_outputs)
 {
-    wye_state_t* wye_state;
-    wye_info_t* wye_info = (wye_info_t*)block_info;
+    if (n_outputs < 1) return NULL;
 
-    wye_state = malloc(sizeof(wye_state_t));
-
-    *state = wye_state;
-
-    if(!wye_state) return raise_error(ERR_MALLOC,"");
-
-    wye_state->active=0;
-    wye_state->num_aux_inputs=wye_info->num_aux_inputs;
-
-    return object_alloc(&wye_info->object_info,&wye_state->object_state);
-}
-
-void wye_state_free(block_info_pt block_info, state_pt state)
-{
-    wye_info_t* wye_info = (wye_info_t*)block_info;
-
-    wye_state_t* wye_state = (wye_state_t*)state;
-
-    object_free(&wye_info->object_info,&wye_state->object_state);
-    free(state);
-}
-
-error_t tee_pull_aux(node_t* node, output_pt * output)
-{
-    union_state_t* union_state = (union_state_t*)(node->state);
-
-    if(!union_state->active)
-    {
-        *output = 0;
-    }
-    else
-    {
-        *output = union_state->object_state.object;
-    }
-    return SUCCESS;
-}
-
-error_t wye_pull(node_t * node, output_pt * output)
-{
-    error_t e;
-
-    wye_state_t* wye_state = (wye_state_t*)(node->state);
-
-    output_pt result=0, garbage=0;
-
-    e=pull(node,0, &result);
-    if(e != SUCCESS) return e;
-
-    int i;
-    for(i=0;i<wye_state->num_aux_inputs;i++)
-    {
-        e=pull(node, i+1, &garbage);
-        if(e != SUCCESS) return e;
+    node_t * node = allocate_node(1, n_outputs, type);
+    node->destroy = &generic_block_destroy;
+    
+    // Define outputs 
+    node->outputs[0] = (struct endpoint) {
+        .node = node,
+        .pull = &tee_pull_main,
+        .type = type,
+        .name = "tee main",
+    };
+    
+    for (size_t i = 1; i < n_outputs; i++) {
+        node->outputs[i] = (struct endpoint) {
+            .node = node,
+            .pull = &tee_pull_aux,
+            .type = type,
+            .name = "tee aux",
+        };
     }
 
-    if(!result)
-    {
-        wye_state->active = 0;
-        *output = 0;
-        return SUCCESS;
-    }
-
-    wye_state->active = 1;
-
-    object_copy(&wye_state->object_state,result);
-    if(e != SUCCESS) return e;
-
-    *output = wye_state->object_state.object;
-    return SUCCESS;
+    return node;
 }
-
