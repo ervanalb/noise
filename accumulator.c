@@ -16,36 +16,43 @@ static error_t accumulator_pull(node_t * node, object_t ** output)
 #define N_INPUTS 1
 #define N_OUTPUTS 1
 
-node_t * accumulator_create()
+node_t * allocate_node(size_t n_inputs, size_t n_outputs, type_t * state_type)
 {
-    // Allocate new node_t 
-    
     node_t * node = calloc(1, sizeof(node_t) + N_OUTPUTS * sizeof(struct endpoint));
     if (node == NULL) return NULL;
 
     // Set up inputs array
-
-    node->n_inputs = N_INPUTS;
-    node->inputs = calloc(N_INPUTS, sizeof(struct endpoint *));
+    node->n_inputs = n_inputs;
+    node->inputs = calloc(n_inputs, sizeof(struct endpoint *));
     if (node->inputs == NULL) return (free(node), NULL);
 
-    // Define outputs (0: double sum)
+    // Set up outputs array
+    node->n_outputs = n_outputs;
 
-    node->n_outputs = N_OUTPUTS;
+    // Allocate state
+    node->state = object_alloc(state_type);
+    if (node->state == NULL) return (free(node->inputs), free(node), NULL);
+
+    return node;
+}
+
+node_t * accumulator_create()
+{
+    node_t * node = allocate_node(1, 1, double_type);
+    node->destroy = &generic_block_destroy;
+    
+    // Define outputs (0: double sum)
     node->outputs[0] = (struct endpoint) {
         .node = node,
         .pull = &accumulator_pull,
-        .type = &double_type,
+        .type = double_type,
         .name = "sum",
     };
 
     // Initialize state
-
-    node->state = object_alloc(&double_type);
-    if (node->state == NULL) return (free(node->inputs), free(node), NULL);
+    
     CAST_OBJECT(double, node->state) = 0.0;
 
-    node->destroy = &generic_block_destroy;
     return node;
 }
 

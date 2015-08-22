@@ -18,13 +18,13 @@ typedef void (*block_destroy_fn_pt)(struct node  * node);
 
 // Block instances are nodes
 
-typedef struct endpoint
+struct endpoint
 {
     struct node * node;
     pull_fn_pt pull;
     const type_t * type;
     const char * name;
-} endpoint_t;
+};
 
 typedef struct node
 {

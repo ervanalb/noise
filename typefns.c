@@ -184,7 +184,7 @@ type_t * get_chunk_type()
 
 // ---
 
-type_t double_type = {
+static type_t _double_type = {
     .parameters = NULL,
     .data_size = sizeof(double),
     .alloc = &simple_alloc,
@@ -192,10 +192,14 @@ type_t double_type = {
     .free = &simple_free,
 };
 
-type_t long_type = {
+type_t * double_type = &_double_type;
+
+static type_t _long_type = {
     .parameters = NULL,
     .data_size = sizeof(long),
     .alloc = &simple_alloc,
     .copy = &simple_copy,
     .free = &simple_free,
 };
+
+type_t * long_type = &_long_type;
