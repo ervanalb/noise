@@ -38,4 +38,9 @@ node_t * tee_create(const type_t * type, size_t n_inputs);
 // Wye<type_t type, int n_inputs> :: (type val[, type discard, type discard, ...]) -> (type val); Pulls from all inputs, returning the first
 node_t * wye_create(const type_t * type, size_t n_inputs);
 
+
+// Soundcard Sink
+node_t * soundcard_get(); // Singleton
+void soundcard_run();
+
 #endif

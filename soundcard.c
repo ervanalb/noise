@@ -1,13 +1,17 @@
 #include <stdlib.h>
 #include <portaudio.h>
 #include "globals.h"
+#include "block.h"
+#include "typefns.h"
+#include "blockdef.h"
 
 PaStreamParameters outputParameters;
 PaError err;
 PaStream* stream;
 float* buffer;
+node_t * sc_node;
 
-int soundcard_init()
+static int soundcard_api_init()
 {
 	/* -- initialize PortAudio -- */
 	err = Pa_Initialize();
@@ -38,7 +42,7 @@ int soundcard_init()
 	return 0;
 }
 
-int soundcard_write(double* chunk)
+static int soundcard_api_write(double* chunk)
 {
 	int i;
 	for(i=0;i<global_chunk_size;i++) buffer[i]=chunk[i];
@@ -47,7 +51,7 @@ int soundcard_write(double* chunk)
 	return 0;
 }
 
-int soundcard_deinit()
+static int soundcard_api_deinit()
 {
 	free(buffer);
 	/* -- Now we stop the stream -- */
@@ -58,4 +62,49 @@ int soundcard_deinit()
 	if( err != paNoError ) return 1;
 	Pa_Terminate();
 	return 0;
+}
+
+// --- Block methods ---
+
+void soundcard_destroy(node_t * node)
+{
+    soundcard_api_deinit();
+    node_destroy_generic(node);
+    sc_node = NULL;
+}
+
+// Public
+
+node_t * soundcard_get()
+{
+    if (sc_node) return sc_node;
+
+    type_t * chunk_type = get_chunk_type();
+    node_t * sc_node = node_alloc(1, 0, NULL);
+    sc_node->name = strdup("Soundcard");
+    sc_node->destroy = &soundcard_destroy;
+
+    // Define inputs
+    sc_node->inputs[0] = (struct node_input) {
+        .type = chunk_type,
+        .name = strdup("chunks"),
+    };
+    
+    // Setup
+    soundcard_api_init();
+
+    return sc_node;
+}
+
+void soundcard_run()
+{
+    if (!sc_node) printf("Soundcard not initialized!\n");
+
+    object_t * chunk = NULL;
+    pull(sc_node, 1, &chunk);
+
+    if (chunk == NULL) return;
+
+    soundcard_api_write(CAST_OBJECT(double *, chunk));
+
 }

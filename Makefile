@@ -7,11 +7,12 @@ OBJECTS = \
 		  constant.o \
 		  debug.o \
 		  error.o \
+		  fittings.o \
+		  function_gen.o \
 		  maths.o \
 		  mixer.o \
+		  soundcard.o \
 		  test.o \
-		  function_gen.o \
-		  fittings.o \
 		  typefns.o
 
 TARGET = noise
