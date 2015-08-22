@@ -30,7 +30,7 @@ typedef struct node
 {
     block_destroy_fn_pt destroy;
 
-	object_t * state;
+    object_t * state;
 
     size_t n_inputs;
     struct endpoint ** inputs;

@@ -18,16 +18,16 @@ typedef void (*type_free_fn_pt)(struct object * obj);
 
 typedef struct type
 {
-	type_parameters_pt parameters;
+    type_parameters_pt parameters;
     size_t data_size;
-	type_alloc_fn_pt alloc;
-	type_copy_fn_pt copy;
-	type_free_fn_pt free;
+    type_alloc_fn_pt alloc;
+    type_copy_fn_pt copy;
+    type_free_fn_pt free;
 } type_t;
 
 typedef struct object
 {
-	const type_t * object_type;
+    const type_t * object_type;
     char object_data[0];
 } object_t;
 
@@ -52,8 +52,8 @@ type_t * make_simple_type(size_t size);
 
 typedef struct
 {
-	size_t length;
-	const type_t * element_type;
+    size_t length;
+    const type_t * element_type;
 } array_parameters_t;
 
 type_t * make_array_type(size_t length, const type_t * element_type);

@@ -49,15 +49,15 @@ object_t * simple_alloc(const type_t * type)
     if(type->data_size == VARIABLE_SIZE) return NULL;
 
     object_t * obj = calloc(1, sizeof(object_t) + type->data_size);
-	if(obj == NULL) return NULL;
+    if(obj == NULL) return NULL;
 
     obj->object_type = type;
-	return obj;
+    return obj;
 }
 
 void simple_free(object_t * obj)
 {
-	free(obj);
+    free(obj);
 }
 
 error_t simple_copy(object_t * dst, const object_t * src)
@@ -66,8 +66,8 @@ error_t simple_copy(object_t * dst, const object_t * src)
 
     //simple_parameters_t * params = (simple_parameters_t *) src->object_type->parameters;
 
-	memcpy(&dst->object_data, &src->object_data, src->object_type->data_size);
-	return SUCCESS;
+    memcpy(&dst->object_data, &src->object_data, src->object_type->data_size);
+    return SUCCESS;
 }
 
 type_t * make_simple_type(size_t size)
@@ -92,10 +92,10 @@ object_t * array_alloc(const type_t * type)
     //array_parameters_t * params = (array_parameters_t *) type->parameters;
 
     object_t * obj = calloc(1, sizeof(object_t) + type->data_size);
-	if(obj == NULL) return NULL;
+    if(obj == NULL) return NULL;
 
     obj->object_type = type;
-	return obj;
+    return obj;
 
 }
 
@@ -142,7 +142,7 @@ error_t array_copy(object_t * dst, const object_t * src)
         src_member++;
     }
 
-	return r;
+    return r;
 }
 
 type_t * make_array_type(size_t length, const type_t * element_type)

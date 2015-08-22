@@ -5,8 +5,8 @@
 
 static error_t constant_pull(node_t * node, object_t ** output)
 {
-	*output = node->state;
-	return SUCCESS;
+    *output = node->state;
+    return SUCCESS;
 }
 
 node_t * constant_create(object_t * constant_value)

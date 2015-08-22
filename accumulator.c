@@ -8,16 +8,16 @@ struct state {
 
 static error_t accumulator_pull(node_t * node, object_t ** output)
 {
-	struct state * state = (struct state *) &node->state->object_data;
+    struct state * state = (struct state *) &node->state->object_data;
 
     object_t * input0;
-	pull(node, 0, &input0);
+    pull(node, 0, &input0);
 
     CAST_OBJECT(double, state->output) += CAST_OBJECT(double, input0);
 
-	*output = state->output;
+    *output = state->output;
 
-	return SUCCESS;
+    return SUCCESS;
 }
 
 #define N_INPUTS 1
@@ -50,7 +50,7 @@ node_t * accumulator_create()
     node->state = object_alloc(state_type);
     if (node->state == NULL) return (free(node->inputs), free(node), NULL);
 
-	struct state * state = (struct state *) &node->state->object_data;
+    struct state * state = (struct state *) &node->state->object_data;
     state->output = object_alloc(&double_type);
     CAST_OBJECT(double, state->output) = 0.0;
 
