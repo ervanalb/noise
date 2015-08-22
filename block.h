@@ -33,7 +33,7 @@ typedef struct node
     object_t * state;
 
     size_t n_inputs;
-    struct endpoint ** inputs;
+    struct endpoint const ** inputs; // XXX where does const go
 
     size_t n_outputs;
     struct endpoint outputs[];

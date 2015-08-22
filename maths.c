@@ -6,16 +6,16 @@
 
 static error_t add_pull(node_t * node, object_t ** output)
 {
-    error_t e;
-    object_t * input0;
-    if ((e = pull(node, 0, &input0) )) return e;
+    error_t e = SUCCESS;
+    object_t * input0 = NULL;
+    e |= pull(node, 0, &input0);
 
-    object_t * input1;
-    if ((e = pull(node, 1, &input1) )) return e;
+    object_t * input1 = NULL;
+    e |= pull(node, 1, &input1);
 
     if (input0 == NULL || input1 == NULL) {
         output = NULL;
-        return SUCCESS;
+        return e;
     }
 
     double x = CAST_OBJECT(double, input0);
@@ -28,21 +28,21 @@ static error_t add_pull(node_t * node, object_t ** output)
     CAST_OBJECT(double, node->state) = result;
     *output = node->state;
 
-    return SUCCESS;
+    return e;
 }
 
 static error_t subtract_pull(node_t * node, object_t ** output)
 {
-    error_t e;
-    object_t * input0;
-    if ((e = pull(node, 0, &input0) )) return e;
+    error_t e = SUCCESS;
+    object_t * input0 = NULL;
+    e |= pull(node, 0, &input0);
 
-    object_t * input1;
-    if ((e = pull(node, 1, &input1) )) return e;
+    object_t * input1 = NULL;
+    e |= pull(node, 1, &input1);
 
     if (input0 == NULL || input1 == NULL) {
         output = NULL;
-        return SUCCESS;
+        return e;
     }
 
     double x = CAST_OBJECT(double, input0);
@@ -55,21 +55,21 @@ static error_t subtract_pull(node_t * node, object_t ** output)
     CAST_OBJECT(double, node->state) = result;
     *output = node->state;
 
-    return SUCCESS;
+    return e;
 }
 
 static error_t multiply_pull(node_t * node, object_t ** output)
 {
-    error_t e;
-    object_t * input0;
-    if ((e = pull(node, 0, &input0) )) return e;
+    error_t e = SUCCESS;
+    object_t * input0 = NULL;
+    e |= pull(node, 0, &input0);
 
-    object_t * input1;
-    if ((e = pull(node, 1, &input1) )) return e;
+    object_t * input1 = NULL;
+    e |= pull(node, 1, &input1);
 
     if (input0 == NULL || input1 == NULL) {
         output = NULL;
-        return SUCCESS;
+        return e;
     }
 
     double x = CAST_OBJECT(double, input0);
@@ -82,21 +82,21 @@ static error_t multiply_pull(node_t * node, object_t ** output)
     CAST_OBJECT(double, node->state) = result;
     *output = node->state;
 
-    return SUCCESS;
+    return e;
 }
 
 static error_t divide_pull(node_t * node, object_t ** output)
 {
-    error_t e;
-    object_t * input0;
-    if ((e = pull(node, 0, &input0) )) return e;
+    error_t e = SUCCESS;
+    object_t * input0 = NULL;
+    e |= pull(node, 0, &input0);
 
-    object_t * input1;
-    if ((e = pull(node, 1, &input1) )) return e;
+    object_t * input1 = NULL;
+    e |= pull(node, 1, &input1);
 
     if (input0 == NULL || input1 == NULL) {
         output = NULL;
-        return SUCCESS;
+        return e;
     }
 
     double x = CAST_OBJECT(double, input0);
@@ -109,26 +109,28 @@ static error_t divide_pull(node_t * node, object_t ** output)
     CAST_OBJECT(double, node->state) = result;
     *output = node->state;
 
-    return SUCCESS;
+    return e;
 }
+
 
 static error_t note_to_freq_pull(node_t * node, object_t ** output)
 {
-    error_t e;
-    object_t * input0;
-    if ((e = pull(node, 0, &input0) )) return e;
+    error_t e = SUCCESS;
+    object_t * input0 = NULL;
+    e |= pull(node, 0, &input0);
 
     if (input0 == NULL) {
         output = NULL;
-        return SUCCESS;
+        return e;
     }
 
     double note = CAST_OBJECT(double, input0);
     CAST_OBJECT(double, node->state) = pow(2,(note-69)/12)*440;
     *output = node->state;
 
-    return SUCCESS;
+    return e;
 }
+
  
 node_t * math_create(enum math_op op)
 {

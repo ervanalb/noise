@@ -8,7 +8,7 @@
 static error_t wye_pull(node_t * node, object_t ** output)
 {
     error_t e = SUCCESS;
-    object_t * input0;
+    object_t * input0 = NULL;
     e = pull(node, 0, &input0);
 
     if (input0 != NULL) {
@@ -49,7 +49,7 @@ node_t * wye_create(const type_t * type, size_t n_inputs)
 static error_t tee_pull_main(node_t * node, object_t ** output)
 {
     error_t e = SUCCESS;
-    object_t * input0;
+    object_t * input0 = NULL;
     e = pull(node, 0, &input0);
 
     if (input0 != NULL) {

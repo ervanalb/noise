@@ -16,19 +16,19 @@ static double f(double t)
 
 static error_t fungen_pull(node_t * node, object_t ** output)
 {
-    error_t e;
-    object_t * input0;
-    if ((e = pull(node, 0, &input0) )) return e;
+    error_t e = SUCCESS;
+    object_t * input0 = NULL;
+    e |= pull(node, 0, &input0);
 
     if (input0 == NULL) { //TODO: formalize null behavior?
         *output = NULL;
-        return SUCCESS;
+        return e;
     }
 
     CAST_OBJECT(double, node->state) = f(CAST_OBJECT(double, input0));
     *output = node->state;
 
-    return SUCCESS;
+    return e;
 }
 
 node_t * fungen_create()

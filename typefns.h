@@ -39,6 +39,10 @@ error_t object_copy(object_t * dst, const object_t * src);
 object_t * object_dup(const object_t * src);
 void object_free(object_t * obj);
 
+static inline const type_t * object_type(object_t * object) {
+    return object->object_type;
+}
+
 //
 
 type_t * get_chunk_type();

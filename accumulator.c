@@ -5,16 +5,16 @@
 
 static error_t accumulator_pull(node_t * node, object_t ** output)
 {
-    error_t e;
-    object_t * input0;
-    if ((e = pull(node, 0, &input0) )) return e;
+    error_t e = SUCCESS;
+    object_t * input0 = NULL;
+    e |= pull(node, 0, &input0);
 
     if (input0 != NULL) { //TODO: formalize null behavior?
         CAST_OBJECT(double, node->state) += CAST_OBJECT(double, input0);
     }
 
     *output = node->state;
-    return SUCCESS;
+    return e;
 }
 
 node_t * accumulator_create()
