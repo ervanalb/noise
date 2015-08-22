@@ -1,10 +1,8 @@
 #include <stdlib.h>
-#include "globals.h"
 #include "error.h"
 #include "block.h"
 
 struct state {
-	double t;
     object_t * output;
 };
 
@@ -13,15 +11,9 @@ static error_t accumulator_pull(node_t * node, object_t ** output)
 	struct state * state = (struct state *) &node->state->object_data;
 
     object_t * input0;
-
 	pull(node, 0, &input0);
 
-	//double * dt = (double *) &input0->object_type;
-	//state->t += *dt;
-    //*(double *)&state->output.object_type = state->t;
-    
-    state->t += CAST_OBJECT(double, input0);
-    CAST_OBJECT(double, state->output) = state->t;
+    CAST_OBJECT(double, state->output) += CAST_OBJECT(double, input0);
 
 	*output = state->output;
 
@@ -31,7 +23,7 @@ static error_t accumulator_pull(node_t * node, object_t ** output)
 #define N_INPUTS 1
 #define N_OUTPUTS 1
 
-node_t * accumulator_create(block_info_pt block_info)
+node_t * accumulator_create()
 {
     static type_t * state_type = NULL;
 
@@ -59,8 +51,8 @@ node_t * accumulator_create(block_info_pt block_info)
     if (node->state == NULL) return (free(node->inputs), free(node), NULL);
 
 	struct state * state = (struct state *) &node->state->object_data;
-    state->t = 0.0;
     state->output = object_alloc(&double_type);
+    CAST_OBJECT(double, state->output) = 0.0;
 
     node->destroy = &generic_block_destroy;
     return node;

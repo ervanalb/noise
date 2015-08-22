@@ -22,7 +22,7 @@ typedef struct endpoint
 {
     struct node * node;
     pull_fn_pt pull;
-    type_t * type;
+    const type_t * type;
     const char * name;
 } endpoint_t;
 
@@ -41,6 +41,8 @@ typedef struct node
 
 void generic_block_destroy(node_t * node);
 
+// Connect blocks & pull
+
 //#define pull(N,I,O) ( ((N)->input_pull[(I)]) ? ((N)->input_pull[(I)]((N)->input_node[(I)],(O))) : ((*(O)=0), 0) )
 
 static inline void pull(struct node * node, size_t index, object_t ** output)
@@ -51,5 +53,20 @@ static inline void pull(struct node * node, size_t index, object_t ** output)
         node->inputs[index]->pull(node->inputs[index]->node, output);
     }
 }
+
+static inline error_t connect(struct node * dst, size_t dst_idx, struct node * src, size_t src_idx)
+{
+    if (src_idx >= src->n_outputs || dst_idx >= dst->n_inputs)
+        return ERR_INVALID;
+
+    dst->inputs[dst_idx] = &src->outputs[src_idx];
+    return SUCCESS;
+}
+
+
+// Block defs -- TODO: move to separate header file?
+
+node_t * constant_create(object_t * constant_value);
+node_t * accumulator_create();
 
 #endif

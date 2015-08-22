@@ -14,10 +14,14 @@ override LFLAGS += $(LIB) $(CFLAGS) -shared
 LIBS = -lm -lportaudio
 
 # Targets
-all: main
+all: main test
 clean:
 	-rm -f $(OBJECTS) $(OUTPUT)
-main: $(OBJECTS)
-	$(CC) $(LFLAGS) -o $(OUTPUT) $(OBJECTS) $(LIBS)
+main: 
+	$(CC) $(LFLAGS) -o $(OUTPUT) $^ $(LIBS)
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
+
+test: test.o block.o typefns.o accumulator.o constant.o debug.o error.o
+	$(CC) $(LIB) $(CFLAGS) -o $@ $^ $(LIBS)
+
