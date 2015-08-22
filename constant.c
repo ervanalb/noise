@@ -10,8 +10,9 @@ static error_t constant_pull(node_t * node, object_t ** output)
 
 node_t * constant_create(object_t * constant_value)
 {
-    node_t * node = allocate_node(0, 1, object_type(constant_value));
-    node->destroy = &generic_block_destroy;
+    node_t * node = node_alloc(0, 1, object_type(constant_value));
+    node->name = "Constant";
+    node->destroy = &node_destroy_generic;
     
     // Define outputs (0: double sum)
     node->outputs[0] = (struct endpoint) {

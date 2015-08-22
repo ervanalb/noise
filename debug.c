@@ -9,8 +9,9 @@
 
 node_t * debug_create()
 {
-    node_t * node = allocate_node(1, 0, double_type);
-    node->destroy = &generic_block_destroy;
+    node_t * node = node_alloc(1, 0, double_type);
+    node->name = "Debug printer";
+    node->destroy = &node_destroy_generic;
 
     // Define inputs
     node->inputs[0] = (struct node_input) {

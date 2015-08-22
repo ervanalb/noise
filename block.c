@@ -3,7 +3,7 @@
 #include "block.h"
 #include "typefns.h"
 
-node_t * allocate_node(size_t n_inputs, size_t n_outputs, const type_t * state_type)
+node_t * node_alloc(size_t n_inputs, size_t n_outputs, const type_t * state_type)
 {
     node_t * node = calloc(1, sizeof(node_t) + n_outputs * sizeof(struct endpoint));
     if (node == NULL) return NULL;
@@ -29,12 +29,34 @@ fail:
     return NULL;
 }
 
-
-void generic_block_destroy(node_t * node)
+void node_destroy_generic(node_t * node)
 {
     object_free(node->state);
     free(node->inputs);
     free(node);
+}
+
+node_t * node_dup(node_t * src)
+{
+    if (src == NULL) return NULL;
+
+    node_t * dst = node_alloc(src->n_inputs, src->n_outputs, object_type(src->state));
+    if (dst == NULL) return NULL;
+
+    dst->name = src->name;
+    dst->destroy = src->destroy;
+
+    // Copy inputs & outputs
+    memcpy(dst->inputs, src->inputs, sizeof(struct node_input) * src->n_inputs);
+    memcpy(dst->outputs, src->outputs, sizeof(struct endpoint) * src->n_outputs);
+
+    // Copy state
+    if (object_copy(dst->state, src->state) != SUCCESS) {
+        dst->destroy(dst); 
+        return NULL;
+    }
+
+    return dst;
 }
 
 error_t connect(struct node * dst, size_t dst_idx, struct node * src, size_t src_idx)

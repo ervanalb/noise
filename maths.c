@@ -136,30 +136,37 @@ node_t * math_create(enum math_op op)
 {
     pull_fn_pt pull_fn;
     size_t n_inputs = 2;
+    const char * name;
     switch(op)
     {
     case MATH_ADD:
         pull_fn = &add_pull;
+        name = "Add";
         break;
     case MATH_SUBTRACT:
         pull_fn = &subtract_pull;
+        name = "Subtract";
         break;
     case MATH_MULTIPLY:
         pull_fn = &multiply_pull;
+        name = "Multiply";
         break;
     case MATH_DIVIDE:
         pull_fn = &divide_pull;
+        name = "Divide";
         break;
     case MATH_NOTE_TO_FREQ:
         pull_fn = &note_to_freq_pull;
+        name = "Note to Freq.";
         n_inputs = 1;
         break;
     default:
         return NULL;
     }
 
-    node_t * node = allocate_node(n_inputs, 1, double_type);
-    node->destroy = &generic_block_destroy;
+    node_t * node = node_alloc(n_inputs, 1, double_type);
+    node->name = name;
+    node->destroy = &node_destroy_generic;
     
     // Define inputs
     if (n_inputs == 1) {

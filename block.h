@@ -35,6 +35,7 @@ struct node_input
 
 typedef struct node
 {
+    const char * name;
     block_destroy_fn_pt destroy;
 
     object_t * state;
@@ -46,8 +47,9 @@ typedef struct node
     struct endpoint outputs[];
 } node_t;
 
-void generic_block_destroy(node_t * node);
-node_t * allocate_node(size_t n_inputs, size_t n_outputs, const type_t * state_type);
+void node_destroy_generic(node_t * node);
+node_t * node_alloc(size_t n_inputs, size_t n_outputs, const type_t * state_type);
+node_t * node_dup(node_t * src); // XXX: Maybe we shouldn't use this? 
 
 // Connect blocks & pull
 

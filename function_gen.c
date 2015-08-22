@@ -33,8 +33,9 @@ static error_t fungen_pull(node_t * node, object_t ** output)
 
 node_t * fungen_create()
 {
-    node_t * node = allocate_node(1, 1, double_type);
-    node->destroy = &generic_block_destroy;
+    node_t * node = node_alloc(1, 1, double_type);
+    node->name = "Sine";
+    node->destroy = &node_destroy_generic;
 
     // Define inputs
     node->inputs[0] = (struct node_input) {
