@@ -22,7 +22,7 @@ node_t * debug_create()
     return node;
 }
 
-void run_debug(node_t * debug_block) 
+void debug_run(node_t * debug_block) 
 {
     char inp;
     do {
@@ -33,3 +33,32 @@ void run_debug(node_t * debug_block)
     } while(scanf("%c", &inp), inp != 'q');
 }
 
+void debug_print_graph(node_t * node)
+{
+    printf("%p %s:\n", node, node->name);
+    for (size_t i = 0; i < node->n_inputs; i++) {
+        if (node->inputs[i].connected_input != NULL) {
+            printf("    [i] '%s' %s.'%s' (%p)\n",
+                    node->inputs[i].name,
+                    node->inputs[i].connected_input->node->name,
+                    node->inputs[i].connected_input->name,
+                    node->inputs[i].connected_input);
+        } else {
+            printf("    [i] '%s' --\n", node->inputs[i].name);
+        }
+    }
+
+    for (size_t i = 0; i < node->n_outputs; i++) {
+        printf("    [o] %s\n", node->outputs[i].name);
+    }
+    //printf("    - inputs (%lu):\n", node->n_inputs);
+    //printf("    - outputs (%lu):\n", node->n_outputs);
+    
+    for (size_t i = 0; i < node->n_inputs; i++) {
+        debug_print_graph(node->inputs[i].connected_input->node);
+    }
+
+    for (size_t i = 0; i < node->n_outputs; i++) {
+        //debug_print_graph(node->outputs[i].node);
+    }
+}

@@ -4,6 +4,7 @@
 #include "block.h"
 #include "typefns.h"
 
-void run_debug(node_t * debug_block);
+void debug_run(node_t * debug_block);
+void debug_print_graph(node_t * node);
 
 #endif

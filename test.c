@@ -29,7 +29,8 @@ int main(void) {
     connect(wye, 1, tee, 1);
     connect(debug, 0, wye, 0);
 
-    run_debug(debug);
+    debug_print_graph(debug);
+    debug_run(debug);
 
     return 0;
 }
