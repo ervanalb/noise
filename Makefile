@@ -8,6 +8,7 @@ OBJECTS = \
 		  debug.o \
 		  error.o \
 		  maths.o \
+		  mixer.o \
 		  test.o \
 		  function_gen.o \
 		  fittings.o \

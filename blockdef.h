@@ -28,6 +28,10 @@ node_t * fungen_create();
 // Math<math_op> :: (double x[, double y]) -> (double result); Performs a basic math op on inputs (see enum math_op)
 node_t * math_create(enum math_op op);
 
+// Mixer<n_channels> :: (chunk s, double vol[, chunk s2, double vol2, ...]) -> (chunk mixout); 
+// UNTESTED TODO
+node_t * mixer_create(size_t n_channels);
+
 // Tee<type_t type, int n_inputs> :: (type val) -> (type val[, type copy, type copy, ...]); Pulls from input, duplicates
 node_t * tee_create(const type_t * type, size_t n_inputs);
 

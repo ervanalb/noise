@@ -168,7 +168,7 @@ type_t * make_array_type(size_t length, const type_t * element_type)
 }
 
 // ---
-int global_chunk_size = 128;
+size_t global_chunk_size = 128;
 
 type_t * get_chunk_type()
 {

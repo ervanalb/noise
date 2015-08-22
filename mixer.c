@@ -1,62 +1,52 @@
-#include "mixer.h"
-#include "block.h"
-#include "typefns.h"
-#include "globals.h"
 #include <stdlib.h>
+#include "error.h"
+#include "block.h"
+#include "blockdef.h"
+#include "globals.h"
 
-error_t mixer_state_alloc(block_info_pt block_info, state_pt* state)
+static error_t mixer_pull(node_t * node, object_t ** output)
 {
     error_t e;
-
-	mixer_state_t* mixer_state;
-	mixer_state=malloc(sizeof(mixer_state_t));
-	*state=mixer_state;
-	if(!mixer_state) return raise_error(ERR_MALLOC,"");
-
-    e=chunk_alloc((type_info_pt)0,(output_pt*)&mixer_state->output);
-    if(e != SUCCESS) return e;
-
-	mixer_state->num_channels = *((int*)block_info);
-
-	return SUCCESS;
-}
-
-void mixer_state_free(block_info_pt block_info, state_pt state)
-{
-	free(state);
-}
-
-error_t mixer_pull(node_t * node, output_pt * output)
-{
-    error_t e;
-	mixer_state_t* mixer_state = (mixer_state_t*)(node->state);
-
-    int i,j;
-    double* gain;
-    double* chunk;
-
-    for(j=0;j<global_chunk_size;j++)
-    {
-        mixer_state->output[j]=0;
+    
+    for (size_t j = 0; j < global_chunk_size; j++) {
+        CAST_OBJECT(double *, node->state)[j] = 0.;
     }
+    
+    for (size_t i = 0; i < node->n_inputs; ) {
+        object_t * input_chunk = NULL;
+        e |= pull(node, i++, &input_chunk);
 
-    for(i=0;i<mixer_state->num_channels;i++)
-    {
-        e=pull(node,2*i,(output_pt*)&chunk);
-        if(e != SUCCESS) return e;
-        e=pull(node,2*i+1,(output_pt*)&gain);
-        if(e != SUCCESS) return e;
+        object_t * input_gain = NULL;
+        e |= pull(node, i++, &input_gain);
 
-        if(!chunk || !gain) continue;
+        if (input_chunk == NULL || input_gain == NULL) continue;
 
-        for(j=0;j<global_chunk_size;j++)
-        {
-            mixer_state->output[j] += *gain * chunk[j];
+        for (size_t j = 0; j < global_chunk_size; j++) {
+            CAST_OBJECT(double *, node->state)[j] += CAST_OBJECT(double, input_gain) * CAST_OBJECT(double *, input_chunk)[j];
         }
+
     }
 
-	*output = (output_pt)(mixer_state->output);
-
-	return SUCCESS;
+    *output = node->state;
+    return e;
 }
 
+node_t * mixer_create(size_t n_channels)
+{
+    type_t * chunk_type = get_chunk_type();
+    node_t * node = allocate_node(n_channels * 2, 1, chunk_type);
+    node->destroy = &generic_block_destroy;
+    
+    // Define output 
+    node->outputs[0] = (struct endpoint) {
+        .node = node,
+        .pull = &mixer_pull,
+        .type = double_type,
+        .name = "mixout",
+    };
+
+    // Initialize state
+    CAST_OBJECT(double, node->state) = 0.0;
+
+    return node;
+}
