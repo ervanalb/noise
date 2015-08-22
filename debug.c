@@ -5,6 +5,7 @@
 #include "error.h"
 #include "block.h"
 #include "typefns.h"
+#include "blockdef.h"
 
 #define N_INPUTS 1
 #define N_OUTPUTS 0

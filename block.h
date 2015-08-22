@@ -40,6 +40,7 @@ typedef struct node
 } node_t;
 
 void generic_block_destroy(node_t * node);
+node_t * allocate_node(size_t n_inputs, size_t n_outputs, type_t * state_type);
 
 // Connect blocks & pull
 
@@ -54,19 +55,5 @@ static inline void pull(struct node * node, size_t index, object_t ** output)
     }
 }
 
-static inline error_t connect(struct node * dst, size_t dst_idx, struct node * src, size_t src_idx)
-{
-    if (src_idx >= src->n_outputs || dst_idx >= dst->n_inputs)
-        return ERR_INVALID;
-
-    dst->inputs[dst_idx] = &src->outputs[src_idx];
-    return SUCCESS;
-}
-
-
-// Block defs -- TODO: move to separate header file?
-
-node_t * constant_create(object_t * constant_value);
-node_t * accumulator_create();
-
+error_t connect(struct node * dst, size_t dst_idx, struct node * src, size_t src_idx);
 #endif

@@ -4,7 +4,6 @@
 #include "block.h"
 #include "typefns.h"
 
-node_t * debug_create();
 void run_debug(node_t * debug_block);
 
 #endif

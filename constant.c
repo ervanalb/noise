@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include "block.h"
+#include "blockdef.h"
 
 #define N_OUTPUTS 1
 
