@@ -30,9 +30,9 @@ int main(void) {
     connect(debug, 0, wye, 0);
 
     debug_print_graph(debug);
-    printf("\n\nRunning:\n");
+    printf("\nRunning:\n");
 
-    //debug_run(debug);
+    debug_run_n(debug, 10);
 
     node_destroy(one);
     node_destroy(acc);
