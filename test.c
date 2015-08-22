@@ -10,10 +10,10 @@ int main(void) {
 
     node_t * one = constant_create(one_obj);
     node_t * acc = accumulator_create(NULL);
-    node_t * math = math_create(MATH_NOTE_TO_FREQ);
+    node_t * math = math_create(MATH_ADD);
     node_t * fungen = fungen_create();
     node_t * tee = tee_create(double_type, 2);
-    node_t * wye = tee_create(double_type, 2);
+    node_t * wye = wye_create(double_type, 2);
     node_t * debug = debug_create(NULL);
 
     connect(acc, 0, one, 0);

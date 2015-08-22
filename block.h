@@ -26,6 +26,13 @@ struct endpoint
     const char * name;
 };
 
+struct node_input
+{
+    const type_t * type;
+    const char * name;
+    struct endpoint * connected_input;
+};
+
 typedef struct node
 {
     block_destroy_fn_pt destroy;
@@ -33,7 +40,7 @@ typedef struct node
     object_t * state;
 
     size_t n_inputs;
-    struct endpoint const ** inputs; // XXX where does const go
+    struct node_input * inputs;
 
     size_t n_outputs;
     struct endpoint outputs[];
@@ -50,12 +57,16 @@ node_t * allocate_node(size_t n_inputs, size_t n_outputs, const type_t * state_t
 
 static inline error_t pull(struct node * node, size_t index, object_t ** output)
 {
-    if (node->inputs[index] == NULL) {
+    if (index > node->n_inputs) 
+        return ERR_INVALID;
+
+    if (node->inputs[index].connected_input == NULL) {
         *output = NULL;
         return SUCCESS;
     } else {
-        printf("pull: %s\n", node->inputs[index]->name);
-        return node->inputs[index]->pull(node->inputs[index]->node, output);
+        struct endpoint * inp = node->inputs[index].connected_input;
+        //printf("pull: %s\n", inp->name);
+        return inp->pull(inp->node, output);
     }
 }
 

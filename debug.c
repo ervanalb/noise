@@ -7,21 +7,17 @@
 #include "typefns.h"
 #include "blockdef.h"
 
-#define N_INPUTS 1
-#define N_OUTPUTS 0
-
 node_t * debug_create()
 {
-    node_t * node = calloc(1, sizeof(node_t) + N_OUTPUTS * sizeof(struct endpoint));
-    if (node == NULL) return NULL;
-
-    node->n_inputs = N_INPUTS;
-    node->inputs = calloc(N_INPUTS, sizeof(struct endpoint *));
-    if (node->inputs == NULL) return (free(node), NULL);
-
-    node->n_outputs = N_OUTPUTS;
-
+    node_t * node = allocate_node(1, 0, double_type);
     node->destroy = &generic_block_destroy;
+
+    // Define inputs
+    node->inputs[0] = (struct node_input) {
+        .type = double_type,
+        .name = "debug input",
+    };
+    
     return node;
 }
 

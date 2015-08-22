@@ -32,6 +32,14 @@ node_t * wye_create(const type_t * type, size_t n_inputs)
 
     node_t * node = allocate_node(n_inputs, 1, type);
     node->destroy = &generic_block_destroy;
+
+    // Define inputs
+    for (size_t i = 0; i < n_inputs; i++) {
+        node->inputs[i] = (struct node_input) {
+            .type = type,
+            .name = (i == 0) ? "main" : "aux",
+        };
+    }
     
     // Define outputs 
     node->outputs[0] = (struct endpoint) {
@@ -74,6 +82,12 @@ node_t * tee_create(const type_t * type, size_t n_outputs)
 
     node_t * node = allocate_node(1, n_outputs, type);
     node->destroy = &generic_block_destroy;
+
+    // Define inputs
+    node->inputs[0] = (struct node_input) {
+        .type = type,
+        .name = "tee in",
+    };
     
     // Define outputs 
     node->outputs[0] = (struct endpoint) {

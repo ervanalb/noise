@@ -21,8 +21,14 @@ node_t * accumulator_create()
 {
     node_t * node = allocate_node(1, 1, double_type);
     node->destroy = &generic_block_destroy;
+
+    // Define inputs
+    node->inputs[0] = (struct node_input) {
+        .type = double_type,
+        .name = "delta",
+    };
     
-    // Define outputs (0: double sum)
+    // Define outputs
     node->outputs[0] = (struct endpoint) {
         .node = node,
         .pull = &accumulator_pull,
