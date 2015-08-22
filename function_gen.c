@@ -1,44 +1,48 @@
-#include "function_gen.h"
 #include <math.h>
 #include <stdlib.h>
 
-error_t function_gen_state_alloc(block_info_pt block_info, state_pt* state)
-{
-	function_gen_state_t* function_gen_state;
+#include "error.h"
+#include "block.h"
+#include "blockdef.h"
 
-	function_gen_state = malloc(sizeof(function_gen_state_t));
-
-	*state = function_gen_state;
-
-	if(!function_gen_state) return raise_error(ERR_MALLOC,"");
-
-	return SUCCESS;
-}
-
-void function_gen_state_free(block_info_pt block_info, state_pt state)
-{
-	free(state);
-}
+#ifndef M_PI
+    #define M_PI 3.14159265358979323846
+#endif
 
 static double f(double t)
 {
 	return sin(t*2*M_PI);
 }
 
-error_t function_gen_pull(node_t * node, output_pt * output)
+static error_t fungen_pull(node_t * node, object_t ** output)
 {
-	double* t;
-	error_t e;
+    error_t e;
+    object_t * input0;
+    if ((e = pull(node, 0, &input0) )) return e;
 
-	e=pull(node,0,(output_pt*)(&t));
-	if(e != SUCCESS) return e;
+    if (input0 == NULL) { //TODO: formalize null behavior?
+        *output = NULL;
+        return SUCCESS;
+    }
 
-	function_gen_state_t* state = (function_gen_state_t*)(node->state);
+    CAST_OBJECT(double, node->state) = f(CAST_OBJECT(double, input0));
+    *output = node->state;
 
-	state->out = f(*t);
-
-	*output = ((void *) &(state->out));
-
-	return SUCCESS;
+    return SUCCESS;
 }
 
+node_t * fungen_create()
+{
+    node_t * node = allocate_node(1, 1, double_type);
+    node->destroy = &generic_block_destroy;
+    
+    // Define outputs (0: double sum)
+    node->outputs[0] = (struct endpoint) {
+        .node = node,
+        .pull = &fungen_pull,
+        .type = double_type,
+        .name = "sin(t)",
+    };
+
+    return node;
+}

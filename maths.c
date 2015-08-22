@@ -1,158 +1,171 @@
-#include "maths.h"
 #include <math.h>
 #include <stdlib.h>
+#include "block.h"
+#include "blockdef.h"
+#include "error.h"
 
-error_t maths_state_alloc(block_info_pt block_info, state_pt* state)
+static error_t add_pull(node_t * node, object_t ** output)
 {
-	maths_state_t* maths_state;
+    error_t e;
+    object_t * input0;
+    if ((e = pull(node, 0, &input0) )) return e;
 
-	maths_state = malloc(sizeof(maths_state_t));
+    object_t * input1;
+    if ((e = pull(node, 1, &input1) )) return e;
 
-	*state = maths_state;
+    if (input0 == NULL || input1 == NULL) {
+        output = NULL;
+        return SUCCESS;
+    }
 
-	if(!maths_state) return raise_error(ERR_MALLOC,"");
+    double x = CAST_OBJECT(double, input0);
+    double y = CAST_OBJECT(double, input1);
 
-	return SUCCESS;
+    // Do the magic here:
+    double result = x + y;
+    // --
+
+    CAST_OBJECT(double, node->state) = result;
+    *output = node->state;
+
+    return SUCCESS;
 }
 
-void maths_state_free(block_info_pt block_info, state_pt state)
+static error_t subtract_pull(node_t * node, object_t ** output)
 {
-	free(state);
+    error_t e;
+    object_t * input0;
+    if ((e = pull(node, 0, &input0) )) return e;
+
+    object_t * input1;
+    if ((e = pull(node, 1, &input1) )) return e;
+
+    if (input0 == NULL || input1 == NULL) {
+        output = NULL;
+        return SUCCESS;
+    }
+
+    double x = CAST_OBJECT(double, input0);
+    double y = CAST_OBJECT(double, input1);
+
+    // Do the magic here:
+    double result = x - y;
+    // --
+
+    CAST_OBJECT(double, node->state) = result;
+    *output = node->state;
+
+    return SUCCESS;
 }
 
-error_t plus_pull(node_t * node, output_pt * output)
+static error_t multiply_pull(node_t * node, object_t ** output)
 {
-	double* x;
-	double* y;
+    error_t e;
+    object_t * input0;
+    if ((e = pull(node, 0, &input0) )) return e;
 
-	error_t e;
+    object_t * input1;
+    if ((e = pull(node, 1, &input1) )) return e;
 
-	e=pull(node,0,(output_pt*)(&x));
-	if(e != SUCCESS) return e;
+    if (input0 == NULL || input1 == NULL) {
+        output = NULL;
+        return SUCCESS;
+    }
 
-	e=pull(node,1,(output_pt*)(&y));
-	if(e != SUCCESS) return e;
+    double x = CAST_OBJECT(double, input0);
+    double y = CAST_OBJECT(double, input1);
 
-	maths_state_t* state = (maths_state_t*)(node->state);
+    // Do the magic here:
+    double result = x * y;
+    // --
 
-	if(!x || !y)
-	{
-		*output = 0;
-		return SUCCESS;
-	}
+    CAST_OBJECT(double, node->state) = result;
+    *output = node->state;
 
-	state->out = *x + *y;
-
-	*output = ((void *) &(state->out));
-
-	return SUCCESS;
+    return SUCCESS;
 }
 
-error_t minus_pull(node_t * node, output_pt * output)
+static error_t divide_pull(node_t * node, object_t ** output)
 {
-	double* x;
-	double* y;
+    error_t e;
+    object_t * input0;
+    if ((e = pull(node, 0, &input0) )) return e;
 
-	error_t e;
+    object_t * input1;
+    if ((e = pull(node, 1, &input1) )) return e;
 
-	e=pull(node,0,(output_pt*)(&x));
-	if(e != SUCCESS) return e;
+    if (input0 == NULL || input1 == NULL) {
+        output = NULL;
+        return SUCCESS;
+    }
 
-	e=pull(node,1,(output_pt*)(&y));
-	if(e != SUCCESS) return e;
+    double x = CAST_OBJECT(double, input0);
+    double y = CAST_OBJECT(double, input1);
 
-	maths_state_t* state = (maths_state_t*)(node->state);
+    // Do the magic here:
+    double result = x / y;
+    // --
 
-	if(!x || !y)
-	{
-		*output = 0;
-		return SUCCESS;
-	}
+    CAST_OBJECT(double, node->state) = result;
+    *output = node->state;
 
-	state->out = *x - *y;
-
-	*output = ((void *) &(state->out));
-
-	return SUCCESS;
+    return SUCCESS;
 }
 
-error_t multiply_pull(node_t * node, output_pt * output)
+static error_t note_to_freq_pull(node_t * node, object_t ** output)
 {
-	double* x;
-	double* y;
+    error_t e;
+    object_t * input0;
+    if ((e = pull(node, 0, &input0) )) return e;
 
-	error_t e;
+    if (input0 == NULL) {
+        output = NULL;
+        return SUCCESS;
+    }
 
-	e=pull(node,0,(output_pt*)(&x));
-	if(e != SUCCESS) return e;
+    double note = CAST_OBJECT(double, input0);
+    CAST_OBJECT(double, node->state) = pow(2,(note-69)/12)*440;
+    *output = node->state;
 
-	e=pull(node,1,(output_pt*)(&y));
-	if(e != SUCCESS) return e;
-
-	maths_state_t* state = (maths_state_t*)(node->state);
-
-	if(!x || !y)
-	{
-		*output = 0;
-		return SUCCESS;
-	}
-
-	state->out = *x * *y;
-
-	*output = ((void *) &(state->out));
-
-	return SUCCESS;
+    return SUCCESS;
 }
-
-error_t divide_pull(node_t * node, output_pt * output)
+ 
+node_t * math_create(enum math_op op)
 {
-	double* x;
-	double* y;
+    pull_fn_pt pull_fn;
+    size_t n_inputs = 2;
+    switch(op)
+    {
+    case MATH_ADD:
+        pull_fn = &add_pull;
+        break;
+    case MATH_SUBTRACT:
+        pull_fn = &subtract_pull;
+        break;
+    case MATH_MULTIPLY:
+        pull_fn = &multiply_pull;
+        break;
+    case MATH_DIVIDE:
+        pull_fn = &divide_pull;
+        break;
+    case MATH_NOTE_TO_FREQ:
+        pull_fn = &note_to_freq_pull;
+        n_inputs = 1;
+        break;
+    default:
+        return NULL;
+    }
 
-	error_t e;
+    node_t * node = allocate_node(n_inputs, 1, double_type);
+    node->destroy = &generic_block_destroy;
+    
+    // Define outputs (0: double sum)
+    node->outputs[0] = (struct endpoint) {
+        .node = node,
+        .pull = pull_fn,
+        .type = double_type,
+        .name = "result",
+    };
 
-	e=pull(node,0,(output_pt*)(&x));
-	if(e != SUCCESS) return e;
-
-	e=pull(node,1,(output_pt*)(&y));
-	if(e != SUCCESS) return e;
-
-	maths_state_t* state = (maths_state_t*)(node->state);
-
-	if(!x || !y)
-	{
-		*output = 0;
-		return SUCCESS;
-	}
-
-	state->out = *x / *y;
-
-	*output = ((void *) &(state->out));
-
-	return SUCCESS;
+    return node;
 }
-
-error_t note_to_freq_pull(node_t * node, output_pt * output)
-{
-	double* note;
-
-	error_t e;
-
-	e=pull(node,0,(output_pt*)(&note));
-	if(e != SUCCESS) return e;
-
-	maths_state_t* state = (maths_state_t*)(node->state);
-
-	if(!note)
-	{
-		*output = 0;
-		return SUCCESS;
-	}
-
-	state->out = pow(2,(*note-69)/12)*440;
-
-	*output = ((void *) &(state->out));
-
-	return SUCCESS;
-}
-

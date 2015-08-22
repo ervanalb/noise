@@ -46,12 +46,13 @@ node_t * allocate_node(size_t n_inputs, size_t n_outputs, type_t * state_type);
 
 //#define pull(N,I,O) ( ((N)->input_pull[(I)]) ? ((N)->input_pull[(I)]((N)->input_node[(I)],(O))) : ((*(O)=0), 0) )
 
-static inline void pull(struct node * node, size_t index, object_t ** output)
+static inline error_t pull(struct node * node, size_t index, object_t ** output)
 {
     if (node->inputs[index] == NULL) {
         *output = NULL;
+        return SUCCESS;
     } else {
-        node->inputs[index]->pull(node->inputs[index]->node, output);
+        return node->inputs[index]->pull(node->inputs[index]->node, output);
     }
 }
 

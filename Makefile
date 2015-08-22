@@ -7,8 +7,11 @@ OBJECTS = \
 		  constant.o \
 		  debug.o \
 		  error.o \
+		  maths.o \
 		  test.o \
+		  function_gen.o \
 		  typefns.o
+
 TARGET = noise
 
 CC = gcc
