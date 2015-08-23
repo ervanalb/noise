@@ -49,24 +49,13 @@ static inline const type_t * object_type(object_t * object) {
 //
 
 type_t * get_chunk_type();
-
-typedef struct
-{
-    size_t size;
-} simple_parameters_t;
-
 type_t * make_simple_type(size_t size);
-
-typedef struct
-{
-    size_t length;
-    const type_t * element_type;
-} array_parameters_t;
-
 type_t * make_array_type(size_t length, const type_t * element_type);
+type_t * make_tuple_type(size_t length);
 
 //
 #define CAST_OBJECT(type, obj) (*(type *)(obj)->object_data)
+#define CAST_TUPLE(type, idx, obj) CAST_OBJECT(type, (&CAST_OBJECT(object_t *, (obj)))[(idx)])
 
 extern type_t * double_type;
 extern type_t * long_type;

@@ -9,10 +9,10 @@ static error_t add_pull(node_t * node, object_t ** output)
 {
     error_t e = SUCCESS;
     object_t * input0 = NULL;
-    e |= pull(node, 0, &input0);
+    e |= node_pull(node, 0, &input0);
 
     object_t * input1 = NULL;
-    e |= pull(node, 1, &input1);
+    e |= node_pull(node, 1, &input1);
 
     if (input0 == NULL || input1 == NULL) {
         output = NULL;
@@ -36,10 +36,10 @@ static error_t subtract_pull(node_t * node, object_t ** output)
 {
     error_t e = SUCCESS;
     object_t * input0 = NULL;
-    e |= pull(node, 0, &input0);
+    e |= node_pull(node, 0, &input0);
 
     object_t * input1 = NULL;
-    e |= pull(node, 1, &input1);
+    e |= node_pull(node, 1, &input1);
 
     if (input0 == NULL || input1 == NULL) {
         output = NULL;
@@ -63,10 +63,10 @@ static error_t multiply_pull(node_t * node, object_t ** output)
 {
     error_t e = SUCCESS;
     object_t * input0 = NULL;
-    e |= pull(node, 0, &input0);
+    e |= node_pull(node, 0, &input0);
 
     object_t * input1 = NULL;
-    e |= pull(node, 1, &input1);
+    e |= node_pull(node, 1, &input1);
 
     if (input0 == NULL || input1 == NULL) {
         output = NULL;
@@ -90,10 +90,10 @@ static error_t divide_pull(node_t * node, object_t ** output)
 {
     error_t e = SUCCESS;
     object_t * input0 = NULL;
-    e |= pull(node, 0, &input0);
+    e |= node_pull(node, 0, &input0);
 
     object_t * input1 = NULL;
-    e |= pull(node, 1, &input1);
+    e |= node_pull(node, 1, &input1);
 
     if (input0 == NULL || input1 == NULL) {
         output = NULL;
@@ -118,7 +118,7 @@ static error_t note_to_freq_pull(node_t * node, object_t ** output)
 {
     error_t e = SUCCESS;
     object_t * input0 = NULL;
-    e |= pull(node, 0, &input0);
+    e |= node_pull(node, 0, &input0);
 
     if (input0 == NULL) {
         output = NULL;
@@ -135,29 +135,29 @@ static error_t note_to_freq_pull(node_t * node, object_t ** output)
  
 node_t * math_create(enum math_op op)
 {
-    pull_fn_pt pull_fn;
+    pull_fn_pt node_pull_fn;
     size_t n_inputs = 2;
     const char * name;
     switch(op)
     {
     case MATH_ADD:
-        pull_fn = &add_pull;
+        node_pull_fn = &add_pull;
         name = "Add";
         break;
     case MATH_SUBTRACT:
-        pull_fn = &subtract_pull;
+        node_pull_fn = &subtract_pull;
         name = "Subtract";
         break;
     case MATH_MULTIPLY:
-        pull_fn = &multiply_pull;
+        node_pull_fn = &multiply_pull;
         name = "Multiply";
         break;
     case MATH_DIVIDE:
-        pull_fn = &divide_pull;
+        node_pull_fn = &divide_pull;
         name = "Divide";
         break;
     case MATH_NOTE_TO_FREQ:
-        pull_fn = &note_to_freq_pull;
+        node_pull_fn = &note_to_freq_pull;
         name = "Note to Freq.";
         n_inputs = 1;
         break;
@@ -189,7 +189,7 @@ node_t * math_create(enum math_op op)
     // Define outputs (0: double sum)
     node->outputs[0] = (struct endpoint) {
         .node = node,
-        .pull = pull_fn,
+        .pull = node_pull_fn,
         .type = double_type,
         .name = strdup("result"),
     };

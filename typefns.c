@@ -76,8 +76,6 @@ error_t simple_copy(object_t * dst, const object_t * src)
 {
     if (src->object_type != dst->object_type) return ERR_INVALID;
 
-    //simple_parameters_t * params = (simple_parameters_t *) src->object_type->parameters;
-
     memcpy(&dst->object_data, &src->object_data, src->object_type->data_size);
     return SUCCESS;
 }
@@ -99,6 +97,13 @@ type_t * make_simple_type(size_t size)
 }
 
 // ---
+
+typedef struct
+{
+    size_t length;
+    const type_t * element_type;
+} array_parameters_t;
+
 object_t * array_alloc(const type_t * type)
 {
     //array_parameters_t * params = (array_parameters_t *) type->parameters;
@@ -171,7 +176,7 @@ type_t * make_array_type(size_t length, const type_t * element_type)
 
     params->length = length;
     params->element_type = element_type;
-    type->data_size = length * sizeof(object_t **);
+    type->data_size = length * sizeof(object_t *);
     type->alloc = &array_alloc;
     type->copy = &array_copy;
     type->free = &array_free;
@@ -179,17 +184,48 @@ type_t * make_array_type(size_t length, const type_t * element_type)
     return type;
 }
 
+// --- 
+
+void tuple_free(object_t * obj)
+{
+    object_t ** member = CAST_OBJECT(object_t **, obj);
+    object_t ** first_member = member;
+
+    while ( ((char *) first_member) + obj->object_type->data_size < (char *) member) {
+        object_free(*member++);
+    }
+}
+
+error_t tuple_copy(object_t * dst, const object_t * src)
+{
+    // TODO
+    return ERR_INVALID;
+}
+
+type_t * make_tuple_type(size_t length)
+{
+    type_t * type = calloc(1, sizeof(type_t));
+    if (type == NULL) return NULL;
+
+    type->parameters = NULL;
+    type->data_size = length * sizeof(object_t *);
+    type->alloc = &simple_alloc;
+    type->copy = NULL; //TODO &tuple_copy;
+    type->free = &tuple_free;
+    
+    return type;
+}
+
 // ---
-size_t global_chunk_size = 128;
+static type_t chunk_type = {
+    .parameters = NULL,
+    .alloc = &simple_alloc,
+    .copy = &simple_copy,
+    .free = &simple_free,
+};
 
 type_t * get_chunk_type()
 {
-    static type_t chunk_type = {
-        .parameters = NULL,
-        .alloc = &simple_alloc,
-        .copy = &simple_copy,
-        .free = &simple_free,
-    };
     chunk_type.data_size = global_chunk_size * sizeof(double);
     return &chunk_type;
 }

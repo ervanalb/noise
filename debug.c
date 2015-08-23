@@ -29,7 +29,7 @@ void debug_run(node_t * debug_block)
     do {
         object_t * obj;
 
-        pull(debug_block, 0, &obj);
+        node_pull(debug_block, 0, &obj);
         printf(" > %f\n", CAST_OBJECT(double, obj));
     } while(scanf("%c", &inp), inp != 'q');
 }
@@ -39,7 +39,7 @@ void debug_run_n(node_t * debug_block, int count)
     for (int i = 0; i < count; i++) {
         object_t * obj;
 
-        pull(debug_block, 0, &obj);
+        node_pull(debug_block, 0, &obj);
         printf(" %4d/%4d > %f\n", i, count, CAST_OBJECT(double, obj));
     }
 }

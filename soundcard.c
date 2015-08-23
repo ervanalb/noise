@@ -1,19 +1,25 @@
 #include <stdlib.h>
+#include <string.h>
 #include <portaudio.h>
 #include "globals.h"
 #include "block.h"
 #include "typefns.h"
 #include "blockdef.h"
+#include "util.h"
+
+size_t global_chunk_size = 128;
+double global_frame_rate = 48000;
 
 PaStreamParameters outputParameters;
 PaError err;
 PaStream* stream;
 float* buffer;
-node_t * sc_node;
+static node_t * sc_node;
 
 static int soundcard_api_init()
 {
 	/* -- initialize PortAudio -- */
+	err = Pa_Terminate();
 	err = Pa_Initialize();
 	if( err != paNoError ) return 1;
 	/* -- setup output -- */
@@ -44,8 +50,10 @@ static int soundcard_api_init()
 
 static int soundcard_api_write(double* chunk)
 {
-	int i;
-	for(i=0;i<global_chunk_size;i++) buffer[i]=chunk[i];
+    //memcpy(buffer, chunk, global_chunk_size * sizeof(double));
+    for (size_t i = 0; i < global_chunk_size; i++) {
+        buffer[i] = (float) chunk[i];
+    }
 	err = Pa_WriteStream( stream, buffer, global_chunk_size);
 	if( err ) return 1;
 	return 0;
@@ -80,7 +88,7 @@ node_t * soundcard_get()
     if (sc_node) return sc_node;
 
     type_t * chunk_type = get_chunk_type();
-    node_t * sc_node = node_alloc(1, 0, NULL);
+    sc_node = node_alloc(1, 0, NULL);
     sc_node->name = strdup("Soundcard");
     sc_node->destroy = &soundcard_destroy;
 
@@ -98,13 +106,18 @@ node_t * soundcard_get()
 
 void soundcard_run()
 {
-    if (!sc_node) printf("Soundcard not initialized!\n");
+    if (!sc_node) {
+        printf("Soundcard not initialized!\n");
+        return;
+    }
 
-    object_t * chunk = NULL;
-    pull(sc_node, 1, &chunk);
+    //while (1) {
+    for (int i = 0; i < 1000; i++) {
+        object_t * chunk = NULL;
+        node_pull(sc_node, 0, &chunk);
 
-    if (chunk == NULL) return;
+        if (chunk == NULL) return;
 
-    soundcard_api_write(CAST_OBJECT(double *, chunk));
-
+        if (soundcard_api_write(&CAST_OBJECT(double, chunk))) return;
+    }
 }

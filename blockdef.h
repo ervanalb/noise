@@ -11,6 +11,12 @@ enum math_op {
     MATH_NOTE_TO_FREQ
 };
 
+enum wave_type {
+    WAVE_SINE,
+    WAVE_SAW,
+    WAVE_SQUARE,
+};
+
 // Block defs
 
 // Accumulator<> :: (double x) -> (double x_sum); Sums an input
@@ -38,6 +44,8 @@ node_t * tee_create(const type_t * type, size_t n_inputs);
 // Wye<type_t type, int n_inputs> :: (type val[, type discard, type discard, ...]) -> (type val); Pulls from all inputs, returning the first
 node_t * wye_create(const type_t * type, size_t n_inputs);
 
+// Wave
+node_t * wave_create();
 
 // Soundcard Sink
 node_t * soundcard_get(); // Singleton

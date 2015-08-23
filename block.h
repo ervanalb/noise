@@ -62,9 +62,9 @@ static inline void node_destroy(node_t * node)
 
 #include <stdio.h>
 
-static inline error_t pull(struct node * node, size_t index, object_t ** output)
+static inline error_t node_pull(struct node * node, size_t index, object_t ** output)
 {
-    if (index > node->n_inputs) 
+    if (index >= node->n_inputs) 
         return ERR_INVALID;
 
     if (node->inputs[index].connected_input == NULL) {
@@ -77,5 +77,5 @@ static inline error_t pull(struct node * node, size_t index, object_t ** output)
     }
 }
 
-error_t connect(struct node * dst, size_t dst_idx, struct node * src, size_t src_idx);
+error_t node_connect(struct node * dst, size_t dst_idx, struct node * src, size_t src_idx);
 #endif

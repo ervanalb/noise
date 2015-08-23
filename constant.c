@@ -23,6 +23,9 @@ node_t * constant_create(object_t * constant_value)
         .name = strdup("constant"),
     };
 
+    // Setup state
+    object_copy(node->state, constant_value);
+
     return node;
 }
 

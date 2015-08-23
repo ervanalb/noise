@@ -10,7 +10,7 @@ static error_t wye_pull(node_t * node, object_t ** output)
 {
     error_t e = SUCCESS;
     object_t * input0 = NULL;
-    e = pull(node, 0, &input0);
+    e = node_pull(node, 0, &input0);
 
     if (input0 != NULL) {
         e |= object_copy(node->state, input0);
@@ -21,7 +21,7 @@ static error_t wye_pull(node_t * node, object_t ** output)
 
     for (size_t i = 1; i < node->n_inputs; i++) {
         object_t * inputx;
-        e |= pull(node, i, &inputx);
+        e |= node_pull(node, i, &inputx);
     }
 
     return e;
@@ -60,7 +60,7 @@ static error_t tee_pull_main(node_t * node, object_t ** output)
 {
     error_t e = SUCCESS;
     object_t * input0 = NULL;
-    e = pull(node, 0, &input0);
+    e = node_pull(node, 0, &input0);
 
     if (input0 != NULL) {
         e |= object_copy(node->state, input0);

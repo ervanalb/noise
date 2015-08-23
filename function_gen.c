@@ -15,7 +15,7 @@ static error_t fungen_pull(node_t * node, object_t ** output)
 {
     error_t e = SUCCESS;
     object_t * input0 = NULL;
-    e |= pull(node, 0, &input0);
+    e |= node_pull(node, 0, &input0);
 
     if (input0 == NULL) { //TODO: formalize null behavior?
         *output = NULL;

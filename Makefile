@@ -13,7 +13,8 @@ OBJECTS = \
 		  mixer.o \
 		  soundcard.o \
 		  test.o \
-		  typefns.o
+		  typefns.o \
+		  wave.o
 
 TARGET = noise
 

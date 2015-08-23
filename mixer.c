@@ -15,10 +15,10 @@ static error_t mixer_pull(node_t * node, object_t ** output)
     
     for (size_t i = 0; i < node->n_inputs; ) {
         object_t * input_chunk = NULL;
-        e |= pull(node, i++, &input_chunk);
+        e |= node_pull(node, i++, &input_chunk);
 
         object_t * input_gain = NULL;
-        e |= pull(node, i++, &input_gain);
+        e |= node_pull(node, i++, &input_gain);
 
         if (input_chunk == NULL || input_gain == NULL) continue;
 

@@ -18,8 +18,10 @@ node_t * node_alloc(size_t n_inputs, size_t n_outputs, const type_t * state_type
     node->n_outputs = n_outputs;
 
     // Allocate state
-    node->state = object_alloc(state_type);
-    if (node->state == NULL) goto fail;
+    if (state_type != NULL) {
+        node->state = object_alloc(state_type);
+        if (node->state == NULL) goto fail;
+    }
 
     return node;
 
@@ -72,7 +74,7 @@ node_t * node_dup(node_t * src)
 
 // 
 
-error_t connect(struct node * dst, size_t dst_idx, struct node * src, size_t src_idx)
+error_t node_connect(struct node * dst, size_t dst_idx, struct node * src, size_t src_idx)
 {
     if (src_idx >= src->n_outputs) {
         printf("connect error: source index too large (%lu >= %lu)\n", src_idx, src->n_outputs);
@@ -86,6 +88,7 @@ error_t connect(struct node * dst, size_t dst_idx, struct node * src, size_t src
 
     if (src->outputs[src_idx].type != dst->inputs[dst_idx].type) {
         printf("connect error: type mismatch %p %p\n", src->outputs[src_idx].type, dst->inputs[dst_idx].type);
+        printf("    '%s' -> '%s'\n", src->name, dst->name);
     }
 
     dst->inputs[dst_idx].connected_input = &src->outputs[src_idx];
