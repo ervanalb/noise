@@ -8,16 +8,42 @@
 #include "util.h"
 #include "blockdef.h"
 
+static error_t debug_pull(node_t * node, object_t ** output)
+{
+    error_t e = SUCCESS;
+    object_t * input0 = NULL;
+    e |= node_pull(node, 0, &input0);
+
+    object_free(node->state);
+    *output = node->state = object_dup(input0);
+
+    if (input0 != NULL) {
+        char * ostr = object_str(node->state);
+        printf("debug: %s\n", ostr);
+        free(ostr);
+    }
+
+    return e;
+}
+
 node_t * debug_create()
 {
-    node_t * node = node_alloc(1, 0, double_type);
+    node_t * node = node_alloc(1, 1, double_type);
     node->name = strdup("Debug printer");
     node->destroy = &node_destroy_generic;
 
     // Define inputs
     node->inputs[0] = (struct node_input) {
         .type = double_type,
-        .name = strdup("debug input"),
+        .name = strdup("in"),
+    };
+
+    // Define outputs
+    node->outputs[0] = (struct endpoint) {
+        .node = node,
+        .type = double_type,
+        .name = strdup("out"),
+        .pull = debug_pull,
     };
     
     return node;

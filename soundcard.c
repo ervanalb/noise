@@ -99,9 +99,11 @@ node_t * soundcard_get()
     };
     
     // Setup
+#ifndef FAKESOUND
     soundcard_api_init();
-    //(void) soundcard_api_init;
-    //(void) soundcard_api_write;
+#endif
+    (void) soundcard_api_init;
+    (void) soundcard_api_write;
 
     return sc_node;
 }
@@ -113,13 +115,20 @@ void soundcard_run()
         return;
     }
 
+#ifndef FAKESOUND
+    int iters = 10000;
+#else
+    int iters = 10;
+#endif
     //while (1) {
-    for (int i = 0; i < 10000; i++) {
+    for (int i = 0; i < iters; i++) {
         object_t * chunk = NULL;
         node_pull(sc_node, 0, &chunk);
 
         if (chunk == NULL) return;
 
+#ifndef FAKESOUND
         if (soundcard_api_write(&CAST_OBJECT(double, chunk))) return;
+#endif
     }
 }

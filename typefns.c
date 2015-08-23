@@ -37,6 +37,28 @@ object_t * object_dup(const object_t * src)
     return dst;
 }
 
+// object_swap: Copy `src` into `*store`, allocating memory as appropriate
+// and returning a ref to a copied version of `src`.
+// Attempts to minimize new allocations
+// This fn is much more efficent than object_free & object_dup
+object_t * object_swap(object_t ** store, const object_t * src)
+{
+    if (src == NULL) return NULL;
+
+    if (*store == NULL) {
+        *store = object_dup(src);
+        return *store;
+    } else if ((*store)->object_type != src->object_type) {
+        object_free(*store);
+        *store = object_dup(src);
+        return *store;
+    } else {
+        object_copy(*store, src);
+    }
+
+    return *store;
+}
+
 void object_free(object_t * obj)
 {
     if (obj == NULL) return;
@@ -220,11 +242,20 @@ type_t * make_tuple_type(size_t length)
 }
 
 // ---
+
+static char * chunk_str (object_t * obj)
+{
+    double * chunk = &CAST_OBJECT(double, obj);
+    return rsprintf("chunk {%f, %f, %f, ... %f} ",
+            chunk[0], chunk[1], chunk[2], chunk[global_chunk_size-1]);
+}
+
 static type_t chunk_type = {
     .parameters = NULL,
     .alloc = &simple_alloc,
     .copy = &simple_copy,
     .free = &simple_free,
+    .str = &chunk_str,
 };
 
 type_t * get_chunk_type()

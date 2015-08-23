@@ -34,12 +34,16 @@ static inline int asprintf(char ** buf, const char * fmt, ...)
     va_list vargs;
     va_start(vargs, fmt);
 
-    int len = vsnprintf(NULL, 0, fmt, vargs);
-    *buf = malloc(len + 1);
+    int len = vsnprintf(NULL, 0, fmt, vargs) + 1;
+    *buf = malloc(len);
+
+    va_end(vargs);
+    va_start(vargs, fmt);
+
     if(*buf == NULL)
         len = -1;
     else
-        len = vsprintf(*buf, fmt, vargs);
+        len = vsnprintf(*buf, len, fmt, vargs);
 
     va_end(vargs);
     
@@ -52,8 +56,8 @@ static inline char * rsprintf(const char * fmt, ...)
     va_list vargs;
     va_start(vargs, fmt);
 
-    int len = vsnprintf(NULL, 0, fmt, vargs);
-    char * buf = malloc(len + 1);
+    int len = vsnprintf(NULL, 0, fmt, vargs) + 1;
+    char * buf = malloc(len);
 
     va_end(vargs);
     va_start(vargs, fmt);

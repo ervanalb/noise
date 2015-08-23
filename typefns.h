@@ -39,6 +39,7 @@ typedef struct object
 object_t * object_alloc(const type_t * type);
 error_t object_copy(object_t * dst, const object_t * src);
 object_t * object_dup(const object_t * src);
+object_t * object_swap(object_t ** store, const object_t * src);
 void object_free(object_t * obj);
 char * object_str(object_t * obj);
 

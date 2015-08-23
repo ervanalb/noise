@@ -41,11 +41,11 @@ node_t * mixer_create(size_t n_channels);
 // Sequencer<> :: (double time, tuple<> stream) -> (tuple_els elem);
 node_t * sequencer_create();
 
-// Tee<type_t type, int n_inputs> :: (type val) -> (type val[, type copy, type copy, ...]); Pulls from input, duplicates
-node_t * tee_create(const type_t * type, size_t n_inputs);
+// Tee<int n_inputs> :: (type val) -> (type val[, type copy, type copy, ...]); Pulls from input, duplicates
+node_t * tee_create(size_t n_inputs);
 
-// Wye<type_t type, int n_inputs> :: (type val[, type discard, type discard, ...]) -> (type val); Pulls from all inputs, returning the first
-node_t * wye_create(const type_t * type, size_t n_inputs);
+// Wye<int n_inputs> :: (type val[, type discard, type discard, ...]) -> (type val); Pulls from all inputs, returning the first
+node_t * wye_create(size_t n_inputs);
 
 // Wave :: (double frequency, long wave_type) -> (chunk samples); See enum wave_type
 node_t * wave_create();

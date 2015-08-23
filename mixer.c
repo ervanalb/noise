@@ -10,7 +10,7 @@ static error_t mixer_pull(node_t * node, object_t ** output)
     error_t e;
     
     for (size_t j = 0; j < global_chunk_size; j++) {
-        CAST_OBJECT(double *, node->state)[j] = 0.;
+        (&CAST_OBJECT(double, node->state))[j] = 0.;
     }
     
     for (size_t i = 0; i < node->n_inputs; ) {
@@ -23,7 +23,7 @@ static error_t mixer_pull(node_t * node, object_t ** output)
         if (input_chunk == NULL || input_gain == NULL) continue;
 
         for (size_t j = 0; j < global_chunk_size; j++) {
-            CAST_OBJECT(double *, node->state)[j] += CAST_OBJECT(double, input_gain) * CAST_OBJECT(double *, input_chunk)[j];
+            (&CAST_OBJECT(double, node->state))[j] += CAST_OBJECT(double, input_gain) * (&CAST_OBJECT(double, input_chunk))[j];
         }
 
     }
@@ -46,7 +46,7 @@ node_t * mixer_create(size_t n_channels)
             .name = rsprintf("ch %lu", i),
         };
         node->inputs[2 * i + 1] = (struct node_input) {
-            .type = chunk_type,
+            .type = double_type,
             .name = rsprintf("gain %lu", i),
         };
     }
@@ -55,7 +55,7 @@ node_t * mixer_create(size_t n_channels)
     node->outputs[0] = (struct endpoint) {
         .node = node,
         .pull = &mixer_pull,
-        .type = double_type,
+        .type = chunk_type,
         .name = strdup("mixout"),
     };
 
