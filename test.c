@@ -25,6 +25,7 @@ int main(void) {
     node_connect(time_wye, 1, time_tee, 0);
 
     // Melody
+    /*
     object_t * melody_obj = object_alloc(make_tuple_type(4));
 
     // TODO: Come up with a better way of specifying tuples
@@ -32,6 +33,19 @@ int main(void) {
     CAST_OBJECT(double, (&CAST_OBJECT(object_t *, melody_obj))[1] = object_alloc(double_type)) = 66;
     //CAST_OBJECT(double, (&CAST_OBJECT(object_t *, melody_obj))[2] = object_alloc(double_type)) = 63;
     CAST_OBJECT(double, (&CAST_OBJECT(object_t *, melody_obj))[3] = object_alloc(double_type)) = 65;
+    */
+
+    //XXX 
+#define None -1
+    double unison[] = {None, None, None, 65, 75, None, 72, 67, 67, 68, None, 65, 70, 72, 70, 65, 65, None, None, 65, 75, None, 72, 67, 67, 68, 65, 72, 75, None, 72, 77};
+    size_t unison_len = sizeof(unison) / sizeof(*unison);
+
+    object_t * melody_obj = object_alloc(make_tuple_type(unison_len));
+
+    for (size_t i = 0; i < unison_len; i++) {
+        if (unison[i] != None)
+            CAST_OBJECT(double, (&CAST_OBJECT(object_t *, melody_obj))[i] = object_alloc(double_type)) = unison[i];
+    }
 
     node_t * melody = constant_create(melody_obj);
 
@@ -49,11 +63,10 @@ int main(void) {
     node_connect(debug, 0, time_wye, 0);
 
     // Instrument
-    MAKE_CONSTANT(sine_wtype, long_type, long, WAVE_SINE);
+    MAKE_CONSTANT(wtype, long_type, long, WAVE_SAW);
     node_t * wave = wave_create();
     node_connect(wave, 0, n2f, 0);
-    node_connect(wave, 1, sine_wtype, 0);
-
+    node_connect(wave, 1, wtype, 0);
 
     // Mixer
     node_t * mixer = mixer_create(1);
@@ -61,7 +74,6 @@ int main(void) {
     node_connect(mixer, 0, wave, 0);
     node_connect(mixer, 1, wave_vol, 0);
     node_connect(time_wye, 0, mixer, 0);
-
 
     // Soundcard 
     printf("Initing soundcard\n");
@@ -72,77 +84,21 @@ int main(void) {
     debug_print_graph(soundcard);
     soundcard_run();
 
-    node_destroy(timebase);
-    node_destroy(time_tee);
-    node_destroy(melody);
-    node_destroy(seq);
-    node_destroy(wave);
-    node_destroy(soundcard);
-
-    printf("Successfully destroyed everything!\n");
-
-    return 0;
-}
-
-/*
-int main(void) {
-    object_t * one_obj = object_alloc(double_type);
-    CAST_OBJECT(double, one_obj) = 0.1;
-
-    node_t * one = constant_create(one_obj);
-    node_t * acc = accumulator_create();
-    node_t * math = math_create(MATH_ADD);
-    node_t * fungen = fungen_create();
-    node_t * tee = tee_create(double_type, 2);
-    node_t * wye = wye_create(double_type, 2);
-    node_t * debug = debug_create(NULL);
-
-    object_t * freq_obj = object_alloc(double_type);
-    CAST_OBJECT(double, freq_obj) = 440.;
-    node_t * freq = constant_create(freq_obj);
-
-    object_t * type_sine_obj = object_alloc(long_type);
-    CAST_OBJECT(long, one_obj) = WAVE_SINE;
-    node_t * type_sine = constant_create(type_sine_obj);
-
-    node_t * wave = wave_create();
-
-    printf("Initing soundcard\n");
-    node_t * soundcard = soundcard_get();
-    node_connect(wave, 0, freq, 0);
-    node_connect(wave, 1, type_sine, 0);
-    node_connect(soundcard, 0, wave, 0);
-    printf("soundcard inited\n");
-
-    node_connect(acc, 0, one, 0);
-    node_connect(fungen, 0, acc, 0);
-    node_connect(debug, 0, fungen, 0);
-
-    node_connect(math, 0, one, 0);
-    node_connect(math, 1, one, 0);
-    //node_connect(debug, 0, math, 0);
-
-    node_connect(tee, 0, one, 0);
-    node_connect(wye, 0, tee, 0);
-    node_connect(wye, 1, tee, 1);
-    //connect(debug, 0, wye, 0);
-
-    debug_print_graph(debug);
-    printf("\nRunning:\n");
-
-    debug_run_n(debug, 10);
-    soundcard_run();
-
-    node_destroy(one);
-    node_destroy(acc);
-    node_destroy(math);
-    node_destroy(fungen);
-    node_destroy(tee);
-    node_destroy(wye);
     node_destroy(debug);
+    node_destroy(delta_t);
+    node_destroy(melody);
+    node_destroy(mixer);
+    node_destroy(n2f);
+    node_destroy(seq);
+    node_destroy(soundcard);
+    node_destroy(time_tee);
+    node_destroy(time_wye);
+    node_destroy(timebase);
+    node_destroy(wave);
+    node_destroy(wave_vol);
+    node_destroy(wtype);
 
     printf("Successfully destroyed everything!\n");
 
     return 0;
 }
-*/
