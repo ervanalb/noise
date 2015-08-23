@@ -25,7 +25,7 @@ INC = -I
 LIB = -L/usr/local/lib
 
 # Assembler, compiler, and linker flags
-override CFLAGS += $(INC) -O0 -g -Wall -Wextra -Werror -Wno-unused-parameter -std=c99 -DFAKESOUND
+override CFLAGS += $(INC) -O0 -g -Wall -Wextra -Werror -Wno-unused-parameter -std=c99 #-DFAKESOUND
 override LFLAGS += $(LIB) $(CFLAGS)
 LIBS = -lm -lportaudio
 

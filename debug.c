@@ -34,14 +34,14 @@ node_t * debug_create()
 
     // Define inputs
     node->inputs[0] = (struct node_input) {
-        .type = double_type,
+        .type = NULL,
         .name = strdup("in"),
     };
 
     // Define outputs
     node->outputs[0] = (struct endpoint) {
         .node = node,
-        .type = double_type,
+        .type = NULL,
         .name = strdup("out"),
         .pull = debug_pull,
     };

@@ -22,7 +22,7 @@ int main(void) {
     node_t * time_wye = wye_create(2);
     node_connect(timebase, 0, delta_t, 0);
     node_connect(time_tee, 0, timebase, 0);
-    node_connect(time_wye, 1, time_tee, 1);
+    node_connect(time_wye, 1, time_tee, 0);
 
     // Melody
     object_t * melody_obj = object_alloc(make_tuple_type(4));
@@ -30,7 +30,7 @@ int main(void) {
     // TODO: Come up with a better way of specifying tuples
     CAST_OBJECT(double, (&CAST_OBJECT(object_t *, melody_obj))[0] = object_alloc(double_type)) = 64;
     CAST_OBJECT(double, (&CAST_OBJECT(object_t *, melody_obj))[1] = object_alloc(double_type)) = 66;
-    CAST_OBJECT(double, (&CAST_OBJECT(object_t *, melody_obj))[2] = object_alloc(double_type)) = 63;
+    //CAST_OBJECT(double, (&CAST_OBJECT(object_t *, melody_obj))[2] = object_alloc(double_type)) = 63;
     CAST_OBJECT(double, (&CAST_OBJECT(object_t *, melody_obj))[3] = object_alloc(double_type)) = 65;
 
     node_t * melody = constant_create(melody_obj);
@@ -54,6 +54,7 @@ int main(void) {
     node_connect(wave, 0, n2f, 0);
     node_connect(wave, 1, sine_wtype, 0);
 
+
     // Mixer
     node_t * mixer = mixer_create(1);
     MAKE_DOUBLE_CONSTANT(wave_vol, 0.5);
@@ -68,7 +69,7 @@ int main(void) {
     node_connect(soundcard, 0, debug, 0);
     printf("soundcard inited\n");
 
-    debug_print_graph(wave);
+    debug_print_graph(soundcard);
     soundcard_run();
 
     node_destroy(timebase);
