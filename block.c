@@ -86,7 +86,9 @@ error_t node_connect(struct node * dst, size_t dst_idx, struct node * src, size_
         return ERR_INVALID;
     } 
 
-    if (src->outputs[src_idx].type != dst->inputs[dst_idx].type) {
+    if (src->outputs[src_idx].type != NULL &&
+        dst->inputs[dst_idx].type != NULL &&
+        src->outputs[src_idx].type != dst->inputs[dst_idx].type) {
         printf("connect error: type mismatch %p %p\n", src->outputs[src_idx].type, dst->inputs[dst_idx].type);
         printf("    '%s' -> '%s'\n", src->name, dst->name);
     }

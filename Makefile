@@ -11,6 +11,7 @@ OBJECTS = \
 		  function_gen.o \
 		  maths.o \
 		  mixer.o \
+		  sequencer.o \
 		  soundcard.o \
 		  test.o \
 		  typefns.o \

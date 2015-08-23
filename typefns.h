@@ -53,6 +53,10 @@ type_t * make_simple_type(size_t size);
 type_t * make_array_type(size_t length, const type_t * element_type);
 type_t * make_tuple_type(size_t length);
 
+static inline size_t tuple_length(object_t * object) {
+    return object->object_type->data_size / sizeof(object_t *);
+}
+
 //
 #define CAST_OBJECT(type, obj) (*(type *)(obj)->object_data)
 #define CAST_TUPLE(type, idx, obj) CAST_OBJECT(type, (&CAST_OBJECT(object_t *, (obj)))[(idx)])

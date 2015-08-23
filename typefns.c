@@ -45,7 +45,9 @@ void object_free(object_t * obj)
 }
 
 char * object_str(object_t * object) {
-    if (object->object_type->str) {
+    if (object == NULL) {
+        return strdup("null");
+    } else if (object->object_type->str) {
         return object->object_type->str(object);
     } else {
         char * rstr;
@@ -198,7 +200,8 @@ void tuple_free(object_t * obj)
 
 error_t tuple_copy(object_t * dst, const object_t * src)
 {
-    // TODO
+    // TODO type checking, deep copy
+    memcpy(dst, src, src->object_type->data_size + sizeof(object_t));
     return ERR_INVALID;
 }
 
@@ -210,7 +213,7 @@ type_t * make_tuple_type(size_t length)
     type->parameters = NULL;
     type->data_size = length * sizeof(object_t *);
     type->alloc = &simple_alloc;
-    type->copy = NULL; //TODO &tuple_copy;
+    type->copy = &tuple_copy;
     type->free = &tuple_free;
     
     return type;

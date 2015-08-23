@@ -25,7 +25,7 @@ node_t * accumulator_create();
 // Constant<type value> :: () -> (type value); Returns a constant value
 node_t * constant_create(object_t * constant_value);
 
-// Debug<> :: (double x) -> (); Prints output on pull; use with run_debug(...)
+// Debug<> :: (double x) -> (); Prints output on pull; use with debug_run(...)
 node_t * debug_create();
 
 // FunGen<> :: (double t) -> (double x); Sine fn generator. Computes x = sin(t)
@@ -38,16 +38,19 @@ node_t * math_create(enum math_op op);
 // UNTESTED TODO
 node_t * mixer_create(size_t n_channels);
 
+// Sequencer<> :: (double time, tuple<> stream) -> (tuple_els elem);
+node_t * sequencer_create();
+
 // Tee<type_t type, int n_inputs> :: (type val) -> (type val[, type copy, type copy, ...]); Pulls from input, duplicates
 node_t * tee_create(const type_t * type, size_t n_inputs);
 
 // Wye<type_t type, int n_inputs> :: (type val[, type discard, type discard, ...]) -> (type val); Pulls from all inputs, returning the first
 node_t * wye_create(const type_t * type, size_t n_inputs);
 
-// Wave
+// Wave :: (double frequency, long wave_type) -> (chunk samples); See enum wave_type
 node_t * wave_create();
 
-// Soundcard Sink
+// Soundcard Sink :: (chunk stream) -> ();
 node_t * soundcard_get(); // Singleton
 void soundcard_run();
 

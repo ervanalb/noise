@@ -54,7 +54,11 @@ static inline char * rsprintf(const char * fmt, ...)
 
     int len = vsnprintf(NULL, 0, fmt, vargs);
     char * buf = malloc(len + 1);
-    vsprintf(buf, fmt, vargs);
+
+    va_end(vargs);
+    va_start(vargs, fmt);
+
+    vsnprintf(buf, len, fmt, vargs);
 
     va_end(vargs);
     

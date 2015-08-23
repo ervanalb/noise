@@ -30,7 +30,7 @@ static error_t wave_pull(node_t * node, object_t ** output)
     e |= node_pull(node, 0, &inp_freq);
 
     object_t * inp_wave = NULL;
-    e |= node_pull(node, 0, &inp_wave);
+    e |= node_pull(node, 1, &inp_wave);
 
     //TODO - null behavior
     if (inp_freq == NULL || inp_wave == NULL) {

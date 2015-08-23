@@ -100,6 +100,8 @@ node_t * soundcard_get()
     
     // Setup
     soundcard_api_init();
+    //(void) soundcard_api_init;
+    //(void) soundcard_api_write;
 
     return sc_node;
 }
@@ -112,7 +114,7 @@ void soundcard_run()
     }
 
     //while (1) {
-    for (int i = 0; i < 1000; i++) {
+    for (int i = 0; i < 10000; i++) {
         object_t * chunk = NULL;
         node_pull(sc_node, 0, &chunk);
 

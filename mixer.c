@@ -38,6 +38,18 @@ node_t * mixer_create(size_t n_channels)
     node_t * node = node_alloc(n_channels * 2, 1, chunk_type);
     node->name = strdup("Mixer");
     node->destroy = &node_destroy_generic;
+
+    // Define inputs
+    for (size_t i = 0; i < n_channels; i++) {
+        node->inputs[2 * i + 0] = (struct node_input) {
+            .type = chunk_type,
+            .name = rsprintf("ch %lu", i),
+        };
+        node->inputs[2 * i + 1] = (struct node_input) {
+            .type = chunk_type,
+            .name = rsprintf("gain %lu", i),
+        };
+    }
     
     // Define output 
     node->outputs[0] = (struct endpoint) {

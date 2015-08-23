@@ -1,62 +1,61 @@
-#include "sequencer.h"
 #include <math.h>
 #include <stdlib.h>
+#include "error.h"
+#include "block.h"
+#include "blockdef.h"
+#include "globals.h"
+#include "util.h"
 
-error_t sequencer_state_alloc(block_info_pt block_info, state_pt* state)
+
+static error_t sequencer_pull(node_t * node, object_t ** output)
 {
-    sequencer_info_t* sequencer_info = (sequencer_info_t*)block_info;
-    array_info_t* array_info = sequencer_info->array_info;
+    error_t e = SUCCESS;
+    object_t * inp_time = NULL;
+    e |= node_pull(node, 0, &inp_time);
 
-    sequencer_state_t* sequencer_state;
+    object_t * inp_stream = NULL;
+    e |= node_pull(node, 1, &inp_stream);
 
-    sequencer_state = malloc(sizeof(sequencer_state_t));
-
-    *state = sequencer_state;
-
-    if(!sequencer_state) return raise_error(ERR_MALLOC,"");
-
-    sequencer_state->length = array_info->length;
-
-    return object_alloc(&array_info->element,&sequencer_state->object_state);
-}
-
-void sequencer_state_free(block_info_pt block_info, state_pt state)
-{
-    sequencer_state_t* sequencer_state = (sequencer_state_t*)state;
-    sequencer_info_t* sequencer_info = (sequencer_info_t*)block_info;
-    array_info_t* array_info = sequencer_info->array_info;
-
-    object_free(&array_info->element,&sequencer_state->object_state);
-
-    free(sequencer_state);
-}
-
-error_t sequencer_pull(node_t * node, output_pt * output)
-{
-    double* t;
-    output_array_t* array;
-    error_t e;
-
-    e=pull(node,0,(output_pt*)(&t));
-    if(e != SUCCESS) return e;
-    e=pull(node,1,(output_pt*)(&array));
-    if(e != SUCCESS) return e;
-
-    sequencer_state_t* sequencer_state = (sequencer_state_t*)(node->state);
-
-    output_pt element;
-    element = array[((int)(*t)) % sequencer_state->length];
-
-    if(element)
-    {
-        object_copy(&sequencer_state->object_state,element);
-        *output = sequencer_state->object_state.object;
-    }
-    else
-    {
-        *output = 0;
+    //TODO - null behavior
+    if (inp_time == NULL || inp_stream == NULL) {
+        *output = NULL;
+        return e;
     }
 
-    return SUCCESS;
+    int t = (int) CAST_OBJECT(double, inp_time);
+
+    size_t stream_idx = t % tuple_length(inp_stream);
+    object_t * result = (&CAST_OBJECT(object_t *, (inp_stream)))[stream_idx];
+
+    object_free(node->state);
+    *output = node->state = object_dup(result);
+
+    return e;
 }
 
+node_t * sequencer_create()
+{
+    node_t * node = node_alloc(2, 1, NULL);
+    node->name = strdup("Sequencer");
+    node->destroy = &node_destroy_generic;
+
+    // Define inputs
+    node->inputs[0] = (struct node_input) {
+        .type = double_type,
+        .name = strdup("time"),
+    };
+    node->inputs[1] = (struct node_input) {
+        .type = NULL, // Takes in a tuple type...
+        .name = strdup("tuple stream"),
+    };
+    
+    // Define outputs
+    node->outputs[0] = (struct endpoint) {
+        .node = node,
+        .pull = &sequencer_pull,
+        .type = NULL, // ...and returns elements from the tuple
+        .name = strdup("out"),
+    };
+
+    return node;
+}
