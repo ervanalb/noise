@@ -4,6 +4,13 @@
 #include "typefns.h"
 #include "globals.h"
 
+typedef struct {
+	int t;
+    int length;
+    double* sample;
+	double* chunk;
+} sample_state_t;
+
 error_t sample_state_alloc(block_info_pt block_info, state_pt* state)
 {
     sample_info_t* sample_info;

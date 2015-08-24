@@ -15,7 +15,8 @@ object_t * object_alloc(const type_t * type)
 
 error_t object_copy(object_t * dst, const object_t * src)
 {
-    //if (src == NULL || dst == NULL) return ERR_INVALID;
+    if (src == NULL) return SUCCESS;
+    if (dst == NULL) return ERR_INVALID;
     if (src->object_type != dst->object_type) return ERR_INVALID;
 
     return src->object_type->copy(dst, src);
@@ -238,6 +239,71 @@ type_t * make_tuple_type(size_t length)
     type->copy = &tuple_copy;
     type->free = &tuple_free;
     
+    return type;
+}
+
+// ---
+
+// XXX I'm not sure how I feel about this type
+// 
+// The idea is you can make a type which consists of a single object
+// as the first element, followed by standard 'plain-old-data'.
+//
+// The struct should not contain any pointers, otherwise they will 
+// *not* be copied correctly/freed. Try using a tuple or a custom
+// type instead.
+//
+
+struct object_and_pod_layout {
+    object_t * object;
+    char pod[0];
+};
+
+error_t object_and_pod_copy(object_t * dst, const object_t * src)
+{
+    error_t e = SUCCESS;
+
+    if (src->object_type != dst->object_type) return ERR_INVALID;
+
+    struct object_and_pod_layout * dst_layout = &CAST_OBJECT(struct object_and_pod_layout, dst);
+    struct object_and_pod_layout * src_layout = &CAST_OBJECT(struct object_and_pod_layout, src);
+
+    // Copy/dup the object
+    if (dst_layout->object)
+        e |= object_copy(dst_layout->object, src_layout->object);
+    else
+        dst_layout->object = object_dup(src_layout->object);
+    
+    // Copy plain-old-data section
+    size_t pod_size = src->object_type->data_size - sizeof(object_t *);
+    memcpy(&dst_layout->pod, &src_layout->pod, pod_size);
+
+    return e;
+}
+
+void object_and_pod_free(object_t * obj)
+{
+    struct object_and_pod_layout * layout = &CAST_OBJECT(struct object_and_pod_layout, obj);
+    object_free(layout->object);
+    free(obj);
+}
+
+type_t * make_object_and_pod_type(size_t total_size)
+{
+    // Total size must be at least able to hold an object
+    if (total_size < sizeof(object_t *)) return NULL;
+
+    type_t * type = calloc(1, sizeof(type_t));
+    if (type == NULL) return NULL;
+
+    *type = (type_t) {
+        .parameters = NULL,
+        .data_size = total_size,
+        .alloc = &simple_alloc,
+        .copy = &object_and_pod_copy,
+        .free = &object_and_pod_free,
+    };
+
     return type;
 }
 

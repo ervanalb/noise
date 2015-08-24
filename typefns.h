@@ -53,6 +53,13 @@ type_t * get_chunk_type();
 type_t * make_simple_type(size_t size);
 type_t * make_array_type(size_t length, const type_t * element_type);
 type_t * make_tuple_type(size_t length);
+type_t * make_object_and_pod_type(size_t total_size);
+
+//
+
+object_t * simple_alloc(const type_t * type);
+void simple_free(object_t * obj);
+error_t simple_copy(object_t * dst, const object_t * src);
 
 static inline size_t tuple_length(object_t * object) {
     return object->object_type->data_size / sizeof(object_t *);

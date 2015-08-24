@@ -53,7 +53,7 @@ int main(void) {
     node_connect(lpf, 1, lpf_alpha, 0);
 
     // Debug
-    node_t * debug = debug_create();
+    node_t * debug = debug_create("lpf");
     node_connect(debug, 0, lpf, 0);
 
     // Math

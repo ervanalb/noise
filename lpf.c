@@ -7,19 +7,11 @@
 #include "util.h"
 
 struct lpf_state {
-	int active;
     object_t * output;
+	int active;
 };
 
 static type_t * lpf_state_type = NULL;
-
-static void lpf_state_free(object_t * obj)
-{
-    struct lpf_state state = CAST_OBJECT(struct lpf_state, obj);
-    object_free(state.output);
-
-    free(obj);
-}
 
 static error_t lpf_pull(node_t * node, object_t ** output)
 {
@@ -58,14 +50,11 @@ static error_t lpf_pull(node_t * node, object_t ** output)
 node_t * lpf_create()
 {
     if (lpf_state_type == NULL) {
-        lpf_state_type = make_simple_type(sizeof(struct lpf_state));
+        lpf_state_type = make_object_and_pod_type(sizeof(struct lpf_state));
         if (lpf_state_type == NULL) return NULL;
-
-        lpf_state_type->copy = NULL;
-        lpf_state_type->free = &lpf_state_free;
     }
 
-    node_t * node = node_alloc(2, 1, double_type);
+    node_t * node = node_alloc(2, 1, lpf_state_type);
     node->name = strdup("LPF");
     node->destroy = &node_destroy_generic;
 
@@ -90,8 +79,8 @@ node_t * lpf_create()
     // Initialize state
     
     CAST_OBJECT(struct lpf_state, node->state) = (struct lpf_state) {
-        .active = 0,
         .output = object_alloc(double_type),
+        .active = 0,
     };
 
     return node;
