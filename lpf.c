@@ -1,57 +1,98 @@
-#include "lpf.h"
+#include <stdlib.h>
+#include <math.h>
+#include "globals.h"
 #include "block.h"
 #include "typefns.h"
-#include "globals.h"
-#include <stdlib.h>
+#include "blockdef.h"
+#include "util.h"
 
-error_t lpf_state_alloc(block_info_pt block_info, state_pt* state)
+struct lpf_state {
+	int active;
+    object_t * output;
+};
+
+static type_t * lpf_state_type = NULL;
+
+static void lpf_state_free(object_t * obj)
 {
-	lpf_state_t* lpf_state;
-	lpf_state=malloc(sizeof(lpf_state_t));
-	*state=lpf_state;
-	if(!lpf_state) return raise_error(ERR_MALLOC,"");
+    struct lpf_state state = CAST_OBJECT(struct lpf_state, obj);
+    object_free(state.output);
 
-	lpf_state->active = 0;
-
-	return SUCCESS;
+    free(obj);
 }
 
-void lpf_state_free(block_info_pt block_info, state_pt state)
+static error_t lpf_pull(node_t * node, object_t ** output)
 {
-	free(state);
-}
+    error_t e = SUCCESS;
+    struct lpf_state * state = &CAST_OBJECT(struct lpf_state, node->state);
 
-error_t lpf_pull(node_t * node, output_pt * output)
-{
-	error_t e;
+    object_t * inp_value = NULL;
+    e |= node_pull(node, 0, &inp_value);
 
-	double* cur;
-    double* alpha;
+    object_t * inp_alpha = NULL;
+    e |= node_pull(node, 1, &inp_alpha);
 
-	lpf_state_t* lpf_state = (lpf_state_t*)(node->state);
-
-	e=pull(node,0,(output_pt*)&cur);
-	if(e != SUCCESS) return e;
-	e=pull(node,1,(output_pt*)&alpha);
-	if(e != SUCCESS) return e;
-
-	if(!cur)
-	{
-		//lpf_state = 0;
-		lpf_state->active = 0;
-		*output = 0; // return NULL
+	if (inp_value == NULL) {
+		state->active = 0;
+		*output = NULL;
 		return SUCCESS;
 	}
-	if(!lpf_state->active)
-	{
-		lpf_state->active = 1;
-		lpf_state->prev=*cur;
-	}
 
-	lpf_state->prev = lpf_state->prev + *alpha * (*cur - lpf_state->prev);
+    double cur_value = CAST_OBJECT(double, inp_value);
+    double prev_value = CAST_OBJECT(double, state->output);
+    double tau = (inp_alpha == NULL) ? 1.0 : CAST_OBJECT(double, inp_alpha);
+    double alpha = exp(-tau);
 
-	*output = (void*)&(lpf_state->prev);
+	if (!state->active) {
+		state->active = 1;
+        CAST_OBJECT(double, state->output) = cur_value;
+	} else {
+        CAST_OBJECT(double, state->output) = prev_value + alpha * (cur_value - prev_value);
+    }
+    
+	*output = state->output;
 
-	return SUCCESS;
+    return e;
 }
 
+node_t * lpf_create()
+{
+    if (lpf_state_type == NULL) {
+        lpf_state_type = make_simple_type(sizeof(struct lpf_state));
+        if (lpf_state_type == NULL) return NULL;
+
+        lpf_state_type->copy = NULL;
+        lpf_state_type->free = &lpf_state_free;
+    }
+
+    node_t * node = node_alloc(2, 1, double_type);
+    node->name = strdup("LPF");
+    node->destroy = &node_destroy_generic;
+
+    // Define inputs
+    node->inputs[0] = (struct node_input) {
+        .type = double_type,
+        .name = strdup("in"),
+    };
+    node->inputs[1] = (struct node_input) {
+        .type = double_type,
+        .name = strdup("alpha"),
+    };
+    
+    // Define outputs
+    node->outputs[0] = (struct endpoint) {
+        .node = node,
+        .pull = &lpf_pull,
+        .type = double_type,
+        .name = strdup("out"),
+    };
+
+    // Initialize state
+    
+    CAST_OBJECT(struct lpf_state, node->state) = (struct lpf_state) {
+        .active = 0,
+        .output = object_alloc(double_type),
+    };
+
+    return node;
+}

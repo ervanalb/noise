@@ -116,7 +116,7 @@ void soundcard_run()
     }
 
 #ifndef FAKESOUND
-    int iters = 10000;
+    int iters = 2500;
 #else
     int iters = 10;
 #endif
@@ -128,7 +128,9 @@ void soundcard_run()
         if (chunk == NULL) return;
 
 #ifndef FAKESOUND
-        if (soundcard_api_write(&CAST_OBJECT(double, chunk))) return;
+        if (soundcard_api_write(&CAST_OBJECT(double, chunk))) {
+            printf("pa error\n");
+        }
 #endif
     }
 }

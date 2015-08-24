@@ -9,6 +9,7 @@ OBJECTS = \
 		  error.o \
 		  fittings.o \
 		  function_gen.o \
+		  lpf.o \
 		  maths.o \
 		  mixer.o \
 		  sequencer.o \
@@ -25,7 +26,8 @@ INC = -I
 LIB = -L/usr/local/lib
 
 # Assembler, compiler, and linker flags
-override CFLAGS += $(INC) -O0 -g -Wall -Wextra -Werror -Wno-unused-parameter -std=c99 #-DFAKESOUND
+#override CFLAGS += $(INC) -O0 -g -Wall -Wextra -Werror -Wno-unused-parameter -std=c99 -DFAKESOUND
+override CFLAGS += $(INC) -O3 -g -Wall -Wextra -Werror -Wno-unused-parameter -std=c99 
 override LFLAGS += $(LIB) $(CFLAGS)
 LIBS = -lm -lportaudio
 

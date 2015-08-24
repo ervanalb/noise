@@ -31,6 +31,9 @@ node_t * debug_create();
 // FunGen<> :: (double t) -> (double x); Sine fn generator. Computes x = sin(t)
 node_t * fungen_create();
 
+// LPF<> :: (double x, double alpha) -> (double x_lpf); Low pass `x` with time const `alpha` (in pulls)
+node_t * lpf_create();
+
 // Math<math_op> :: (double x[, double y]) -> (double result); Performs a basic math op on inputs (see enum math_op)
 node_t * math_create(enum math_op op);
 

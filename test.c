@@ -5,9 +5,9 @@
 #include "blockdef.h"
 
 // TODO: Come up with a way better way of specifying constants
-#define MAKE_CONSTANT(name, otype, ctype, value)   \
-    object_t * name ## _obj = object_alloc(otype); \
-    CAST_OBJECT(ctype, name ## _obj) = (value);    \
+#define MAKE_CONSTANT(name, otype, ctype, value)    \
+    object_t * name ## _obj = object_alloc(otype);  \
+    CAST_OBJECT(ctype, name ## _obj) = (value);     \
     node_t * name = constant_create(name ## _obj); 
 
 #define MAKE_DOUBLE_CONSTANT(name, value) MAKE_CONSTANT(name, double_type, double, value)
@@ -25,17 +25,7 @@ int main(void) {
     node_connect(time_wye, 1, time_tee, 0);
 
     // Melody
-    /*
-    object_t * melody_obj = object_alloc(make_tuple_type(4));
-
     // TODO: Come up with a better way of specifying tuples
-    CAST_OBJECT(double, (&CAST_OBJECT(object_t *, melody_obj))[0] = object_alloc(double_type)) = 64;
-    CAST_OBJECT(double, (&CAST_OBJECT(object_t *, melody_obj))[1] = object_alloc(double_type)) = 66;
-    //CAST_OBJECT(double, (&CAST_OBJECT(object_t *, melody_obj))[2] = object_alloc(double_type)) = 63;
-    CAST_OBJECT(double, (&CAST_OBJECT(object_t *, melody_obj))[3] = object_alloc(double_type)) = 65;
-    */
-
-    //XXX 
 #define None -1
     double unison[] = {None, None, None, 65, 75, None, 72, 67, 67, 68, None, 65, 70, 72, 70, 65, 65, None, None, 65, 75, None, 72, 67, 67, 68, 65, 72, 75, None, 72, 77};
     size_t unison_len = sizeof(unison) / sizeof(*unison);
@@ -43,8 +33,11 @@ int main(void) {
     object_t * melody_obj = object_alloc(make_tuple_type(unison_len));
 
     for (size_t i = 0; i < unison_len; i++) {
-        if (unison[i] != None)
-            CAST_OBJECT(double, (&CAST_OBJECT(object_t *, melody_obj))[i] = object_alloc(double_type)) = unison[i];
+        if (unison[i] == None) continue;
+
+        object_t * note = object_alloc(double_type);
+        CAST_OBJECT(double, note) = unison[i];
+        (&CAST_OBJECT(object_t *, melody_obj))[i] = note;
     }
 
     node_t * melody = constant_create(melody_obj);
@@ -54,13 +47,18 @@ int main(void) {
     node_connect(seq, 0, time_tee, 1);
     node_connect(seq, 1, melody, 0);
 
-    // Math
-    node_t * n2f = math_create(MATH_NOTE_TO_FREQ);
-    node_connect(n2f, 0, seq, 0);
+    node_t * lpf = lpf_create();
+    MAKE_CONSTANT(lpf_alpha, double_type, double, 2);
+    node_connect(lpf, 0, seq, 0);
+    node_connect(lpf, 1, lpf_alpha, 0);
 
     // Debug
     node_t * debug = debug_create();
-    node_connect(debug, 0, time_wye, 0);
+    node_connect(debug, 0, lpf, 0);
+
+    // Math
+    node_t * n2f = math_create(MATH_NOTE_TO_FREQ);
+    node_connect(n2f, 0, debug, 0);
 
     // Instrument
     MAKE_CONSTANT(wtype, long_type, long, WAVE_SAW);
@@ -78,7 +76,7 @@ int main(void) {
     // Soundcard 
     printf("Initing soundcard\n");
     node_t * soundcard = soundcard_get();
-    node_connect(soundcard, 0, debug, 0);
+    node_connect(soundcard, 0, time_wye, 0);
     printf("soundcard inited\n");
 
     debug_print_graph(soundcard);
