@@ -27,8 +27,7 @@ static error_t sequencer_pull(node_t * node, object_t ** output)
     size_t stream_idx = t % tuple_length(inp_stream);
     object_t * result = (&CAST_OBJECT(object_t *, (inp_stream)))[stream_idx];
 
-    object_free(node->state);
-    *output = node->state = object_dup(result);
+    *output = object_swap(&node->state, result);
 
     return e;
 }

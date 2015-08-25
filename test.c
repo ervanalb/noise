@@ -1,8 +1,11 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include "debug.h"
+#include <math.h>
 #include "block.h"
 #include "blockdef.h"
+#include "debug.h"
+#include "globals.h"
+#include "util.h"
 
 // TODO: Come up with a way better way of specifying constants
 #define MAKE_CONSTANT(name, otype, ctype, value)    \
@@ -12,13 +15,32 @@
 
 #define MAKE_DOUBLE_CONSTANT(name, value) MAKE_CONSTANT(name, double_type, double, value)
 
+
+node_t * make_drum(const double * sample, size_t sample_len, const long * hits, size_t hits_len, node_t * time_tee, size_t tinp)
+{
+    object_t * hits_obj = object_alloc(make_tuple_type(hits_len));
+    for (size_t i = 0; i < hits_len; i++) {
+        object_t * h = object_alloc(long_type);
+        CAST_OBJECT(long, h) = hits[i];
+        (&CAST_OBJECT(object_t *, hits_obj))[i] = h;
+    }
+    node_t * hits_node = constant_create(hits_obj);
+    node_t * hits_seq = sequencer_create();
+    node_connect(hits_seq, 0, time_tee, tinp);
+    node_connect(hits_seq, 1, hits_node, 0);
+    node_t * voice = sampler_create(sample, sample_len);
+    node_connect(voice, 0, hits_seq, 0);
+
+    return voice;
+}
+
 int main(void) {
     //type_t * chunk_type = get_chunk_type();
 
     // Timebase
     MAKE_DOUBLE_CONSTANT(delta_t, 0.01);
     node_t * timebase = accumulator_create();
-    node_t * time_tee = tee_create(2);
+    node_t * time_tee = tee_create(4);
     node_t * time_wye = wye_create(2);
     node_connect(timebase, 0, delta_t, 0);
     node_connect(time_tee, 0, timebase, 0);
@@ -53,12 +75,12 @@ int main(void) {
     node_connect(lpf, 1, lpf_alpha, 0);
 
     // Debug
-    node_t * debug = debug_create("lpf");
-    node_connect(debug, 0, lpf, 0);
+    node_t * debug_lpf = debug_create("lpf", 0);
+    node_connect(debug_lpf, 0, lpf, 0);
 
     // Math
     node_t * n2f = math_create(MATH_NOTE_TO_FREQ);
-    node_connect(n2f, 0, debug, 0);
+    node_connect(n2f, 0, debug_lpf, 0);
 
     // Instrument
     MAKE_CONSTANT(wtype, long_type, long, WAVE_SAW);
@@ -66,11 +88,41 @@ int main(void) {
     node_connect(wave, 0, n2f, 0);
     node_connect(wave, 1, wtype, 0);
 
+    long snare_hits[] = {0,0,1,1};
+    double snare_samples[50000];
+    double snare_tau = 0.0001;
+    
+    for (size_t i = 0; i < 50000; i++)
+        snare_samples[i] = ((rand() / (double) (RAND_MAX / 2)) - 1.0) * exp(- (double) i * snare_tau);
+
+    node_t * snare = make_drum(snare_samples, 50000, snare_hits, 4, time_tee, 2);
+    MAKE_DOUBLE_CONSTANT(snare_vol, 0.4);
+
+    node_t * debug_snare = debug_create("snare", 1);
+    node_connect(debug_snare, 0, snare, 0);
+
+    long kick_hits[] = {0,0,1,1};
+    double kick_samples[50000];
+    double kick_tau = 0.0001;
+    double kick_freq = 60;
+
+    for (size_t i = 0; i < 50000; i++)
+        kick_samples[i] = cos(2 * M_PI * i * kick_freq / global_frame_rate) * exp(- (double) i * kick_tau);
+
+    node_t * kick = make_drum(kick_samples, 50000, kick_hits, 4, time_tee, 3);
+    MAKE_DOUBLE_CONSTANT(kick_vol, 0.4);
+
     // Mixer
-    node_t * mixer = mixer_create(1);
-    MAKE_DOUBLE_CONSTANT(wave_vol, 0.5);
+    node_t * mixer = mixer_create(3);
+    MAKE_DOUBLE_CONSTANT(wave_vol, 0.05);
+
     node_connect(mixer, 0, wave, 0);
     node_connect(mixer, 1, wave_vol, 0);
+    node_connect(mixer, 2, debug_snare, 0);
+    node_connect(mixer, 3, snare_vol, 0);
+    node_connect(mixer, 4, kick, 0);
+    node_connect(mixer, 5, kick_vol, 0);
+
     node_connect(time_wye, 0, mixer, 0);
 
     // Soundcard 
@@ -82,7 +134,6 @@ int main(void) {
     debug_print_graph(soundcard);
     soundcard_run();
 
-    node_destroy(debug);
     node_destroy(delta_t);
     node_destroy(melody);
     node_destroy(mixer);

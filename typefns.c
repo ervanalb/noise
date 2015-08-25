@@ -123,6 +123,7 @@ type_t * make_simple_type(size_t size)
 
 // ---
 
+/*
 typedef struct
 {
     size_t length;
@@ -208,6 +209,7 @@ type_t * make_array_type(size_t length, const type_t * element_type)
     
     return type;
 }
+*/
 
 // --- 
 

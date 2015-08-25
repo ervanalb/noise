@@ -25,8 +25,8 @@ node_t * accumulator_create();
 // Constant<type value> :: () -> (type value); Returns a constant value
 node_t * constant_create(object_t * constant_value);
 
-// Debug<char name[]> :: (double x) -> (); Prints output on pull; or use with debug_run(...)
-node_t * debug_create(const char *);
+// Debug<char name[], bool on> :: (double x) -> (); Prints output on pull; or use with debug_run(...)
+node_t * debug_create(const char * name, char on);
 
 // FunGen<> :: (double t) -> (double x); Sine fn generator. Computes x = sin(t)
 node_t * fungen_create();
@@ -39,6 +39,9 @@ node_t * math_create(enum math_op op);
 
 // Mixer<n_channels> :: (chunk s, double vol[, chunk s2, double vol2, ...]) -> (chunk mixout); 
 node_t * mixer_create(size_t n_channels);
+
+// Sampler<double * samples, size_t len> :: (long play?) -> (chunk out);
+node_t * sampler_create(const double * samples, size_t length);
 
 // Sequencer<> :: (double time, tuple<> stream) -> (tuple_els elem);
 node_t * sequencer_create();

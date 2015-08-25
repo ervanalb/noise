@@ -12,6 +12,7 @@ OBJECTS = \
 		  lpf.o \
 		  maths.o \
 		  mixer.o \
+		  sample.o \
 		  sequencer.o \
 		  soundcard.o \
 		  test.o \

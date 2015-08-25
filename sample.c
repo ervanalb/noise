@@ -1,88 +1,83 @@
-#include "sample.h"
 #include <stdlib.h>
-#include <string.h>
-#include "typefns.h"
+#include "error.h"
+#include "block.h"
+#include "blockdef.h"
 #include "globals.h"
+#include "util.h"
+#include "math.h"
 
-typedef struct {
+struct state {
+    object_t * output;
 	int t;
     int length;
-    double* sample;
-	double* chunk;
-} sample_state_t;
+    const double * sample;
+};
 
-error_t sample_state_alloc(block_info_pt block_info, state_pt* state)
+static type_t * state_type;
+
+static error_t sampler_pull(node_t * node, object_t ** output)
 {
-    sample_info_t* sample_info;
-	sample_state_t* sample_state;
+    object_t * inp_play = NULL;
+    error_t e = node_pull(node, 0, &inp_play);
+	if (e != SUCCESS) return e;
 
-    sample_info = block_info;
+    struct state * state = &CAST_OBJECT(struct state, node->state);
 
-	sample_state = malloc(sizeof(sample_state_t));
-
-	*state = sample_state;
-
-	if(!sample_state) return raise_error(ERR_MALLOC,"");
-
-	sample_state->t = 0;
-    sample_state->length = sample_info->length;
-    sample_state->sample = malloc(sizeof(double)*sample_info->length);
-	if(!sample_state->sample) return raise_error(ERR_MALLOC,"");
-    memcpy(sample_state->sample, sample_info->sample, sizeof(double)*sample_info->length);
-
-	error_t e;
-
-	e = chunk_alloc(0,(output_pt*)(&sample_state->chunk));
-	if(e != SUCCESS) return e;
-
-	return SUCCESS;
-}
-
-void sample_state_free(block_info_pt block_info, state_pt state)
-{
-	chunk_free(0,((sample_state_t*)state)->chunk);
-	free(((sample_state_t*)state)->sample);
-	free(state);
-}
-
-error_t sample_pull(node_t * node, output_pt * output)
-{
-    int* play;
-	error_t e;
-
-	e=pull(node,0,(output_pt*)(&play));
-	if(e != SUCCESS) return e;
-
-	sample_state_t* state = (sample_state_t*)(node->state);
-
-	int i;
-
-    if(!play)
-    {
+    if (inp_play == NULL) {
         state->t = 0;
-        *output = 0;
+        *output = NULL;
         return SUCCESS;
     }
 
-    for(i=0;i<global_chunk_size;i++)
-    {
-        if(*play && state->t < state->length)
-        {
-            state->chunk[i]=state->sample[state->t++];
-        }
+    long play = CAST_OBJECT(long, inp_play);
+    double * chunk = &CAST_OBJECT(double, state->output);
+
+    for (size_t i = 0; i < global_chunk_size; i++) {
+        if (play && state->t < state->length)
+            chunk[i] = state->sample[state->t++];
         else
-        {
-            state->chunk[i] = 0;
-        }
+            chunk[i] = 0;
     }
 
-    if(!*play)
-    {
+    if (!play)
         state->t = 0;
-    }
 
-	*output = ((void *) (state->chunk));
-
-	return SUCCESS;
+    *output = state->output;
+    return SUCCESS;
 }
 
+node_t * sampler_create(const double * sample, size_t length)
+{
+    type_t * chunk_type = get_chunk_type();
+    if (state_type == NULL) {
+        state_type = make_object_and_pod_type(sizeof(struct state));
+        if (state_type == NULL) return NULL;
+    }
+
+    node_t * node = node_alloc(1, 1, state_type);
+    node->name = strdup("Sampler");
+    node->destroy = &node_destroy_generic;
+
+    // Define inputs
+    node->inputs[0] = (struct node_input) {
+        .type = long_type,
+        .name = strdup("play?"),
+    };
+
+    // Define outputs
+    node->outputs[0] = (struct endpoint) {
+        .node = node,
+        .type = chunk_type,
+        .name = strdup("out"),
+        .pull = &sampler_pull,
+    };
+
+    // Init state
+    struct state * state = &CAST_OBJECT(struct state, node->state);
+    state->output = object_alloc(chunk_type);
+    state->t = 0;
+    state->length = length;
+    state->sample = sample;
+    
+    return node;
+}

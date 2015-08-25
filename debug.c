@@ -10,6 +10,7 @@
 
 struct state {
     object_t * output;
+    char on;
 	char name[32];
 };
 
@@ -25,7 +26,7 @@ static error_t debug_pull(node_t * node, object_t ** output)
 
     *output = object_swap(&state->output, input0);
 
-    if (*output != NULL) {
+    if (*output != NULL && state->on) {
         char * ostr = object_str(*output);
         printf("%s: %s\n", state->name, ostr);
         free(ostr);
@@ -34,7 +35,7 @@ static error_t debug_pull(node_t * node, object_t ** output)
     return e;
 }
 
-node_t * debug_create(const char * name)
+node_t * debug_create(const char * name, char on)
 {
     if (state_type == NULL) {
         state_type = make_object_and_pod_type(sizeof(struct state));
@@ -61,6 +62,7 @@ node_t * debug_create(const char * name)
 
     // Init state
     struct state * state = &CAST_OBJECT(struct state, node->state);
+    state->on = on;
     strncpy(state->name, name, sizeof(state->name));
     
     return node;
