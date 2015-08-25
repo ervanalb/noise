@@ -7,3 +7,6 @@
 [submodule "wireit"]
 	path = wireit
 	url = https://github.com/neyric/wireit
+[submodule "mpc"]
+	path = mpc
+	url = https://github.com/orangeduck/mpc
