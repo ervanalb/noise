@@ -5,7 +5,9 @@
 :tee(4) = time
     .main > .aux1
 :wye(2) = timewye
-    .out > .soundcard
+    .out > .in
+:soundcard
+
 :mixer(3) = mixer
     .mixout > timewye.main
 
