@@ -112,13 +112,118 @@ type_t * make_simple_type(size_t size)
     type_t * type = calloc(1, sizeof(type_t));
     if (type == NULL) return NULL;
 
-    type->parameters = NULL;
     type->data_size = size;
     type->alloc = &simple_alloc;
     type->copy = &simple_copy;
     type->free = &simple_free;
+    //type->parameters = NULL;
     
     return type;
+}
+
+// --
+
+#define VECTOR_INITIAL_CAPACITY 32
+#define VECTOR_FACTOR 2
+
+struct vector_data {
+    void * contents;
+    size_t size;
+    size_t capacity;
+};
+
+struct vector_parameters {
+    size_t element_size;
+};
+
+object_t * vector_alloc(const type_t * type)
+{
+    struct vector_parameters * params = (struct vector_parameters *) &type->parameters;
+
+    object_t * obj = calloc(1, sizeof(object_t) + type->data_size);
+    if (obj == NULL) return NULL;
+
+    obj->object_type = type;
+
+    struct vector_data * vdata = &CAST_OBJECT(struct vector_data, obj);
+    vdata->contents = calloc(VECTOR_INITIAL_CAPACITY, params->element_size);
+    if (vdata->contents == NULL) return (free(obj), NULL);
+
+    vdata->size = 0;
+    vdata->capacity = VECTOR_INITIAL_CAPACITY;
+
+    return obj;
+}
+
+void vector_free(object_t * obj)
+{
+    free(CAST_OBJECT(void *, obj));
+    free(obj);
+}
+
+error_t vector_copy(object_t * dst, const object_t * src)
+{
+    if (src->object_type != dst->object_type) return ERR_INVALID;
+
+    struct vector_parameters * params = (struct vector_parameters *) src->object_type->parameters;
+    size_t src_size = vector_get_size(src);
+
+    error_t e = vector_set_size(dst, src_size);
+    if (e) return e;
+
+    memcpy(CAST_OBJECT(void *, dst), CAST_OBJECT(void *, src), src_size * params->element_size);
+    return SUCCESS;
+}
+
+type_t * make_vector_type(size_t element_size)
+{
+    if (element_size == 0) return NULL;
+
+    struct vector_parameters params = {
+        .element_size = element_size,
+    };
+
+    type_t * type = calloc(1, sizeof(type_t) + sizeof(params));
+    if (type == NULL) return NULL;
+
+    type->data_size = sizeof(struct vector_data);
+    type->alloc = &vector_alloc;
+    type->copy = &vector_copy;
+    type->free = &vector_free;
+    memcpy(&type->parameters, &params, sizeof(params));
+
+    return type;
+}
+
+//
+
+error_t vector_set_size(object_t * obj, size_t new_size)
+{
+    struct vector_data * vdata = &CAST_OBJECT(struct vector_data, obj);
+
+    if (new_size > vdata->capacity) {
+        struct vector_parameters * params = (struct vector_parameters *) &object_type(obj)->parameters;
+        size_t el_size = params->element_size;
+
+        size_t new_capacity = vdata->capacity;
+        while (new_capacity && new_capacity < new_size) new_capacity *= VECTOR_FACTOR;
+
+        if (!new_capacity) return ERR_INVALID;
+
+        void * new_ptr = realloc(vdata->contents, new_capacity * el_size);
+        if (new_ptr == NULL) return ERR_MALLOC;
+
+        vdata->contents = new_ptr;
+        vdata->capacity = new_capacity;
+    }
+
+    vdata->size = new_size;
+    return SUCCESS;
+}
+
+size_t vector_get_size(const object_t * obj)
+{
+    return CAST_OBJECT(struct vector_data, obj).size;
 }
 
 // ---
@@ -235,11 +340,11 @@ type_t * make_tuple_type(size_t length)
     type_t * type = calloc(1, sizeof(type_t));
     if (type == NULL) return NULL;
 
-    type->parameters = NULL;
     type->data_size = length * sizeof(object_t *);
     type->alloc = &simple_alloc;
     type->copy = &tuple_copy;
     type->free = &tuple_free;
+    //type->parameters = NULL;
     
     return type;
 }
@@ -299,7 +404,6 @@ type_t * make_object_and_pod_type(size_t total_size)
     if (type == NULL) return NULL;
 
     *type = (type_t) {
-        .parameters = NULL,
         .data_size = total_size,
         .alloc = &simple_alloc,
         .copy = &object_and_pod_copy,
@@ -319,7 +423,6 @@ static char * chunk_str (object_t * obj)
 }
 
 static type_t chunk_type = {
-    .parameters = NULL,
     .alloc = &simple_alloc,
     .copy = &simple_copy,
     .free = &simple_free,
@@ -340,7 +443,6 @@ static char * double_str (object_t * obj)
 }
 
 static type_t _double_type = {
-    .parameters = NULL,
     .data_size = sizeof(double),
     .alloc = &simple_alloc,
     .copy = &simple_copy,
@@ -358,7 +460,6 @@ static char * long_str (object_t * obj)
 }
 
 static type_t _long_type = {
-    .parameters = NULL,
     .data_size = sizeof(long),
     .alloc = &simple_alloc,
     .copy = &simple_copy,
@@ -367,3 +468,39 @@ static type_t _long_type = {
 };
 
 type_t * long_type = &_long_type;
+
+// -
+
+// Untested: string_type
+void string_free(object_t * obj)
+{
+    free(CAST_OBJECT(char *, obj));
+    free(obj);
+}
+
+error_t string_copy(object_t * dst, const object_t * src)
+{
+    if (src->object_type != dst->object_type) return ERR_INVALID;
+    char ** dst_str = &CAST_OBJECT(char *, dst);
+    free(*dst_str);
+    *dst_str = strdup(CAST_OBJECT(char *, src));
+
+    if (*dst_str == NULL) return ERR_MALLOC;
+
+    return SUCCESS;
+}
+
+char * string_str(object_t * obj)
+{
+    return strdup(CAST_OBJECT(char *, obj));
+}
+
+static type_t _string_type = {
+    .data_size = sizeof(char *),
+    .alloc = &simple_alloc,
+    .copy = &string_copy,
+    .free = &string_free,
+    .str = &string_str
+};
+
+type_t * string_type = &_string_type;

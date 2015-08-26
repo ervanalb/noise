@@ -8,8 +8,6 @@
 struct type;
 struct object;
 
-typedef void * type_parameters_pt;
-
 typedef error_t (*type_copy_fn_pt)(struct object * dst, const struct object * src);
 typedef struct object * (*type_alloc_fn_pt)(const struct type * type);
 typedef void (*type_free_fn_pt)(struct object * obj);
@@ -19,12 +17,12 @@ typedef char * (*type_str_fn_pt)(struct object * obj);
 
 typedef struct type
 {
-    type_parameters_pt parameters;
     size_t data_size;
     type_alloc_fn_pt alloc;
     type_copy_fn_pt copy;
     type_free_fn_pt free;
     type_str_fn_pt str;
+    char parameters[0];
 } type_t;
 
 typedef struct object
@@ -53,6 +51,7 @@ type_t * get_chunk_type();
 type_t * make_simple_type(size_t size);
 type_t * make_tuple_type(size_t length);
 type_t * make_object_and_pod_type(size_t total_size);
+type_t * make_vector_type(size_t element_size);
 // TODO Array type is untested, needs some more thought...
 //type_t * make_array_type(size_t length, const type_t * element_type);
 
@@ -66,12 +65,17 @@ static inline size_t tuple_length(object_t * object) {
     return object->object_type->data_size / sizeof(object_t *);
 }
 
+error_t vector_set_size(object_t * obj, size_t new_size);
+size_t vector_get_size(const object_t * obj);
+
 //
 #define CAST_OBJECT(type, obj) (*(type *)(obj)->object_data)
 #define CAST_TUPLE(type, idx, obj) CAST_OBJECT(type, (&CAST_OBJECT(object_t *, (obj)))[(idx)])
 
 extern type_t * double_type;
 extern type_t * long_type;
+extern type_t * string_type;
+
 
 // nb: there is no way to 'destroy' or 'free' types once created.
 
