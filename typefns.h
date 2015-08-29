@@ -68,8 +68,8 @@ static inline size_t tuple_length(object_t * object) {
 error_t vector_set_size(object_t * obj, size_t new_size);
 size_t vector_get_size(const object_t * obj);
 
-//
-#define CAST_OBJECT(type, obj) (*(type *)(obj)->object_data)
+// 
+#define CAST_OBJECT(type, obj) (*((type *)((union { char * c; type* x;})(char *)((obj)->object_data)).x))
 #define CAST_TUPLE(type, idx, obj) CAST_OBJECT(type, (&CAST_OBJECT(object_t *, (obj)))[(idx)])
 
 extern type_t * double_type;

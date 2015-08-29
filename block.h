@@ -13,7 +13,6 @@ typedef void* block_info_pt;
 struct node;
 
 typedef error_t (*pull_fn_pt)(struct node * node, object_t ** output);
-typedef struct node_t * (*block_create_fn_pt)(block_info_pt block_info);
 typedef void (*block_destroy_fn_pt)(struct node  * node);
 
 // Block instances are nodes
@@ -21,6 +20,7 @@ typedef void (*block_destroy_fn_pt)(struct node  * node);
 struct endpoint
 {
     struct node * node;
+
     pull_fn_pt pull;
     const type_t * type;
     char * name;

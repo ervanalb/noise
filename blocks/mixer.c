@@ -7,7 +7,7 @@
 
 static error_t mixer_pull(node_t * node, object_t ** output)
 {
-    error_t e;
+    error_t e = SUCCESS;
     
     for (size_t j = 0; j < global_chunk_size; j++) {
         (&CAST_OBJECT(double, node->state))[j] = 0.;

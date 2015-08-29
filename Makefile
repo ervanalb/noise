@@ -2,29 +2,28 @@
 #C_SRC  = $(wildcard *.c)
 #OBJECTS := $(patsubst %.c,%.o,$(C_SRC))
 OBJECTS = \
-		  accumulator.o \
 		  block.o \
-		  constant.o \
-		  debug.o \
+		  blocks/accumulator.o \
+		  blocks/constant.o \
+		  blocks/debug.o \
+		  blocks/fittings.o \
+		  blocks/function_gen.o \
+		  blocks/lpf.o \
+		  blocks/maths.o \
+		  blocks/mixer.o \
+		  blocks/sample.o \
+		  blocks/sequencer.o \
+		  blocks/wave.o \
 		  error.o \
-		  fittings.o \
-		  function_gen.o \
-		  lpf.o \
-		  maths.o \
-		  mixer.o \
-		  mpc/mpc.o \
-		  sample.o \
-		  sequencer.o \
 		  soundcard.o \
 		  test.o \
 		  typefns.o \
-		  wave.o
 
 TARGET = noise
 
 CC = gcc
 
-INC = -I
+INC = -I.
 LIB = -L/usr/local/lib
 
 # Assembler, compiler, and linker flags
@@ -37,7 +36,7 @@ LIBS = -lm -lportaudio
 .PHONY: clean
 all: $(TARGET)
 clean:
-	-rm -f *.o *.d $(OUTPUT)
+	-rm -f $(OBJECTS) $(OUTPUT)
 
 $(TARGET): $(OBJECTS)
 	$(CC) $(LFLAGS) -o $@ $^ $(LIBS)

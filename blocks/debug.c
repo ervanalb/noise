@@ -70,13 +70,12 @@ node_t * debug_create(const char * name, char on)
 
 void debug_run(node_t * debug_block) 
 {
-    char inp;
     do {
         object_t * obj;
 
         node_pull(debug_block, 0, &obj);
         printf(" > %f\n", CAST_OBJECT(double, obj));
-    } while(scanf("%c", &inp), inp != 'q');
+    } while(getc(stdin) != 'q');
 }
 
 void debug_run_n(node_t * debug_block, int count)
