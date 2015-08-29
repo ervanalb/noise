@@ -1,14 +1,13 @@
-#include <stdio.h>
-#include <stdarg.h>
 #include "error.h"
+#include <string.h>
 
-error_info_t global_error;
+int noise_errno(void) {
+    return errno;    
+}
 
-error_t raise_error(error_t type, const char * message, ...){
-	va_list argptr;
-	global_error.type = type;
-	va_start(argptr, message);
-	vsnprintf(global_error.message, sizeof(global_error.message)/sizeof(*(global_error.message)), message, argptr);
-	va_end(argptr);
-	return type;
+const char * noise_strerror(int errnum) {
+    switch(errnum) {
+        default: 
+            return strerror(errnum);
+    }
 }

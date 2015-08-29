@@ -1,101 +1,95 @@
 #include <string.h>
 #include <stdlib.h>
+
 #include "block.h"
-#include "typefns.h"
+#include "error.h"
+#include "ntypes.h"
 #include "util.h"
 
-node_t * node_alloc(size_t n_inputs, size_t n_outputs, const type_t * state_type)
-{
-    node_t * node = calloc(1, sizeof(node_t) + n_outputs * sizeof(struct endpoint));
-    if (node == NULL) return NULL;
+int node_alloc_connections(node_t * node, size_t n_inputs, size_t n_outputs) {
+    assert(node);
 
     // Set up inputs array
-    node->n_inputs = n_inputs;
-    node->inputs = calloc(n_inputs, sizeof(struct node_input));
-    if (node->inputs == NULL) goto fail;
+    node->node_n_inputs = n_inputs;
+    node->node_inputs = calloc(n_inputs, sizeof(*node->node_inputs));
+    if (node->node_inputs == NULL) goto fail;
 
     // Set up outputs array
-    node->n_outputs = n_outputs;
+    node->node_n_outputs = n_outputs;
+    node->node_outputs = calloc(n_outputs, sizeof(*node->node_outputs));
+    if (node->node_outputs == NULL) goto fail;
 
-    // Allocate state
-    if (state_type != NULL) {
-        node->state = object_alloc(state_type);
-        if (node->state == NULL) goto fail;
-    }
-
-    return node;
-
+    return 0;
 fail:
-    object_free(node->state);
-    free(node->inputs);
-    free(node);
-    return NULL;
+    free(node->node_inputs);
+    free(node->node_outputs);
+    return (errno = ENOMEM, -1);
 }
 
-void node_destroy_generic(node_t * node)
-{
-    for (size_t i = 0; i < node->n_inputs; i++) {
-        free(node->inputs[i].name); 
+void node_free_connections(node_t * node) {
+    for (size_t i = 0; i < node->node_n_inputs; i++) {
+        free(node->node_inputs[i].inport_name);
     }
 
-    for (size_t i = 0; i < node->n_outputs; i++) {
-        free(node->outputs[i].name); 
+    for (size_t i = 0; i < node->node_n_outputs; i++) {
+        free(node->node_outputs[i].port_name); 
     }
 
-    object_free(node->state);
-
-    free(node->inputs);
-    free(node->name);
-    free(node);
+    free(node->node_inputs);
+    free(node->node_name);
 }
 
-node_t * node_dup(node_t * src)
-{
-    if (src == NULL) return NULL;
+void node_term_generic(node_t * node) {
+    node_free_connections(node);
+    free(node->node_state);
+}
 
-    node_t * dst = node_alloc(src->n_inputs, src->n_outputs, object_type(src->state));
-    if (dst == NULL) return NULL;
+void node_term_generic_objstate(node_t * node) {
+    node_free_connections(node);
+    object_free(node->node_state);
+}
 
-    dst->name = src->name;
-    dst->destroy = src->destroy;
+// Return a copy of the node, *and* any input connections
+// If flags.can_copy is set, node->node_state must be NULL or an object_t
+node_t * node_dup(const node_t * src) {
+    if (src == NULL || !src->node_flags.flag_can_copy) return (errno = EINVAL, NULL);
+
+    node_t * dst = calloc(1, sizeof(*dst));
+    if (dst == NULL) return (errno = ENOMEM, NULL);
+
+    int rc = node_alloc_connections(dst, src->node_n_inputs, src->node_n_outputs);
+    if (rc != 0) goto fail;
+
+    dst->node_name = src->node_name;
+    dst->node_term = src->node_term;
 
     // Copy inputs & outputs
-    memcpy(dst->inputs, src->inputs, sizeof(struct node_input) * src->n_inputs);
-    memcpy(dst->outputs, src->outputs, sizeof(struct endpoint) * src->n_outputs);
+    memcpy(dst->node_inputs, src->node_inputs, sizeof(*src->node_inputs) * src->node_n_inputs);
+    memcpy(dst->node_outputs, src->node_outputs, sizeof(*src->node_outputs) * src->node_n_outputs);
 
     // Copy state
-    if (object_copy(dst->state, src->state) != SUCCESS) {
-        dst->destroy(dst); 
-        return NULL;
+    if (src->node_state != NULL) {
+        dst->node_state = object_dup(src->node_state);
+        if (dst->node_state == NULL) goto fail;
     }
 
     return dst;
+
+fail:
+    free(dst->node_inputs);
+    free(dst->node_outputs);
+    object_free(dst->node_state);
+    free(dst);
+    return NULL;
 }
 
 // 
 
-error_t node_connect(struct node * dst, size_t dst_idx, struct node * src, size_t src_idx)
-{
-    if (src_idx >= src->n_outputs) {
-        printf("connect error: source index too large (%lu >= %lu)\n", src_idx, src->n_outputs);
-        return ERR_INVALID;
-    } 
+int port_connect(const struct port * output, struct inport * input) {
+    if (!type_compatible(output->port_type, input->inport_type))
+        return (errno = EINVAL, -1);
 
-    if (dst_idx >= dst->n_inputs) {
-        printf("connect error: dest index too large (%lu >= %lu)\n", dst_idx, dst->n_inputs);
-        return ERR_INVALID;
-    } 
-
-    if (src->outputs[src_idx].type != NULL &&
-        dst->inputs[dst_idx].type != NULL &&
-        src->outputs[src_idx].type != dst->inputs[dst_idx].type) {
-        printf("connect error: type mismatch %p %p\n", src->outputs[src_idx].type, dst->inputs[dst_idx].type);
-        printf("    '%s' -> '%s'\n", src->name, dst->name);
-    }
-
-    dst->inputs[dst_idx].connected_input = &src->outputs[src_idx];
-
-    //printf("connect success\n");
-    return SUCCESS;
+    input->inport_connection = output;
+    return 0;
 }
 

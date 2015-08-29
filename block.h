@@ -1,81 +1,75 @@
 #ifndef __BLOCK_H
 #define __BLOCK_H
 
-#include "error.h"
-#include "typefns.h"
 #include <stddef.h>
 
-// Stuff relating to blocks
-typedef void* state_pt;
-typedef void* output_pt;
-typedef void* block_info_pt;
+#include "error.h"
+#include "ntypes.h"
 
 struct node;
+struct port;
 
-typedef error_t (*pull_fn_pt)(struct node * node, object_t ** output);
-typedef void (*block_destroy_fn_pt)(struct node  * node);
+typedef int (*port_pull_fn_pt)(struct port * port);
+typedef void (*node_term_fn_pt)(struct node  * node);
 
 // Block instances are nodes
 
-struct endpoint
-{
-    struct node * node;
+struct port {
+    struct node * port_node;
+    port_pull_fn_pt port_pull;
+    object_t * port_value; 
 
-    pull_fn_pt pull;
-    const type_t * type;
-    char * name;
+    const struct type * port_type;
+    char * port_name;
 };
 
-struct node_input
-{
-    const type_t * type;
-    char * name;
-    struct endpoint * connected_input;
+struct inport {
+    const struct type * inport_type;
+    char * inport_name;
+    const struct port * inport_connection;
 };
 
-typedef struct node
-{
-    char * name;
-    block_destroy_fn_pt destroy;
+typedef struct node {
+    char * node_name;
+    node_term_fn_pt node_term;
+    struct {
+        int flag_can_copy:1;
+    } node_flags;
 
-    object_t * state;
+    void * node_state;
 
-    size_t n_inputs;
-    struct node_input * inputs;
+    size_t node_n_inputs;
+    struct inport * node_inputs;
 
-    size_t n_outputs;
-    struct endpoint outputs[];
+    size_t node_n_outputs;
+    struct port * node_outputs;
 } node_t;
 
-void node_destroy_generic(node_t * node);
-node_t * node_alloc(size_t n_inputs, size_t n_outputs, const type_t * state_type);
-node_t * node_dup(node_t * src); // XXX: Maybe we shouldn't use this? 
+int node_alloc_connections(node_t * node, size_t n_inputs, size_t n_outputs);
+node_t * node_dup(const node_t * src);
 
-static inline void node_destroy(node_t * node) 
-{
-    node->destroy(node);
+void node_term_generic(node_t * node);
+void node_term_generic_objstate(node_t * node);
+void node_free_connections(node_t * node);
+
+static inline void node_term(node_t * node) {
+    if (node->node_term) node->node_term(node);
 }
 
 // Connect blocks & pull
+int port_connect(const struct port * output, struct inport * input);
 
-//#define pull(N,I,O) ( ((N)->input_pull[(I)]) ? ((N)->input_pull[(I)]((N)->input_node[(I)],(O))) : ((*(O)=0), 0) )
+static inline object_t * port_pull(struct port * port) {
+    if (port == NULL)
+        return (errno = EINVAL, NULL);
 
-#include <stdio.h>
+    assert(port->port_pull);
+    int rc = port->port_pull(port);
 
-static inline error_t node_pull(struct node * node, size_t index, object_t ** output)
-{
-    if (index >= node->n_inputs) 
-        return ERR_INVALID;
+    if (rc != 0)
+        return NULL;
 
-    if (node->inputs[index].connected_input == NULL) {
-        *output = NULL;
-        return SUCCESS;
-    } else {
-        struct endpoint * inp = node->inputs[index].connected_input;
-        //printf("pull: %s\n", inp->name);
-        return inp->pull(inp->node, output);
-    }
+    return port->port_value;
 }
 
-error_t node_connect(struct node * dst, size_t dst_idx, struct node * src, size_t src_idx);
 #endif

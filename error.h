@@ -1,15 +1,13 @@
-#ifndef __ERROR_H
-#define __ERROR_H
+#ifndef __ERROR_H__
+#define __ERROR_H__
 
-typedef enum error_t {SUCCESS = 0, ERR_MALLOC = 1, ERR_INVALID = 2} error_t;
+#include <errno.h>
+#include <assert.h>
 
-typedef struct error_info_t {
-    error_t type;
-    char message[1024];
-} error_info_t; 
+// Random number to prevent collisions
+#define NOISE_ERRNOBASE 829410
 
-error_t raise_error(error_t type, const char * message, ...);
-
-extern error_info_t global_error;
+int noise_errno(void);
+const char * noise_strerror(int errnum);
 
 #endif
