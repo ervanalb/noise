@@ -43,9 +43,8 @@ static inline const struct type * object_type(const object_t * object) {
 
 //
 
-const struct type * get_chunk_type();
 struct type * make_simple_type(size_t size);
-struct type * make_tuple_type(size_t length);
+//struct type * make_tuple_type(size_t length);
 struct type * make_vector_type(size_t element_size);
 // TODO Array type is untested, needs some more thought...
 //struct type * make_array_type(size_t length, const struct type * element_type);
@@ -65,9 +64,11 @@ object_t * simple_alloc(const struct type * type);
 void simple_free(object_t * obj);
 object_t * simple_copy(object_t * dst, const object_t * src);
 
+/*
 static inline size_t tuple_length(const object_t * object) {
     return object->object_type->type_data_size / sizeof(object_t *);
 }
+*/
 
 size_t vector_set_size(object_t * obj, size_t new_size);
 size_t vector_get_size(const object_t * obj);
@@ -79,6 +80,9 @@ size_t vector_get_size(const object_t * obj);
 extern const struct type * double_type;
 extern const struct type * long_type;
 extern const struct type * string_type;
+const struct type * get_chunk_type();
+const struct type * get_sample_type();
+const struct type * get_object_vector_type();
 
 // nb: there is no way to 'destroy' or 'free' types once created.
 

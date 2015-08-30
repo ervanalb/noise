@@ -1,87 +1,79 @@
-#include <stdlib.h>
 #include <math.h>
-#include "globals.h"
+#include <stdlib.h>
+
 #include "block.h"
-#include "typefns.h"
 #include "blockdef.h"
+#include "noise.h"
 #include "util.h"
 
-struct lpf_state {
-    object_t * output;
+struct state {
 	int active;
 };
 
-static type_t * lpf_state_type = NULL;
+static enum pull_rc lpf_pull(struct port * port) {
+    node_t * node = port->port_node;
 
-static error_t lpf_pull(node_t * node, object_t ** output)
-{
-    error_t e = SUCCESS;
-    struct lpf_state * state = &CAST_OBJECT(struct lpf_state, node->state);
+    object_t * inp_value = NODE_PULL(node, 0);
+    object_t * inp_alpha = NODE_PULL(node, 1);
 
-    object_t * inp_value = NULL;
-    e |= node_pull(node, 0, &inp_value);
-
-    object_t * inp_alpha = NULL;
-    e |= node_pull(node, 1, &inp_alpha);
+    struct state * state = (struct state *) node->node_state;
 
 	if (inp_value == NULL) {
 		state->active = 0;
-		*output = NULL;
-		return SUCCESS;
+        return PULL_RC_NULL;
 	}
 
     double cur_value = CAST_OBJECT(double, inp_value);
-    double prev_value = CAST_OBJECT(double, state->output);
+    double prev_value = CAST_OBJECT(double, port->port_value);
     double tau = (inp_alpha == NULL) ? 1.0 : CAST_OBJECT(double, inp_alpha);
     double alpha = exp(-tau);
 
 	if (!state->active) {
 		state->active = 1;
-        CAST_OBJECT(double, state->output) = cur_value;
+        CAST_OBJECT(double, port->port_value) = cur_value;
 	} else {
-        CAST_OBJECT(double, state->output) = prev_value + alpha * (cur_value - prev_value);
+        CAST_OBJECT(double, port->port_value) = prev_value + alpha * (cur_value - prev_value);
     }
-    
-	*output = state->output;
 
-    return e;
+    return PULL_RC_OBJECT;
 }
 
-node_t * lpf_create()
-{
-    if (lpf_state_type == NULL) {
-        lpf_state_type = make_object_and_pod_type(sizeof(struct lpf_state));
-        if (lpf_state_type == NULL) return NULL;
-    }
+int lpf_init(node_t * node) {
+    int rc = node_alloc_connections(node, 2, 1);
+    if (rc != 0) return rc;
 
-    node_t * node = node_alloc(2, 1, lpf_state_type);
-    node->name = strdup("LPF");
-    node->destroy = &node_destroy_generic;
+    node->node_term = &node_term_generic;
+    node->node_name = strdup("LPF");
 
     // Define inputs
-    node->inputs[0] = (struct node_input) {
-        .type = double_type,
-        .name = strdup("in"),
+    node->node_inputs[0] = (struct inport) {
+        .inport_type = double_type,
+        .inport_name = strdup("in"),
     };
-    node->inputs[1] = (struct node_input) {
-        .type = double_type,
-        .name = strdup("alpha"),
+    node->node_inputs[1] = (struct inport) {
+        .inport_type = double_type,
+        .inport_name = strdup("alpha"),
     };
     
     // Define outputs
-    node->outputs[0] = (struct endpoint) {
-        .node = node,
-        .pull = &lpf_pull,
-        .type = double_type,
-        .name = strdup("out"),
+    node->node_outputs[0] = (struct port) {
+        .port_node = node,
+        .port_name = strdup("out"),
+        .port_pull = &lpf_pull,
+        .port_type = double_type,
+        .port_value = object_alloc(double_type),
     };
+
+    if (node->node_outputs[0].port_value == NULL)
+        return (node_term(node), -1);
 
     // Initialize state
+    node->node_state = calloc(1, sizeof(struct state));
+    struct state * state = (struct state *) node->node_state;
+    if (state == NULL) 
+        return (node_term(node), -1);
     
-    CAST_OBJECT(struct lpf_state, node->state) = (struct lpf_state) {
-        .output = object_alloc(double_type),
-        .active = 0,
-    };
+    state->active = 0;
 
-    return node;
+    return 0;
 }

@@ -9,7 +9,13 @@
 struct node;
 struct port;
 
-typedef int (*port_pull_fn_pt)(struct port * port);
+enum pull_rc {
+    PULL_RC_ERROR  = -1,
+    PULL_RC_NULL   = 0,
+    PULL_RC_OBJECT = 1,
+};
+
+typedef enum pull_rc (*port_pull_fn_pt)(struct port * port);
 typedef void (*node_term_fn_pt)(struct node  * node);
 
 // Block instances are nodes
@@ -26,7 +32,7 @@ struct port {
 struct inport {
     const struct type * inport_type;
     char * inport_name;
-    const struct port * inport_connection;
+    struct port * inport_connection;
 };
 
 typedef struct node {
@@ -57,19 +63,34 @@ static inline void node_term(node_t * node) {
 }
 
 // Connect blocks & pull
-int port_connect(const struct port * output, struct inport * input);
+int port_connect(struct port * output, struct inport * input);
+int node_connect(node_t * output, size_t out_idx, node_t * input, size_t in_idx);
+
+// These two don't seem that important
+#define NODE_INPUT(node, idx) ((node)->node_inputs[(idx)].inport_connection->port_value)
+#define NODE_OUTPUT(node, idx) ((node)->node_outputs[(idx)].port_value)
+
+// Useful sugar
+#define NODE_PULL(node, idx) port_pull((node)->node_inputs[(idx)].inport_connection)
 
 static inline object_t * port_pull(struct port * port) {
     if (port == NULL)
         return (errno = EINVAL, NULL);
 
     assert(port->port_pull);
-    int rc = port->port_pull(port);
+    enum pull_rc rc = port->port_pull(port);
 
-    if (rc != 0)
-        return NULL;
-
-    return port->port_value;
+    switch(rc) {
+        case PULL_RC_ERROR:
+            // TODO: log errors or something?
+            return NULL;
+        case PULL_RC_NULL:
+            return NULL;
+        case PULL_RC_OBJECT:
+            return port->port_value;
+        default:
+            assert(0);
+    }
 }
 
 #endif

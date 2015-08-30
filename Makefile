@@ -15,9 +15,8 @@ OBJECTS = \
 		  blocks/sequencer.o \
 		  blocks/wave.o \
 		  error.o \
-		  soundcard.o \
 		  test.o \
-		  typefns.o \
+		  ntypes.o \
 
 TARGET = noise
 

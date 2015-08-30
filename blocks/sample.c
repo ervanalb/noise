@@ -1,83 +1,110 @@
+#include <math.h>
 #include <stdlib.h>
-#include "error.h"
+
 #include "block.h"
 #include "blockdef.h"
-#include "globals.h"
+#include "noise.h"
 #include "util.h"
-#include "math.h"
 
 struct state {
-    object_t * output;
-	int t;
-    int length;
-    const double * sample;
+    object_t * sample;
+	size_t t;
 };
 
-static type_t * state_type;
+static void sampler_term(node_t * node) {
+    node_free_connections(node);
 
-static error_t sampler_pull(node_t * node, object_t ** output)
-{
-    object_t * inp_play = NULL;
-    error_t e = node_pull(node, 0, &inp_play);
-	if (e != SUCCESS) return e;
-
-    struct state * state = &CAST_OBJECT(struct state, node->state);
-
-    if (inp_play == NULL) {
-        state->t = 0;
-        *output = NULL;
-        return SUCCESS;
-    }
-
-    long play = CAST_OBJECT(long, inp_play);
-    double * chunk = &CAST_OBJECT(double, state->output);
-
-    for (size_t i = 0; i < global_chunk_size; i++) {
-        if (play && state->t < state->length)
-            chunk[i] = state->sample[state->t++];
-        else
-            chunk[i] = 0;
-    }
-
-    if (!play)
-        state->t = 0;
-
-    *output = state->output;
-    return SUCCESS;
+    struct state * state = (struct state *) node->node_state;
+    object_free(state->sample);
+    free(node->node_state);
 }
 
-node_t * sampler_create(const double * sample, size_t length)
-{
-    type_t * chunk_type = get_chunk_type();
-    if (state_type == NULL) {
-        state_type = make_object_and_pod_type(sizeof(struct state));
-        if (state_type == NULL) return NULL;
+static enum pull_rc sampler_pull(struct port * port) {
+    node_t * node = port->port_node;
+    object_t * inp_cmd = NODE_PULL(node, 1);
+
+    struct state * state = (struct state *) node->node_state;
+
+    if (inp_cmd == NULL) {
+        state->t = 0;
+        return PULL_RC_NULL;
     }
 
-    node_t * node = node_alloc(1, 1, state_type);
-    node->name = strdup("Sampler");
-    node->destroy = &node_destroy_generic;
+    enum sampler_command cmd = CAST_OBJECT(long, inp_cmd);
+
+    if (cmd == SAMPLER_COMMAND_REFETCH || state->sample == NULL) {
+        object_t * inp_sample = NODE_PULL(node, 0);
+
+        object_free(state->sample);
+        state->sample = object_dup(inp_sample);
+        state->t = 0;
+    }
+
+    if (state->sample == NULL) 
+        return PULL_RC_NULL;
+
+    double * chunk = &CAST_OBJECT(double, port->port_value);
+
+    if (cmd == SAMPLER_COMMAND_RESTART || cmd == SAMPLER_COMMAND_STOP)
+        state->t = 0;
+
+    size_t length = vector_get_size(state->sample);
+    if ((cmd == SAMPLER_COMMAND_PLAY || cmd == SAMPLER_COMMAND_RESTART) && state->t < length) {
+        double * sample = CAST_OBJECT(double *, state->sample);
+
+        for (size_t i = 0; i < noise_chunk_size; i++) {
+            if (state->t < length)
+                chunk[i] = sample[state->t++];
+            else
+                chunk[i] = 0;
+        }
+    } else { // SAMPLER_COMMAND_PAUSE, STOP & otherwise
+        memset(chunk, 0, sizeof(double) * noise_chunk_size);
+    }
+
+    return PULL_RC_OBJECT;
+}
+
+int sampler_init(node_t * node) {
+    const struct type * chunk_type = get_chunk_type();
+    const struct type * sample_type = get_sample_type();
+
+    int rc = node_alloc_connections(node, 2, 1);
+    if (rc != 0) return rc;
+
+    node->node_term = &sampler_term;
+    node->node_name = strdup("Sampler");
 
     // Define inputs
-    node->inputs[0] = (struct node_input) {
-        .type = long_type,
-        .name = strdup("play?"),
+    node->node_inputs[0] = (struct inport) {
+        .inport_type = sample_type,
+        .inport_name = strdup("sample"),
     };
-
-    // Define outputs
-    node->outputs[0] = (struct endpoint) {
-        .node = node,
-        .type = chunk_type,
-        .name = strdup("out"),
-        .pull = &sampler_pull,
+    node->node_inputs[1] = (struct inport) {
+        .inport_type = long_type,
+        .inport_name = strdup("command"),
     };
-
-    // Init state
-    struct state * state = &CAST_OBJECT(struct state, node->state);
-    state->output = object_alloc(chunk_type);
-    state->t = 0;
-    state->length = length;
-    state->sample = sample;
     
-    return node;
+    // Define outputs
+    node->node_outputs[0] = (struct port) {
+        .port_node = node,
+        .port_name = strdup("out"),
+        .port_pull = &sampler_pull,
+        .port_type = chunk_type,
+        .port_value = object_alloc(chunk_type),
+    };
+
+    if (node->node_outputs[0].port_value == NULL)
+        return (node_term(node), -1);
+
+    // Initialize state
+    node->node_state = calloc(1, sizeof(struct state));
+    struct state * state = (struct state *) node->node_state;
+    if (state == NULL) 
+        return (node_term(node), -1);
+    
+    state->t = 0;
+    state->sample = NULL;
+    
+    return 0;
 }

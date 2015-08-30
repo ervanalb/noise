@@ -1,60 +1,57 @@
 #include <math.h>
 #include <stdlib.h>
-#include "error.h"
+
 #include "block.h"
 #include "blockdef.h"
-#include "globals.h"
+#include "noise.h"
 #include "util.h"
 
+static enum pull_rc sequencer_pull(struct port * port) {
+    node_t * node = port->port_node; 
 
-static error_t sequencer_pull(node_t * node, object_t ** output)
-{
-    error_t e = SUCCESS;
-    object_t * inp_time = NULL;
-    e |= node_pull(node, 0, &inp_time);
+    object_t * inp_time = NODE_PULL(node, 0);
+    object_t * inp_stream = NODE_PULL(node, 1);
 
-    object_t * inp_stream = NULL;
-    e |= node_pull(node, 1, &inp_stream);
-
-    //TODO - null behavior
     if (inp_time == NULL || inp_stream == NULL) {
-        *output = NULL;
-        return e;
+        return PULL_RC_NULL;
     }
 
     int t = (int) CAST_OBJECT(double, inp_time);
 
-    size_t stream_idx = t % tuple_length(inp_stream);
-    object_t * result = (&CAST_OBJECT(object_t *, (inp_stream)))[stream_idx];
+    size_t stream_idx = t % vector_get_size(inp_stream);
+    object_t ** sequence = CAST_OBJECT(object_t **, inp_stream);
+    object_t * out = object_swap(&port->port_value, sequence[stream_idx]);
 
-    *output = object_swap(&node->state, result);
-
-    return e;
+    return (out == NULL) ? PULL_RC_NULL : PULL_RC_OBJECT;
 }
 
-node_t * sequencer_create()
-{
-    node_t * node = node_alloc(2, 1, NULL);
-    node->name = strdup("Sequencer");
-    node->destroy = &node_destroy_generic;
+int sequencer_init(node_t * node) {
+    const struct type * object_vector_type = get_object_vector_type();
+
+    int rc = node_alloc_connections(node, 2, 1);
+    if (rc != 0) return rc;
+
+    node->node_term = &node_term_generic;
+    node->node_name = strdup("Sequencer");
 
     // Define inputs
-    node->inputs[0] = (struct node_input) {
-        .type = double_type,
-        .name = strdup("time"),
+    node->node_inputs[0] = (struct inport) {
+        .inport_type = double_type,
+        .inport_name = strdup("time"),
     };
-    node->inputs[1] = (struct node_input) {
-        .type = NULL, // Takes in a tuple type...
-        .name = strdup("tuple stream"),
+    node->node_inputs[1] = (struct inport) {
+        .inport_type = object_vector_type,
+        .inport_name = strdup("sequence"),
     };
     
     // Define outputs
-    node->outputs[0] = (struct endpoint) {
-        .node = node,
-        .pull = &sequencer_pull,
-        .type = NULL, // ...and returns elements from the tuple
-        .name = strdup("out"),
+    node->node_outputs[0] = (struct port) {
+        .port_node = node,
+        .port_name = strdup("out"),
+        .port_pull = &sequencer_pull,
+        .port_type = NULL,
+        .port_value = NULL,
     };
 
-    return node;
+    return 0;
 }

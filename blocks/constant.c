@@ -3,29 +3,29 @@
 #include "blockdef.h"
 #include "util.h"
 
-static error_t constant_pull(node_t * node, object_t ** output)
-{
-    *output = node->state;
-    return SUCCESS;
+static enum pull_rc constant_pull(struct port * port) {
+    return PULL_RC_OBJECT;
 }
 
-node_t * constant_create(object_t * constant_value)
-{
-    node_t * node = node_alloc(0, 1, object_type(constant_value));
-    node->name = strdup("Constant");
-    node->destroy = &node_destroy_generic;
+int constant_init(node_t * node, object_t * constant_value) {
+    int rc= node_alloc_connections(node, 0, 1);
+    if (rc != 0) return rc;
+
+    node->node_term = &node_term_generic;
+
+    char * constant_str = object_str(constant_value);
+    node->node_name = rsprintf("Constant %s", constant_str);
+    free(constant_str);
     
     // Define outputs (0: double sum)
-    node->outputs[0] = (struct endpoint) {
-        .node = node,
-        .pull = constant_pull,
-        .type = object_type(constant_value),
-        .name = strdup("constant"),
+    node->node_outputs[0] = (struct port) {
+        .port_node = node,
+        .port_pull = constant_pull,
+        .port_type = object_type(constant_value),
+        .port_name = strdup("constant"),
+        .port_value = object_dup(constant_value),
     };
 
-    // Setup state
-    object_copy(node->state, constant_value);
-
-    return node;
+    return 0;
 }
 

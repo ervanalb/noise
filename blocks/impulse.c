@@ -1,7 +1,9 @@
+#include <math.h>
 #include <stdlib.h>
-#include "error.h"
+
 #include "block.h"
 #include "blockdef.h"
+#include "noise.h"
 #include "util.h"
 
 enum status {
@@ -11,73 +13,70 @@ enum status {
 };
 
 struct state {
-    object_t * output;
     enum status status;
 };
 
-static type_t * state_type;
+static enum pull_rc impulse_pull(struct port * port) {
+    node_t * node = port->port_node;
+    object_t * input0 = NODE_PULL(node, 0);
 
-static error_t impulse_pull(node_t * node, object_t ** output)
-{
-    object_t * input0 = NULL;
-    node_pull(node, 0, &input0);
-
-    struct state * state = &CAST_OBJECT(struct state, node->state);
-    CAST_OBJECT(double, state->output) = 0.0;
+    struct state * state = (struct state *) node->node_state;
+    CAST_OBJECT(double, port->port_value) = 0.0;
 
     switch(state->status) {
     case STATUS_NEW:
-        CAST_OBJECT(double, state->output) = 1.0;
+        CAST_OBJECT(double, port->port_value) = 1.0;
         state->status = STATUS_WAIT_LOW;
         break;
     case STATUS_WAIT_HIGH:
         if (input0 != NULL && CAST_OBJECT(double, input0)) {
-            CAST_OBJECT(double, state->output) = 1.0;
+            CAST_OBJECT(double, port->port_value) = 1.0;
             state->status = STATUS_WAIT_LOW;
         }
         break;
     case STATUS_WAIT_LOW:
-        if (input0 == NULL || !CAST_OBJECT(double, input0))
+        if (input0 == NULL || !CAST_OBJECT(double, input0)) {
             state->status = STATUS_WAIT_HIGH;
+        }
         break;
     }
 
-    *output = state->output;
-    return SUCCESS;
+    return PULL_RC_OBJECT;
 }
 
-node_t * impulse_create()
-{
-    if (state_type == NULL) {
-        state_type = make_object_and_pod_type(sizeof(struct state));
-        if (state_type == NULL) return NULL;
-    }
+int impulse_init(node_t * node) {
+    int rc = node_alloc_connections(node, 1, 1);
+    if (rc != 0) return rc;
 
-    node_t * node = node_alloc(1, 1, state_type);
-    node->name = strdup("Impulse");
-    node->destroy = &node_destroy_generic;
+    node->node_name = strdup("Impulse");
+    node->node_term = &node_term_generic;
 
     // Define inputs
-    node->inputs[0] = (struct node_input) {
-        .type = double_type,
-        .name = strdup("trigger"),
+    node->node_inputs[0] = (struct inport) {
+        .inport_type = double_type,
+        .inport_name = strdup("trigger"),
     };
     
     // Define outputs
-    node->outputs[0] = (struct endpoint) {
-        .node = node,
-        .pull = &impulse_pull,
-        .type = chunk_type,
-        .name = strdup("impulse"),
+    const struct type * chunk_type = get_chunk_type();
+    node->node_outputs[0] = (struct port) {
+        .port_node = node,
+        .port_name = strdup("impulse"),
+        .port_pull = &impulse_pull,
+        .port_type = chunk_type,
+        .port_value = object_alloc(chunk_type),
     };
 
-    // Initialize state
-    
-    struct state * state = &CAST_OBJECT(struct state, node->state);
-    state->output = object_alloc(chunk_type);
-    CAST_OBJECT(double, state->output) = 0.0;
-    state->status = STATUS_NEW;
+    if (node->node_outputs[0].port_value == NULL)
+        return (node_term(node), -1);
 
-    return node;
+    // Initialize state
+    node->node_state = calloc(1, sizeof(state));
+    if (node->node_state == NULL) 
+        return (node_term(node), -1);
+    
+    node->node_state->status = STATUS_NEW;
+
+    return 0;
 }
 

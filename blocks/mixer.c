@@ -1,66 +1,64 @@
+#include <math.h>
 #include <stdlib.h>
-#include "error.h"
+
 #include "block.h"
 #include "blockdef.h"
-#include "globals.h"
+#include "noise.h"
 #include "util.h"
 
-static error_t mixer_pull(node_t * node, object_t ** output)
-{
-    error_t e = SUCCESS;
+static enum pull_rc mixer_pull(struct port * port) {
+    node_t * node = port->port_node;
     
-    for (size_t j = 0; j < global_chunk_size; j++) {
-        (&CAST_OBJECT(double, node->state))[j] = 0.;
+    for (size_t j = 0; j < noise_chunk_size; j++) {
+        (&CAST_OBJECT(double, port->port_value))[j] = 0.;
     }
     
-    for (size_t i = 0; i < node->n_inputs; ) {
-        object_t * input_chunk = NULL;
-        e |= node_pull(node, i++, &input_chunk);
-
-        object_t * input_gain = NULL;
-        e |= node_pull(node, i++, &input_gain);
+    for (size_t i = 0; i < node->node_n_inputs; ) {
+        object_t * input_chunk = NODE_PULL(node, i++);
+        object_t * input_gain = NODE_PULL(node, i++);
 
         if (input_chunk == NULL || input_gain == NULL) continue;
 
-        for (size_t j = 0; j < global_chunk_size; j++) {
-            (&CAST_OBJECT(double, node->state))[j] += CAST_OBJECT(double, input_gain) * (&CAST_OBJECT(double, input_chunk))[j];
+        for (size_t j = 0; j < noise_chunk_size; j++) {
+            (&CAST_OBJECT(double, port->port_value))[j] += CAST_OBJECT(double, input_gain) * (&CAST_OBJECT(double, input_chunk))[j];
         }
-
     }
 
-    *output = node->state;
-    return e;
+    return PULL_RC_OBJECT;
 }
 
-node_t * mixer_create(size_t n_channels)
-{
-    type_t * chunk_type = get_chunk_type();
-    node_t * node = node_alloc(n_channels * 2, 1, chunk_type);
-    node->name = strdup("Mixer");
-    node->destroy = &node_destroy_generic;
+int mixer_init(node_t * node, size_t n_channels) {
+    int rc = node_alloc_connections(node, 2 * n_channels, 1);
+    if (rc != 0) return rc;
+
+    node->node_term = &node_term_generic;
+    node->node_name = rsprintf("Mixer %lu", n_channels);
+
+    const struct type * chunk_type = get_chunk_type();
 
     // Define inputs
     for (size_t i = 0; i < n_channels; i++) {
-        node->inputs[2 * i + 0] = (struct node_input) {
-            .type = chunk_type,
-            .name = rsprintf("ch %lu", i),
+        node->node_inputs[2 * i + 0] = (struct inport) {
+            .inport_type = chunk_type,
+            .inport_name = rsprintf("ch %lu", i),
         };
-        node->inputs[2 * i + 1] = (struct node_input) {
-            .type = double_type,
-            .name = rsprintf("gain %lu", i),
+        node->node_inputs[2 * i + 1] = (struct inport) {
+            .inport_type = double_type,
+            .inport_name = rsprintf("gain %lu", i),
         };
     }
     
     // Define output 
-    node->outputs[0] = (struct endpoint) {
-        .node = node,
-        .pull = &mixer_pull,
-        .type = chunk_type,
-        .name = strdup("mixout"),
+    node->node_outputs[0] = (struct port) {
+        .port_node = node,
+        .port_name = strdup("mixout"),
+        .port_pull = &mixer_pull,
+        .port_type = chunk_type,
+        .port_value = object_alloc(chunk_type),
     };
 
-    // Initialize state
-    CAST_OBJECT(double, node->state) = 0.0;
+    if (node->node_outputs[0].port_value == NULL)
+        return (node_term(node), -1);
 
-    return node;
+    return 0;
 }

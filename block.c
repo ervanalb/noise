@@ -23,7 +23,7 @@ int node_alloc_connections(node_t * node, size_t n_inputs, size_t n_outputs) {
 fail:
     free(node->node_inputs);
     free(node->node_outputs);
-    return (errno = ENOMEM, -1);
+    return (errno = ENOMEM, -errno);
 }
 
 void node_free_connections(node_t * node) {
@@ -85,11 +85,14 @@ fail:
 
 // 
 
-int port_connect(const struct port * output, struct inport * input) {
+int port_connect(struct port * output, struct inport * input) {
     if (!type_compatible(output->port_type, input->inport_type))
-        return (errno = EINVAL, -1);
+        return (errno = EINVAL, -errno);
 
     input->inport_connection = output;
     return 0;
 }
 
+int node_connect(node_t * output, size_t out_idx, node_t * input, size_t in_idx){
+    return port_connect(&output->node_outputs[out_idx], &input->node_inputs[in_idx]);
+}

@@ -17,46 +17,59 @@ enum wave_type {
     WAVE_SQUARE,
 };
 
+enum sampler_command {
+    // Pause: output silent chunks, keep current seek position
+    SAMPLER_COMMAND_PAUSE,
+    // Play: output chunks from sample until the end is reached
+    SAMPLER_COMMAND_PLAY,
+    // Restart: seek back to beginning of sample & start playing
+    SAMPLER_COMMAND_RESTART,
+    // Stop: seek back to beginning of sample & pause
+    SAMPLER_COMMAND_STOP,
+    // Refetch: pull in a new sample from the sample port
+    SAMPLER_COMMAND_REFETCH,
+};
+
 // Block defs
 
 // Accumulator<> :: (double x) -> (double x_sum); Sums an input
-node_t * accumulator_create();
+int accumulator_init(node_t * node);
 
 // Constant<type value> :: () -> (type value); Returns a constant value
-node_t * constant_create(object_t * constant_value);
+int constant_init(node_t * node, object_t * constant_value);
 
 // Debug<char name[], bool on> :: (double x) -> (); Prints output on pull; or use with debug_run(...)
-node_t * debug_create(const char * name, char on);
+int debug_init(node_t * node, const char * name, char on);
 
 // FunGen<> :: (double t) -> (double x); Sine fn generator. Computes x = sin(t)
-node_t * fungen_create();
+int fungen_init(node_t * node);
 
 // LPF<> :: (double x, double alpha) -> (double x_lpf); Low pass `x` with time const `alpha` (in pulls)
-node_t * lpf_create();
+int lpf_init(node_t * node);
 
 // Math<math_op> :: (double x[, double y]) -> (double result); Performs a basic math op on inputs (see enum math_op)
-node_t * math_create(enum math_op op);
+int math_init(node_t * node, enum math_op op);
 
 // Mixer<n_channels> :: (chunk s, double vol[, chunk s2, double vol2, ...]) -> (chunk mixout); 
-node_t * mixer_create(size_t n_channels);
+int mixer_init(node_t * node, size_t n_channels);
 
 // Sampler<double * samples, size_t len> :: (long play?) -> (chunk out);
-node_t * sampler_create(const double * samples, size_t length);
+int sampler_init(node_t * node);
 
 // Sequencer<> :: (double time, tuple<> stream) -> (tuple_els elem);
-node_t * sequencer_create();
+int sequencer_init(node_t * node);
 
 // Tee<int n_inputs> :: (type val) -> (type val[, type copy, type copy, ...]); Pulls from input, duplicates
-node_t * tee_create(size_t n_inputs);
+int tee_init(node_t * node, size_t n_inputs);
 
 // Wye<int n_inputs> :: (type val[, type discard, type discard, ...]) -> (type val); Pulls from all inputs, returning the first
-node_t * wye_create(size_t n_inputs);
+int wye_init(node_t * node, size_t n_inputs);
 
 // Wave :: (double frequency, long wave_type) -> (chunk samples); See enum wave_type
-node_t * wave_create();
+int wave_init(node_t * node);
 
 // Soundcard Sink :: (chunk stream) -> ();
-node_t * soundcard_get(); // Singleton
-void soundcard_run();
+//int soundcard_get(); // Singleton
+//void soundcard_run();
 
 #endif

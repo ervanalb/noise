@@ -1,102 +1,103 @@
+#include <math.h>
 #include <stdlib.h>
-#include "error.h"
+
 #include "block.h"
 #include "blockdef.h"
-#include "globals.h"
+#include "noise.h"
 #include "util.h"
-#include "math.h"
 
-static type_t * wave_state_type = NULL;
+struct state {
+	double phase;
+};
 
-static double sine(double t)
-{
-	return sin(t*2*M_PI);
+static double sine(double phi) {
+	return sin(phi * 2 * M_PI);
 }
 
-static double saw(double t)
-{
-	return 2*fmod(t,1)-1;
+static double saw(double phi) {
+	return 2 * phi - 1;
 }
 
-static double square(double t)
-{
-	return 2*(fmod(t,1)<.5)-1;
+static double square(double phi) {
+	return 2 * (phi < .5) - 1;
 }
 
-static error_t wave_pull(node_t * node, object_t ** output)
-{
-    error_t e = SUCCESS;
-    object_t * inp_freq = NULL;
-    e |= node_pull(node, 0, &inp_freq);
+static enum pull_rc wave_pull(struct port * port) {
+    node_t * node = port->port_node;
 
-    object_t * inp_wave = NULL;
-    e |= node_pull(node, 1, &inp_wave);
+    object_t * inp_freq = NODE_PULL(node, 0);
+    object_t * inp_wave = NODE_PULL(node, 1);
 
-    //TODO - null behavior
-    if (inp_freq == NULL || inp_wave == NULL) {
-        *output = NULL;
-        return e;
-    }
+    struct state * state = (struct state *) node->node_state;
 
-    *output = (&CAST_OBJECT(object_t *, node->state))[1];
+	if (inp_freq == NULL || inp_wave == NULL) {
+        state->phase = 0.;
+        return PULL_RC_NULL;
+	}
 
     double freq = CAST_OBJECT(double, inp_freq);
     enum wave_type wave = CAST_OBJECT(long, inp_wave);
-    double * t = &CAST_TUPLE(double, 0, node->state);
-    double * chunk = &CAST_TUPLE(double, 1, node->state);
+    double * chunk = &CAST_OBJECT(double, port->port_value);
 
-	for (size_t i=0; i < global_chunk_size; i++) {
+	for (size_t i=0; i < noise_chunk_size; i++) {
         switch(wave) {
-        case WAVE_SINE:
-            chunk[i] = sine(*t);
-            break;
-        case WAVE_SAW:
-            chunk[i] = saw(*t);
-            break;
-        case WAVE_SQUARE:
-            chunk[i] = square(*t);
-            break;
+            case WAVE_SINE:
+                chunk[i] = sine(state->phase);
+                break;
+            case WAVE_SAW:
+                chunk[i] = saw(state->phase);
+                break;
+            case WAVE_SQUARE:
+                chunk[i] = square(state->phase);
+                break;
+            default:
+                chunk[i] = 0.;
+                break;
         }
 
-        *t += freq / global_frame_rate;
+        state->phase = fmod(state->phase + freq / noise_frame_rate, 1.0);
 	}
 
-    return e;
+    return PULL_RC_OBJECT;
 }
 
-node_t * wave_create()
-{
-    if (wave_state_type == NULL)
-        wave_state_type = make_tuple_type(2);
-    if (wave_state_type == NULL) return NULL;
+int wave_init(node_t * node) {
+    const struct type * chunk_type = get_chunk_type();
+    int rc = node_alloc_connections(node, 2, 1);
+    if (rc != 0) return rc;
 
-    type_t * chunk_type = get_chunk_type();
-    node_t * node = node_alloc(2, 1, wave_state_type);
-    node->name = strdup("Wave");
-    node->destroy = &node_destroy_generic;
+    node->node_term = &node_term_generic;
+    node->node_name = strdup("Wave");
 
     // Define inputs
-    node->inputs[0] = (struct node_input) {
-        .type = double_type,
-        .name = strdup("freq"),
+    node->node_inputs[0] = (struct inport) {
+        .inport_type = double_type,
+        .inport_name = strdup("freq"),
     };
-    node->inputs[1] = (struct node_input) {
-        .type = long_type,
-        .name = strdup("type"),
+    node->node_inputs[1] = (struct inport) {
+        .inport_type = long_type,
+        .inport_name = strdup("type"),
     };
     
     // Define outputs
-    node->outputs[0] = (struct endpoint) {
-        .node = node,
-        .pull = &wave_pull,
-        .type = chunk_type,
-        .name = strdup("chunk"),
+    node->node_outputs[0] = (struct port) {
+        .port_node = node,
+        .port_name = strdup("out"),
+        .port_pull = &wave_pull,
+        .port_type = chunk_type,
+        .port_value = object_alloc(chunk_type),
     };
 
-    // Setup state
-    object_t ** tuple = &CAST_OBJECT(object_t *, node->state);
-    tuple[0] = object_alloc(double_type);
-    tuple[1] = object_alloc(chunk_type);
+    if (node->node_outputs[0].port_value == NULL)
+        return (node_term(node), -1);
 
-    return node;
+    // Initialize state
+    node->node_state = calloc(1, sizeof(struct state));
+    struct state * state = (struct state *) node->node_state;
+    if (state == NULL) 
+        return (node_term(node), -1);
+    
+    state->phase = 0.;
+
+    return 0;
 }

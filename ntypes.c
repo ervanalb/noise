@@ -297,7 +297,9 @@ type_t * make_array_type(size_t length, const type_t * element_type)
 */
 
 // --- 
+// Consider getting rid of this? XXX Vector<object_t *> instead?
 
+/*
 void tuple_free(object_t * obj) {
     object_t ** member = CAST_OBJECT(object_t **, obj);
     object_t ** first_member = member;
@@ -351,6 +353,7 @@ struct type * make_tuple_type(size_t length) {
     
     return type;
 }
+*/
 
 // ---
 
@@ -370,6 +373,26 @@ static struct type chunk_type = {
 const struct type * get_chunk_type() {
     chunk_type.type_data_size = noise_chunk_size * sizeof(double);
     return &chunk_type;
+}
+
+// ---
+
+static struct type * sample_type = NULL;
+
+const struct type * get_sample_type() {
+    if (sample_type == NULL)
+        sample_type = make_vector_type(sizeof(double));
+    return sample_type;
+}
+
+// ---
+
+static struct type * object_vector_type = NULL;
+
+const struct type * get_object_vector_type() {
+    if (object_vector_type == NULL)
+        object_vector_type = make_vector_type(sizeof(object_t *));
+    return object_vector_type;
 }
 
 // ---

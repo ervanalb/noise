@@ -1,124 +1,88 @@
 #include <stdlib.h>
-#include <stdio.h>
-
-#include "debug.h"
-#include "error.h"
 #include "block.h"
-#include "typefns.h"
-#include "util.h"
 #include "blockdef.h"
+#include "debug.h"
+#include "noise.h"
+#include "util.h"
 
 struct state {
-    object_t * output;
     char on;
 	char name[32];
 };
 
-static type_t * state_type = NULL;
+static enum pull_rc debug_pull(struct port * port){
+    node_t * node = port->port_node;
+    struct state * state = (struct state *) node->node_state;
 
-static error_t debug_pull(node_t * node, object_t ** output)
-{
-    error_t e = SUCCESS;
-    object_t * input0 = NULL;
-    e |= node_pull(node, 0, &input0);
+    object_t * out = object_swap(&port->port_value, NODE_PULL(node, 0));
 
-    struct state * state = &CAST_OBJECT(struct state, node->state);
-
-    *output = object_swap(&state->output, input0);
-
-    if (*output != NULL && state->on) {
-        char * ostr = object_str(*output);
+    if (out != NULL && state->on) {
+        char * ostr = object_str(port->port_value);
         printf("%s: %s\n", state->name, ostr);
         free(ostr);
     }
 
-    return e;
+    return (out == NULL) ? PULL_RC_NULL : PULL_RC_OBJECT;
 }
 
-node_t * debug_create(const char * name, char on)
-{
-    if (state_type == NULL) {
-        state_type = make_object_and_pod_type(sizeof(struct state));
-        if (state_type == NULL) return NULL;
-    }
+int debug_init(node_t * node, const char * name, char on) {
+    int rc = node_alloc_connections(node, 1, 1);
+    if (rc != 0) return rc;
 
-    node_t * node = node_alloc(1, 1, state_type);
-    node->name = rsprintf("Debug printer '%32s'", name);
-    node->destroy = &node_destroy_generic;
+    node->node_term = &node_term_generic;
+    node->node_name = rsprintf("Debug printer '%32s'", name);
 
     // Define inputs
-    node->inputs[0] = (struct node_input) {
-        .type = NULL,
-        .name = strdup("in"),
+    node->node_inputs[0] = (struct inport) {
+        .inport_type = NULL,
+        .inport_name = strdup("in"),
     };
 
     // Define outputs
-    node->outputs[0] = (struct endpoint) {
-        .node = node,
-        .type = NULL,
-        .name = strdup("out"),
-        .pull = debug_pull,
+    node->node_outputs[0] = (struct port) {
+        .port_node = node,
+        .port_name = strdup("out"),
+        .port_pull = debug_pull,
+        .port_type = NULL,
+        .port_value = NULL,
     };
 
     // Init state
-    struct state * state = &CAST_OBJECT(struct state, node->state);
+    node->node_state = calloc(1, sizeof(struct state));
+    if (node->node_state == NULL) return (node_term(node), -1);
+
+    struct state * state = (struct state *) node->node_state;
     state->on = on;
     strncpy(state->name, name, sizeof(state->name));
     
-    return node;
-}
-
-void debug_run(node_t * debug_block) 
-{
-    do {
-        object_t * obj;
-
-        node_pull(debug_block, 0, &obj);
-        printf(" > %f\n", CAST_OBJECT(double, obj));
-    } while(getc(stdin) != 'q');
-}
-
-void debug_run_n(node_t * debug_block, int count)
-{
-    for (int i = 0; i < count; i++) {
-        object_t * obj;
-
-        node_pull(debug_block, 0, &obj);
-        printf(" %4d/%4d > %f\n", i, count, CAST_OBJECT(double, obj));
-    }
+    return 0;
 }
 
 void debug_print_graph(node_t * node)
 {
-    printf("%p %s:\n", node, node->name);
+    printf("%p %s:\n", node, node->node_name);
 
-    char * state_value = object_str(node->state);
-    printf("    [s] %s\n", state_value);
-    free(state_value);
-
-    for (size_t i = 0; i < node->n_inputs; i++) {
-        if (node->inputs[i].connected_input != NULL) {
+    for (size_t i = 0; i < node->node_n_inputs; i++) {
+        if (node->node_inputs[i].inport_connection != NULL) {
             printf("    [i] '%s' %s.'%s' (%p)\n",
-                    node->inputs[i].name,
-                    node->inputs[i].connected_input->node->name,
-                    node->inputs[i].connected_input->name,
-                    node->inputs[i].connected_input);
+                    node->node_inputs[i].inport_name,
+                    node->node_inputs[i].inport_connection->port_node->node_name,
+                    node->node_inputs[i].inport_connection->port_name,
+                    node->node_inputs[i].inport_connection);
         } else {
-            printf("    [i] '%s' --\n", node->inputs[i].name);
+            printf("    [i] '%s' --\n", node->node_inputs[i].inport_name);
         }
     }
 
-    for (size_t i = 0; i < node->n_outputs; i++) {
-        printf("    [o] %s\n", node->outputs[i].name);
+    for (size_t i = 0; i < node->node_n_outputs; i++) {
+        printf("    [o] %s\n", node->node_outputs[i].port_name);
     }
-    //printf("    - inputs (%lu):\n", node->n_inputs);
-    //printf("    - outputs (%lu):\n", node->n_outputs);
     
-    for (size_t i = 0; i < node->n_inputs; i++) {
-        debug_print_graph(node->inputs[i].connected_input->node);
+    for (size_t i = 0; i < node->node_n_inputs; i++) {
+        debug_print_graph(node->node_inputs[i].inport_connection->port_node);
     }
 
-    for (size_t i = 0; i < node->n_outputs; i++) {
+    for (size_t i = 0; i < node->node_n_outputs; i++) {
         //debug_print_graph(node->outputs[i].node);
     }
 }

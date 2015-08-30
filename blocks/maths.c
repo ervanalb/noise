@@ -1,22 +1,19 @@
 #include <math.h>
 #include <stdlib.h>
+
 #include "block.h"
 #include "blockdef.h"
-#include "error.h"
+#include "noise.h"
 #include "util.h"
 
-static error_t add_pull(node_t * node, object_t ** output)
-{
-    error_t e = SUCCESS;
-    object_t * input0 = NULL;
-    e |= node_pull(node, 0, &input0);
+static enum pull_rc add_pull(struct port * port) {
+    node_t * node = port->port_node;
 
-    object_t * input1 = NULL;
-    e |= node_pull(node, 1, &input1);
+    object_t * input0 = NODE_PULL(node, 0);
+    object_t * input1 = NODE_PULL(node, 1);
 
     if (input0 == NULL || input1 == NULL) {
-        output = NULL;
-        return e;
+        return PULL_RC_NULL;
     }
 
     double x = CAST_OBJECT(double, input0);
@@ -26,24 +23,18 @@ static error_t add_pull(node_t * node, object_t ** output)
     double result = x + y;
     // --
 
-    CAST_OBJECT(double, node->state) = result;
-    *output = node->state;
-
-    return e;
+    CAST_OBJECT(double, port->port_value) = result;
+    return PULL_RC_OBJECT;
 }
 
-static error_t subtract_pull(node_t * node, object_t ** output)
-{
-    error_t e = SUCCESS;
-    object_t * input0 = NULL;
-    e |= node_pull(node, 0, &input0);
+static enum pull_rc subtract_pull(struct port * port) {
+    node_t * node = port->port_node;
 
-    object_t * input1 = NULL;
-    e |= node_pull(node, 1, &input1);
+    object_t * input0 = NODE_PULL(node, 0);
+    object_t * input1 = NODE_PULL(node, 1);
 
     if (input0 == NULL || input1 == NULL) {
-        output = NULL;
-        return e;
+        return PULL_RC_NULL;
     }
 
     double x = CAST_OBJECT(double, input0);
@@ -53,24 +44,18 @@ static error_t subtract_pull(node_t * node, object_t ** output)
     double result = x - y;
     // --
 
-    CAST_OBJECT(double, node->state) = result;
-    *output = node->state;
-
-    return e;
+    CAST_OBJECT(double, port->port_value) = result;
+    return PULL_RC_OBJECT;
 }
 
-static error_t multiply_pull(node_t * node, object_t ** output)
-{
-    error_t e = SUCCESS;
-    object_t * input0 = NULL;
-    e |= node_pull(node, 0, &input0);
+static enum pull_rc multiply_pull(struct port * port) {
+    node_t * node = port->port_node;
 
-    object_t * input1 = NULL;
-    e |= node_pull(node, 1, &input1);
+    object_t * input0 = NODE_PULL(node, 0);
+    object_t * input1 = NODE_PULL(node, 1);
 
     if (input0 == NULL || input1 == NULL) {
-        output = NULL;
-        return e;
+        return PULL_RC_NULL;
     }
 
     double x = CAST_OBJECT(double, input0);
@@ -80,24 +65,18 @@ static error_t multiply_pull(node_t * node, object_t ** output)
     double result = x * y;
     // --
 
-    CAST_OBJECT(double, node->state) = result;
-    *output = node->state;
-
-    return e;
+    CAST_OBJECT(double, port->port_value) = result;
+    return PULL_RC_OBJECT;
 }
 
-static error_t divide_pull(node_t * node, object_t ** output)
-{
-    error_t e = SUCCESS;
-    object_t * input0 = NULL;
-    e |= node_pull(node, 0, &input0);
+static enum pull_rc divide_pull(struct port * port) {
+    node_t * node = port->port_node;
 
-    object_t * input1 = NULL;
-    e |= node_pull(node, 1, &input1);
+    object_t * input0 = NODE_PULL(node, 0);
+    object_t * input1 = NODE_PULL(node, 1);
 
     if (input0 == NULL || input1 == NULL) {
-        output = NULL;
-        return e;
+        return PULL_RC_NULL;
     }
 
     double x = CAST_OBJECT(double, input0);
@@ -107,92 +86,92 @@ static error_t divide_pull(node_t * node, object_t ** output)
     double result = x / y;
     // --
 
-    CAST_OBJECT(double, node->state) = result;
-    *output = node->state;
-
-    return e;
+    CAST_OBJECT(double, port->port_value) = result;
+    return PULL_RC_OBJECT;
 }
 
+static enum pull_rc note_to_freq_pull(struct port * port) {
+    node_t * node = port->port_node;
 
-static error_t note_to_freq_pull(node_t * node, object_t ** output)
-{
-    error_t e = SUCCESS;
-    object_t * input0 = NULL;
-    e |= node_pull(node, 0, &input0);
+    object_t * input0 = NODE_PULL(node, 0);
 
     if (input0 == NULL) {
-        output = NULL;
-        return e;
+        return PULL_RC_NULL;
     }
 
     double note = CAST_OBJECT(double, input0);
-    CAST_OBJECT(double, node->state) = pow(2,(note-69)/12)*440;
-    *output = node->state;
+    double freq = pow(2,(note-69)/12)*440;
+    CAST_OBJECT(double, port->port_value) = freq;
 
-    return e;
+    return PULL_RC_OBJECT;
 }
-
  
-node_t * math_create(enum math_op op)
-{
-    pull_fn_pt node_pull_fn;
+int math_init(node_t * node, enum math_op op) {
+    assert(node);
+    port_pull_fn_pt pull_fn;
     size_t n_inputs = 2;
     const char * name;
     switch(op)
     {
     case MATH_ADD:
-        node_pull_fn = &add_pull;
+        pull_fn = &add_pull;
         name = "Add";
         break;
     case MATH_SUBTRACT:
-        node_pull_fn = &subtract_pull;
+        pull_fn = &subtract_pull;
         name = "Subtract";
         break;
     case MATH_MULTIPLY:
-        node_pull_fn = &multiply_pull;
+        pull_fn = &multiply_pull;
         name = "Multiply";
         break;
     case MATH_DIVIDE:
-        node_pull_fn = &divide_pull;
+        pull_fn = &divide_pull;
         name = "Divide";
         break;
     case MATH_NOTE_TO_FREQ:
-        node_pull_fn = &note_to_freq_pull;
+        pull_fn = &note_to_freq_pull;
         name = "Note to Freq.";
         n_inputs = 1;
         break;
     default:
-        return NULL;
+        return (errno = EINVAL, -1);
     }
+    
+    int rc = node_alloc_connections(node, 2, 1);
+    if (rc != 0) return rc;
 
-    node_t * node = node_alloc(n_inputs, 1, double_type);
-    node->name = strdup(name);
-    node->destroy = &node_destroy_generic;
+    node->node_term = &node_term_generic;
+    node->node_name = strdup(name);
     
     // Define inputs
     if (n_inputs == 1) {
-        node->inputs[0] = (struct node_input) {
-            .type = double_type,
-            .name = strdup("freq"),
+        node->node_inputs[0] = (struct inport) {
+            .inport_type = double_type,
+            .inport_name = strdup("freq"),
         };
     } else {
-        node->inputs[0] = (struct node_input) {
-            .type = double_type,
-            .name = strdup("x"),
+        node->node_inputs[0] = (struct inport) {
+            .inport_type = double_type,
+            .inport_name = strdup("x"),
         };
-        node->inputs[1] = (struct node_input) {
-            .type = double_type,
-            .name = strdup("y"),
+        node->node_inputs[0] = (struct inport) {
+            .inport_type = double_type,
+            .inport_name = strdup("y"),
         };
     }
 
     // Define outputs (0: double sum)
-    node->outputs[0] = (struct endpoint) {
-        .node = node,
-        .pull = node_pull_fn,
-        .type = double_type,
-        .name = strdup("result"),
+    node->node_outputs[0] = (struct port) {
+        .port_node = node,
+        .port_name = strdup("result"),
+        .port_pull = pull_fn,
+        .port_type = double_type,
+        .port_value = object_alloc(double_type),
     };
 
-    return node;
+    if (node->node_outputs[0].port_value == NULL)
+        return (node_term(node), -1);
+
+    return 0;
 }

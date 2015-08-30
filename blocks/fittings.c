@@ -6,98 +6,96 @@
 #include "util.h"
 
 
-static error_t wye_pull(node_t * node, object_t ** output)
-{
-    error_t e = SUCCESS;
-    object_t * input0 = NULL;
-    e = node_pull(node, 0, &input0);
+static int wye_pull(struct port * port) {
+    node_t * node = port->port_node;
+    object_t * out = object_swap(&port->port_value, NODE_PULL(node, 0));
 
-    *output = object_swap(&node->state, input0);
-
-    for (size_t i = 1; i < node->n_inputs; i++) {
-        object_t * inputx;
-        e |= node_pull(node, i, &inputx);
+    for (size_t i = 1; i < node->node_n_inputs; i++) {
+        NODE_PULL(node, i);
     }
 
-    return e;
+    return (out == NULL) ? PULL_RC_NULL : PULL_RC_OBJECT;
 }
 
-node_t * wye_create(size_t n_inputs)
-{
-    if (n_inputs < 1) return NULL;
+int wye_init(node_t * node, size_t n_inputs) {
+    if (n_inputs < 1) return (errno = EINVAL, -1);
 
-    node_t * node = node_alloc(n_inputs, 1, NULL);
-    node->name = strdup("Wye");
-    node->destroy = &node_destroy_generic;
+    int rc = node_alloc_connections(node, n_inputs, 1);
+    if (rc != 0) return rc;
+
+    node->node_term = &node_term_generic;
+    node->node_name = rsprintf("Wye %lu", n_inputs);
 
     // Define inputs
     for (size_t i = 0; i < n_inputs; i++) {
-        node->inputs[i] = (struct node_input) {
-            .type = NULL,
-            .name = (i == 0) ? strdup("main") : rsprintf("aux %lu", i),
+        node->node_inputs[i] = (struct inport) {
+            .inport_type = NULL,
+            .inport_name = (i == 0) ? strdup("main") : rsprintf("aux %lu", i),
         };
     }
     
     // Define outputs 
-    node->outputs[0] = (struct endpoint) {
-        .node = node,
-        .pull = &wye_pull,
-        .type = NULL,
-        .name = strdup("out"),
+    node->node_outputs[0] = (struct port) {
+        .port_node = node,
+        .port_name = strdup("out"),
+        .port_pull = &wye_pull,
+        .port_type = NULL,
+        .port_value = NULL,
     };
 
-    return node;
+    return 0;
 }
 
 //
 
-static error_t tee_pull_main(node_t * node, object_t ** output)
-{
-    error_t e = SUCCESS;
-    object_t * input0 = NULL;
-    e = node_pull(node, 0, &input0);
+static enum pull_rc tee_pull_main(struct port * port) {
+    node_t * node = port->port_node;
+    object_t * out = object_swap(&port->port_value, NODE_PULL(node, 0));
 
-    *output = object_swap(&node->state, input0);
-
-    return e;
+    for (size_t i = 1; i < node->node_n_outputs; i++) {
+        node->node_outputs[i].port_value = out;
+    }
+    
+    return (out == NULL) ? PULL_RC_NULL : PULL_RC_OBJECT;
 }
 
-static error_t tee_pull_aux(node_t * node, object_t ** output)
-{
-    *output = node->state;
-    return SUCCESS;
+static enum pull_rc tee_pull_aux(struct port * port) {
+    return PULL_RC_OBJECT;
 }
 
-node_t * tee_create(size_t n_outputs)
-{
-    if (n_outputs < 1) return NULL;
+int tee_init(node_t * node, size_t n_outputs) {
+    if (n_outputs < 1) return (errno = EINVAL, -1);
 
-    node_t * node = node_alloc(1, n_outputs, NULL);
-    node->name = strdup("Tee");
-    node->destroy = &node_destroy_generic;
+    int rc = node_alloc_connections(node, 1, n_outputs);
+    if (rc != 0) return rc;
+
+    node->node_term = &node_term_generic;
+    node->node_name = rsprintf("Tee %lu", n_outputs);
 
     // Define inputs
-    node->inputs[0] = (struct node_input) {
-        .type = NULL,
-        .name = strdup("in"),
+    node->node_inputs[0] = (struct inport) {
+        .inport_type = NULL,
+        .inport_name = strdup("in"),
     };
     
     // Define outputs 
-    node->outputs[0] = (struct endpoint) {
-        .node = node,
-        .pull = &tee_pull_main,
-        .type = NULL,
-        .name = strdup("main"),
+    node->node_outputs[0] = (struct port) {
+        .port_node = node,
+        .port_name = strdup("main"),
+        .port_pull = &tee_pull_main,
+        .port_type = NULL,
+        .port_value = NULL,
     };
     
     for (size_t i = 1; i < n_outputs; i++) {
-        node->outputs[i] = (struct endpoint) {
-            .node = node,
-            .pull = &tee_pull_aux,
-            .type = NULL,
-            .name = rsprintf("aux %lu", i),
+        node->node_outputs[i] = (struct port) {
+            .port_node = node,
+            .port_name = rsprintf("aux %lu", i),
+            .port_pull = &tee_pull_aux,
+            .port_type = NULL,
+            .port_value = NULL,
         };
     }
 
-    return node;
+    return 0;
 }
