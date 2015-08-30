@@ -63,8 +63,8 @@ static inline void node_term(node_t * node) {
 }
 
 // Connect blocks & pull
-int port_connect(struct port * output, struct inport * input);
-int node_connect(node_t * output, size_t out_idx, node_t * input, size_t in_idx);
+int port_connect(struct inport * input, struct port * output);
+int node_connect(node_t * input, size_t in_idx, node_t * output, size_t out_idx);
 
 // These two don't seem that important
 #define NODE_INPUT(node, idx) ((node)->node_inputs[(idx)].inport_connection->port_value)

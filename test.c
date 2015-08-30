@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#include <sndfile.h>
 #include "block.h"
 #include "blockdef.h"
 #include "debug.h"
@@ -20,6 +21,7 @@ const double noise_frame_rate = 44100;
     constant_init(&name, name ## _obj); 
 
 #define MAKE_DOUBLE_CONSTANT(name, value) MAKE_CONSTANT(name, double_type, double, value)
+#define MAKE_LONG_CONSTANT(name, value) MAKE_CONSTANT(name, long_type, long, value)
 
 
 /*
@@ -54,7 +56,12 @@ int main(void) {
 
     node_connect(&timebase, 0, &delta_t, 0);
     node_connect(&time_tee, 0, &timebase, 0);
-    node_connect(&time_wye, 1, &time_tee, 0);
+
+    // Debug
+    node_t debug_time;
+    debug_init(&debug_time, "time", 0);
+    node_connect(&debug_time, 0, &time_tee, 0);
+    node_connect(&time_wye, 1, &debug_time, 0);
 
     // Melody
     // TODO: Come up with a better way of specifying tuples
@@ -82,10 +89,15 @@ int main(void) {
     node_connect(&seq, 0, &time_tee, 1);
     node_connect(&seq, 1, &melody, 0);
 
+    // Debug
+    node_t debug_seq;
+    debug_init(&debug_seq, "seq", 0);
+    node_connect(&debug_seq, 0, &seq, 0);
+
     node_t lpf;
     lpf_init(&lpf);
     MAKE_CONSTANT(lpf_alpha, double_type, double, 2);
-    node_connect(&lpf, 0, &seq, 0);
+    node_connect(&lpf, 0, &debug_seq, 0);
     node_connect(&lpf, 1, &lpf_alpha, 0);
 
     // Debug
@@ -147,7 +159,30 @@ int main(void) {
 
     node_connect(&time_wye, 0, &mixer, 0);
 
-    debug_print_graph(&mixer);
+    node_t recorder;
+    recorder_init(&recorder);
+    MAKE_LONG_CONSTANT(recorder_len, noise_frame_rate * 30);
+    node_connect(&recorder, 0, &time_wye, 0);
+    node_connect(&recorder, 1, &recorder_len, 0);
+
+    debug_print_graph(&recorder);
+
+    // This triggers everything!
+    object_t * sample = port_pull(&recorder.node_outputs[0]);
+    printf("%s %lu", object_str(sample), vector_get_size(sample));
+
+    SF_INFO fdata = {
+        .frames = vector_get_size(sample),
+        .samplerate = noise_frame_rate,
+        .channels = 1,
+        .format = SF_FORMAT_WAV | SF_FORMAT_PCM_16,
+        .sections = 1,
+        .seekable = 0,
+    };
+    SNDFILE * f = sf_open("unison.wav", SFM_WRITE, &fdata);
+    sf_write_double(f, CAST_OBJECT(double *, sample), vector_get_size(sample));
+    sf_write_sync(f);
+    sf_close(f);
 
     /*
     // Soundcard 
@@ -171,9 +206,9 @@ int main(void) {
     node_destroy(wave);
     node_destroy(wave_vol);
     node_destroy(wtype);
-    */
 
     printf("Successfully destroyed everything!\n");
+    */
 
     return 0;
 }

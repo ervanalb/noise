@@ -16,7 +16,7 @@ static enum pull_rc debug_pull(struct port * port){
 
     object_t * out = object_swap(&port->port_value, NODE_PULL(node, 0));
 
-    if (out != NULL && state->on) {
+    if (state->on) {
         char * ostr = object_str(port->port_value);
         printf("%s: %s\n", state->name, ostr);
         free(ostr);
@@ -30,7 +30,7 @@ int debug_init(node_t * node, const char * name, char on) {
     if (rc != 0) return rc;
 
     node->node_term = &node_term_generic;
-    node->node_name = rsprintf("Debug printer '%32s'", name);
+    node->node_name = rsprintf("Debug printer '%.32s'", name);
 
     // Define inputs
     node->node_inputs[0] = (struct inport) {
@@ -79,7 +79,9 @@ void debug_print_graph(node_t * node)
     }
     
     for (size_t i = 0; i < node->node_n_inputs; i++) {
-        debug_print_graph(node->node_inputs[i].inport_connection->port_node);
+        struct port * port = node->node_inputs[i].inport_connection;
+        if (port) 
+            debug_print_graph(port->port_node);
     }
 
     for (size_t i = 0; i < node->node_n_outputs; i++) {

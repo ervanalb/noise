@@ -85,7 +85,7 @@ fail:
 
 // 
 
-int port_connect(struct port * output, struct inport * input) {
+int port_connect(struct inport * input, struct port * output) {
     if (!type_compatible(output->port_type, input->inport_type))
         return (errno = EINVAL, -errno);
 
@@ -93,6 +93,6 @@ int port_connect(struct port * output, struct inport * input) {
     return 0;
 }
 
-int node_connect(node_t * output, size_t out_idx, node_t * input, size_t in_idx){
-    return port_connect(&output->node_outputs[out_idx], &input->node_inputs[in_idx]);
+int node_connect(node_t * input, size_t in_idx, node_t * output, size_t out_idx){
+    return port_connect(&input->node_inputs[in_idx], &output->node_outputs[out_idx]);
 }

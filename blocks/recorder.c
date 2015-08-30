@@ -1,78 +1,76 @@
+#include <math.h>
 #include <stdlib.h>
-#include "error.h"
+
 #include "block.h"
 #include "blockdef.h"
+#include "noise.h"
 #include "util.h"
 
-struct state {
-    object_t * output;
-    size_t n_samples;
-    size_t index;
-};
+static enum pull_rc recorder_pull(struct port * port) {
+    node_t * node = port->port_node;
+    object_t * inp_len = NODE_PULL(node, 1);
 
-static type_t * state_type;
+    if (inp_len == NULL)
+        return PULL_RC_NULL;
 
-static error_t recorder_pull(node_t * node, object_t ** output)
-{
-    object_t * input0 = NULL;
-    node_pull(node, 0, &input0);
+    size_t length = CAST_OBJECT(long, inp_len);
+    size_t t = 0;
 
-    struct state * state = &CAST_OBJECT(struct state, node->state);
-    CAST_OBJECT(double, state->output) = 0.0;
+    free(port->port_value);
+    port->port_value = object_alloc(get_sample_type());
+    vector_set_size(port->port_value, length); //TODO this can fail
+    double * samples = CAST_OBJECT(double *, port->port_value);
 
-    switch(state->status) {
-    case STATUS_NEW:
-        CAST_OBJECT(double, state->output) = 1.0;
-        state->status = STATUS_WAIT_LOW;
-        break;
-    case STATUS_WAIT_HIGH:
-        if (input0 != NULL && CAST_OBJECT(double, input0)) {
-            CAST_OBJECT(double, state->output) = 1.0;
-            state->status = STATUS_WAIT_LOW;
+    while (t < length) {
+        object_t * inp_chunk = NODE_PULL(node, 0);
+
+        if (inp_chunk == NULL) {
+            // We don't want to loop forever... so just increment t by one?
+            // XXX
+            t++;
+            continue;
         }
-        break;
-    case STATUS_WAIT_LOW:
-        if (input0 == NULL || !CAST_OBJECT(double, input0))
-            state->status = STATUS_WAIT_HIGH;
-        break;
-    }
 
-    *output = state->output;
-    return SUCCESS;
+        double * chunk = &CAST_OBJECT(double, port->port_value);
+        if (t + noise_chunk_size < length) {
+            memcpy(&samples[t], chunk, sizeof(double) * noise_chunk_size);
+            t += noise_chunk_size;
+        } else {
+            while(t < length)
+                samples[t++] = *chunk++;
+        }
+    }
+    return PULL_RC_OBJECT;
 }
 
-node_t * recorder_create(size_t n_samples)
-{
-    if (state_type == NULL) {
-        state_type = make_object_and_pod_type(sizeof(struct state));
-        if (state_type == NULL) return NULL;
-    }
+int recorder_init(node_t * node) {
+    const struct type * chunk_type = get_chunk_type();
+    const struct type * sample_type = get_sample_type();
 
-    node_t * node = node_alloc(1, 1, state_type);
-    node->name = strdup("Impulse");
-    node->destroy = &node_destroy_generic;
+    int rc = node_alloc_connections(node, 2, 1);
+    if (rc != 0) return rc;
+
+    node->node_name = strdup("Recorder");
 
     // Define inputs
-    node->inputs[0] = (struct node_input) {
-        .type = chunk_type,
-        .name = strdup("record in"),
+    node->node_inputs[0] = (struct inport) {
+        .inport_type = chunk_type,
+        .inport_name = strdup("chunks"),
+    };
+    node->node_inputs[1] = (struct inport) {
+        .inport_type = long_type,
+        .inport_name = strdup("sizecmd"),
     };
     
     // Define outputs
-    node->outputs[0] = (struct endpoint) {
-        .node = node,
-        .pull = &accumulator_pull,
-        .type = chunk_type,
-        .name = strdup("samples"),
+    node->node_outputs[0] = (struct port) {
+        .port_node = node,
+        .port_name = strdup("sample"),
+        .port_pull = &recorder_pull,
+        .port_type = sample_type,
+        .port_value = NULL,
     };
 
-    // Initialize state
-    
-    struct state * state = &CAST_OBJECT(struct state, node->state);
-    state->output = object_alloc(chunk_type);
-    CAST_OBJECT(double, state->output) = 0.0;
-    state->status = STATUS_NEW;
-
-    return node;
+    return 0;
 }
 

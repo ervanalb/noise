@@ -53,10 +53,13 @@ int math_init(node_t * node, enum math_op op);
 // Mixer<n_channels> :: (chunk s, double vol[, chunk s2, double vol2, ...]) -> (chunk mixout); 
 int mixer_init(node_t * node, size_t n_channels);
 
-// Sampler<double * samples, size_t len> :: (long play?) -> (chunk out);
+// Recorder :: (chunk s, long len) -> (sample[len] samp);
+int recorder_init(node_t * node);
+
+// Sampler :: (sample samp, long cmd) -> (chunk out);
 int sampler_init(node_t * node);
 
-// Sequencer<> :: (double time, tuple<> stream) -> (tuple_els elem);
+// Sequencer :: (double time, vector<obj> stream) -> (obj elem);
 int sequencer_init(node_t * node);
 
 // Tee<int n_inputs> :: (type val) -> (type val[, type copy, type copy, ...]); Pulls from input, duplicates

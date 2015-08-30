@@ -11,6 +11,7 @@ OBJECTS = \
 		  blocks/lpf.o \
 		  blocks/maths.o \
 		  blocks/mixer.o \
+		  blocks/recorder.o \
 		  blocks/sample.o \
 		  blocks/sequencer.o \
 		  blocks/wave.o \
@@ -26,10 +27,10 @@ INC = -I.
 LIB = -L/usr/local/lib
 
 # Assembler, compiler, and linker flags
-#override CFLAGS += $(INC) -O0 -g -Wall -Wextra -Werror -Wno-unused-parameter -std=c99 -DFAKESOUND
-override CFLAGS += $(INC) -O3 -g -Wall -Wextra -Werror -Wno-unused-parameter -std=c99 
+override CFLAGS += $(INC) -O0 -g -Wall -Wextra -Werror -Wno-unused-parameter -std=c99 -DFAKESOUND
+#override CFLAGS += $(INC) -O3 -g -Wall -Wextra -Werror -Wno-unused-parameter -std=c99 
 override LFLAGS += $(LIB) $(CFLAGS)
-LIBS = -lm -lportaudio
+LIBS = -lm -lportaudio -lsndfile
 
 # Targets
 .PHONY: clean
