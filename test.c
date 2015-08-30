@@ -24,25 +24,74 @@ const double noise_frame_rate = 44100;
 #define MAKE_LONG_CONSTANT(name, value) MAKE_CONSTANT(name, long_type, long, value)
 
 
-/*
-node_t * make_drum(const double * sample, size_t sample_len, const long * hits, size_t hits_len, node_t * time_tee, size_t tinp)
-{
-    object_t * hits_obj = object_alloc(make_tuple_type(hits_len));
-    for (size_t i = 0; i < hits_len; i++) {
-        object_t * h = object_alloc(long_type);
-        CAST_OBJECT(long, h) = hits[i];
-        (&CAST_OBJECT(object_t *, hits_obj))[i] = h;
+#define None -1
+object_t * make_double_vector(double * array, size_t len) {
+    object_t * obj = object_alloc(get_object_vector_type());
+    vector_set_size(obj, len);
+
+    for (size_t i = 0; i < len; i++) {
+        if (array[i] == None) continue;
+
+        object_t * v = object_alloc(double_type);
+        CAST_OBJECT(double, v) = array[i];
+        CAST_OBJECT(object_t **, obj)[i] = v;
     }
-    node_t * hits_node = constant_create(hits_obj);
-    node_t * hits_seq = sequencer_create();
+    return obj;
+}
+
+node_t * make_drum(node_t * record, const long * hits, size_t hits_len, node_t * time_tee, size_t tinp) {
+    object_t * hits_obj = object_alloc(get_object_vector_type());
+    vector_set_size(hits_obj, hits_len);
+
+    for (size_t i = 0; i < hits_len; i++) {
+        object_t * v = object_alloc(long_type);
+        CAST_OBJECT(long, v) = hits[i];
+        CAST_OBJECT(object_t **, hits_obj)[i] = v;
+    }
+
+    node_t * hits_node = calloc(1, sizeof(node_t));
+    node_t * hits_seq = calloc(1, sizeof(node_t));
+    node_t * voice = calloc(1, sizeof(node_t));
+
+    constant_init(hits_node, hits_obj);
+    sequencer_init(hits_seq);
+    sampler_init(voice);
+
     node_connect(hits_seq, 0, time_tee, tinp);
     node_connect(hits_seq, 1, hits_node, 0);
-    node_t * voice = sampler_create(sample, sample_len);
-    node_connect(voice, 0, hits_seq, 0);
+
+    node_t * debug = calloc(1, sizeof(node_t));
+    debug_init(debug, "hit", 1);
+    node_connect(debug, 0, record, 0);
+    node_connect(voice, 0, debug, 0);
+    node_connect(voice, 1, hits_seq, 0);
 
     return voice;
 }
-*/
+
+int record_and_write(node_t * recorder_node, const char * filename, double time_seconds) {
+    MAKE_LONG_CONSTANT(recorder_len, noise_frame_rate * time_seconds);
+    node_connect(recorder_node, 1, &recorder_len, 0);
+
+    // Trigger the computation
+    object_t * sample = port_pull(&recorder_node->node_outputs[0]);
+    printf("Writing %lu frames to %s", vector_get_size(sample), filename);
+
+    SF_INFO fdata = {
+        .frames = vector_get_size(sample),
+        .samplerate = noise_frame_rate,
+        .channels = 1,
+        .format = SF_FORMAT_WAV | SF_FORMAT_PCM_16,
+        .sections = 1,
+        .seekable = 0,
+    };
+
+    SNDFILE * f = sf_open(filename, SFM_WRITE, &fdata);
+    sf_write_double(f, CAST_OBJECT(double *, sample), vector_get_size(sample));
+    sf_write_sync(f);
+    sf_close(f);
+    return 0;
+}
 
 int main(void) {
     //type_t * chunk_type = get_chunk_type();
@@ -65,21 +114,10 @@ int main(void) {
 
     // Melody
     // TODO: Come up with a better way of specifying tuples
-#define None -1
-    double unison[] = {88, None, None, 65, 75, None, 72, 67, 67, 68, None, 65, 70, 72, 70, 65, 65, None, None, 65, 75, None, 72, 67, 67, 68, 65, 72, 75, None, 72, 77};
+    double unison[] = {None, None, None, 65, 75, None, 72, 67, 67, 68, None, 65, 70, 72, 70, 65, 65, None, None, 65, 75, None, 72, 67, 67, 68, 65, 72, 75, None, 72, 77};
     size_t unison_len = sizeof(unison) / sizeof(*unison);
 
-    object_t * melody_obj = object_alloc(get_object_vector_type());
-    vector_set_size(melody_obj, unison_len);
-
-    for (size_t i = 0; i < unison_len; i++) {
-        if (unison[i] == None) continue;
-
-        object_t * note = object_alloc(double_type);
-        CAST_OBJECT(double, note) = unison[i];
-        CAST_OBJECT(object_t **, melody_obj)[i] = note;
-    }
-
+    object_t * melody_obj = make_double_vector(unison,  unison_len);
     node_t melody;
     constant_init(&melody, melody_obj);
 
@@ -116,8 +154,59 @@ int main(void) {
     wave_init(&wave);
     node_connect(&wave, 0, &n2f, 0);
     node_connect(&wave, 1, &wtype, 0);
-    /*
 
+    // Snare
+    node_t snare_imp, snare_lpf, snare_rec, snare_wav, snare_mix;
+    impulse_init(&snare_imp);
+    MAKE_DOUBLE_CONSTANT(snare_tau, 8.5);
+    clpf_init(&snare_lpf);
+    node_connect(&snare_lpf, 0, &snare_imp, 0);
+    node_connect(&snare_lpf, 1, &snare_tau, 0);
+
+    white_init(&snare_wav);
+    cmixer_init(&snare_mix, 1);
+    node_connect(&snare_mix, 0, &snare_wav, 0);
+    node_connect(&snare_mix, 1, &snare_lpf, 0);
+
+    recorder_init(&snare_rec);
+    MAKE_LONG_CONSTANT(snare_len, noise_frame_rate * 0.5);
+    node_connect(&snare_rec, 0, &snare_mix, 0);
+    node_connect(&snare_rec, 1, &snare_len, 0);
+    //record_and_write(&snare_rec, "snare.wav", 0.5);
+
+    // Kick
+    node_t kick_imp, kick_lpf, kick_rec, kick_wav, kick_mix;
+    impulse_init(&kick_imp);
+    MAKE_DOUBLE_CONSTANT(kick_tau, 8.5);
+    clpf_init(&kick_lpf);
+    node_connect(&kick_lpf, 0, &kick_imp, 0);
+    node_connect(&kick_lpf, 1, &kick_tau, 0);
+
+    MAKE_DOUBLE_CONSTANT(kick_freq, 80);
+    MAKE_LONG_CONSTANT(kick_wtype, WAVE_SINE);
+    wave_init(&kick_wav);
+    node_connect(&kick_wav, 0, &kick_freq, 0);
+    node_connect(&kick_wav, 1, &kick_wtype, 0);
+
+    cmixer_init(&kick_mix, 1);
+    node_connect(&kick_mix, 0, &kick_wav, 0);
+    node_connect(&kick_mix, 1, &kick_lpf, 0);
+
+    recorder_init(&kick_rec);
+    MAKE_LONG_CONSTANT(kick_len, noise_frame_rate * 0.5);
+    node_connect(&kick_rec, 0, &kick_mix, 0);
+    node_connect(&kick_rec, 1, &kick_len, 0);
+    
+
+    // Kick & Snare sampling
+    long snare_pat[] = {SAMPLER_COMMAND_PLAY, SAMPLER_COMMAND_PLAY, SAMPLER_COMMAND_STOP, SAMPLER_COMMAND_STOP};
+    long kick_pat[]  = {SAMPLER_COMMAND_STOP, SAMPLER_COMMAND_STOP, SAMPLER_COMMAND_PLAY, SAMPLER_COMMAND_PLAY};
+
+    node_t * snare = make_drum(&snare_rec, snare_pat, 4, &time_tee, 2);
+    node_t * kick = make_drum(&kick_rec, kick_pat, 4, &time_tee, 3);
+
+
+    /*
     long snare_hits[] = {0,0,1,1};
     double snare_samples[50000];
     double snare_tau = 0.0001;
@@ -126,7 +215,6 @@ int main(void) {
         snare_samples[i] = ((rand() / (double) (RAND_MAX / 2)) - 1.0) * exp(- (double) i * snare_tau);
 
     node_t * snare = make_drum(snare_samples, 50000, snare_hits, 4, time_tee, 2);
-    MAKE_DOUBLE_CONSTANT(snare_vol, 0.4);
 
     node_t * debug_snare = debug_create("snare", 1);
     node_connect(debug_snare, 0, snare, 0);
@@ -146,16 +234,16 @@ int main(void) {
     // Mixer
     node_t  mixer;
     mixer_init(&mixer, 3);
-    MAKE_DOUBLE_CONSTANT(wave_vol, 0.05);
+    MAKE_DOUBLE_CONSTANT(wave_vol, 0.1);
+    MAKE_DOUBLE_CONSTANT(snare_vol, 0.3);
+    MAKE_DOUBLE_CONSTANT(kick_vol, 0.6);
 
     node_connect(&mixer, 0, &wave, 0);
     node_connect(&mixer, 1, &wave_vol, 0);
-    /*
-    node_connect(mixer, 2, debug_snare, 0);
-    node_connect(mixer, 3, snare_vol, 0);
-    node_connect(mixer, 4, kick, 0);
-    node_connect(mixer, 5, kick_vol, 0);
-    */
+    node_connect(&mixer, 2, snare, 0);
+    node_connect(&mixer, 3, &snare_vol, 0);
+    node_connect(&mixer, 4, kick, 0);
+    node_connect(&mixer, 5, &kick_vol, 0);
 
     node_connect(&time_wye, 0, &mixer, 0);
     
@@ -166,29 +254,13 @@ int main(void) {
 
     node_t recorder;
     recorder_init(&recorder);
-    MAKE_LONG_CONSTANT(recorder_len, noise_frame_rate * 30);
     //MAKE_LONG_CONSTANT(recorder_len, noise_chunk_size * 5);
     node_connect(&recorder, 0, &debug_ch, 0);
-    node_connect(&recorder, 1, &recorder_len, 0);
 
     debug_print_graph(&recorder);
 
     // This triggers everything!
-    object_t * sample = port_pull(&recorder.node_outputs[0]);
-    printf("%s %lu", object_str(sample), vector_get_size(sample));
-
-    SF_INFO fdata = {
-        .frames = vector_get_size(sample),
-        .samplerate = noise_frame_rate,
-        .channels = 1,
-        .format = SF_FORMAT_WAV | SF_FORMAT_PCM_16,
-        .sections = 1,
-        .seekable = 0,
-    };
-    SNDFILE * f = sf_open("unison.wav", SFM_WRITE, &fdata);
-    sf_write_double(f, CAST_OBJECT(double *, sample), vector_get_size(sample));
-    sf_write_sync(f);
-    sf_close(f);
+    record_and_write(&recorder, "unison.wav", 10);
 
 
     /*

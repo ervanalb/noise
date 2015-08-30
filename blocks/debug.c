@@ -54,7 +54,7 @@ int debug_init(node_t * node, const char * name, char on) {
     struct state * state = (struct state *) node->node_state;
     state->on = on;
     strncpy(state->name, name, sizeof(state->name));
-    
+
     return 0;
 }
 

@@ -23,7 +23,7 @@ int node_alloc_connections(node_t * node, size_t n_inputs, size_t n_outputs) {
 fail:
     free(node->node_inputs);
     free(node->node_outputs);
-    return (errno = ENOMEM, -errno);
+    return (errno = ENOMEM, -1);
 }
 
 void node_free_connections(node_t * node) {

@@ -71,11 +71,12 @@ int impulse_init(node_t * node) {
         return (node_term(node), -1);
 
     // Initialize state
-    node->node_state = calloc(1, sizeof(state));
+    node->node_state = calloc(1, sizeof(struct state));
+    struct state * state = (struct state *) node->node_state;
     if (node->node_state == NULL) 
         return (node_term(node), -1);
     
-    node->node_state->status = STATUS_NEW;
+    state->status = STATUS_NEW;
 
     return 0;
 }

@@ -15,6 +15,7 @@ enum wave_type {
     WAVE_SINE,
     WAVE_SAW,
     WAVE_SQUARE,
+    WAVE_WHITE,
 };
 
 enum sampler_command {
@@ -44,14 +45,19 @@ int debug_init(node_t * node, const char * name, char on);
 // FunGen<> :: (double t) -> (double x); Sine fn generator. Computes x = sin(t)
 int fungen_init(node_t * node);
 
+// Impulse :: (double x) -> (double d); Generates impulse fn on edges of x
+int impulse_init(node_t * node);
+
 // LPF<> :: (double x, double alpha) -> (double x_lpf); Low pass `x` with time const `alpha` (in pulls)
 int lpf_init(node_t * node);
+int clpf_init(node_t * node);
 
 // Math<math_op> :: (double x[, double y]) -> (double result); Performs a basic math op on inputs (see enum math_op)
 int math_init(node_t * node, enum math_op op);
 
 // Mixer<n_channels> :: (chunk s, double vol[, chunk s2, double vol2, ...]) -> (chunk mixout); 
 int mixer_init(node_t * node, size_t n_channels);
+int cmixer_init(node_t * node, size_t n_channels);
 
 // Recorder :: (chunk s, long len) -> (sample[len] samp);
 int recorder_init(node_t * node);
@@ -70,6 +76,9 @@ int wye_init(node_t * node, size_t n_inputs);
 
 // Wave :: (double frequency, long wave_type) -> (chunk samples); See enum wave_type
 int wave_init(node_t * node);
+
+// White :: () -> (chunk samples); White noise
+int white_init(node_t * node);
 
 // Soundcard Sink :: (chunk stream) -> ();
 //int soundcard_get(); // Singleton

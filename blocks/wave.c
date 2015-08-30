@@ -102,3 +102,36 @@ int wave_init(node_t * node) {
 
     return 0;
 }
+
+static enum pull_rc white_pull(struct port * port) {
+    double * chunk = &CAST_OBJECT(double, port->port_value);
+
+	for (size_t i=0; i < noise_chunk_size; i++) {
+        chunk[i] = (rand() / (double) (RAND_MAX / 2)) - 1.0;
+	}
+
+    return PULL_RC_OBJECT;
+}
+
+int white_init(node_t * node) {
+    const struct type * chunk_type = get_chunk_type();
+    int rc = node_alloc_connections(node, 0, 1);
+    if (rc != 0) return rc;
+
+    node->node_term = &node_term_generic;
+    node->node_name = strdup("White noise");
+
+    // Define outputs
+    node->node_outputs[0] = (struct port) {
+        .port_node = node,
+        .port_name = strdup("out"),
+        .port_pull = &white_pull,
+        .port_type = chunk_type,
+        .port_value = object_alloc(chunk_type),
+    };
+
+    if (node->node_outputs[0].port_value == NULL)
+        return (node_term(node), -1);
+
+    return 0;
+}

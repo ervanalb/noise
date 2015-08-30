@@ -27,7 +27,7 @@ static enum pull_rc recorder_pull(struct port * port) {
         if (inp_chunk == NULL) {
             // We don't want to loop forever... so just increment t by one?
             // XXX
-            printf("what do\n");
+            assert(0);
             //t++;
             continue;
         }

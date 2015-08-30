@@ -38,6 +38,10 @@ static enum pull_rc sampler_pull(struct port * port) {
         object_free(state->sample);
         state->sample = object_dup(inp_sample);
         state->t = 0;
+        if(!state->sample)
+            printf("failed to get sample %p\n", inp_sample);
+        else
+            printf("got sample len %lu\n", vector_get_size(state->sample));
     }
 
     if (state->sample == NULL) 
