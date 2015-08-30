@@ -27,11 +27,12 @@ static enum pull_rc recorder_pull(struct port * port) {
         if (inp_chunk == NULL) {
             // We don't want to loop forever... so just increment t by one?
             // XXX
-            t++;
+            printf("what do\n");
+            //t++;
             continue;
         }
 
-        double * chunk = &CAST_OBJECT(double, port->port_value);
+        double * chunk = &CAST_OBJECT(double, inp_chunk);
         if (t + noise_chunk_size < length) {
             memcpy(&samples[t], chunk, sizeof(double) * noise_chunk_size);
             t += noise_chunk_size;

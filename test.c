@@ -66,7 +66,7 @@ int main(void) {
     // Melody
     // TODO: Come up with a better way of specifying tuples
 #define None -1
-    double unison[] = {None, None, None, 65, 75, None, 72, 67, 67, 68, None, 65, 70, 72, 70, 65, 65, None, None, 65, 75, None, 72, 67, 67, 68, 65, 72, 75, None, 72, 77};
+    double unison[] = {88, None, None, 65, 75, None, 72, 67, 67, 68, None, 65, 70, 72, 70, 65, 65, None, None, 65, 75, None, 72, 67, 67, 68, 65, 72, 75, None, 72, 77};
     size_t unison_len = sizeof(unison) / sizeof(*unison);
 
     object_t * melody_obj = object_alloc(get_object_vector_type());
@@ -158,11 +158,17 @@ int main(void) {
     */
 
     node_connect(&time_wye, 0, &mixer, 0);
+    
+    // Debug
+    node_t debug_ch;
+    debug_init(&debug_ch, "ch", 0);
+    node_connect(&debug_ch, 0, &time_wye, 0);
 
     node_t recorder;
     recorder_init(&recorder);
     MAKE_LONG_CONSTANT(recorder_len, noise_frame_rate * 30);
-    node_connect(&recorder, 0, &time_wye, 0);
+    //MAKE_LONG_CONSTANT(recorder_len, noise_chunk_size * 5);
+    node_connect(&recorder, 0, &debug_ch, 0);
     node_connect(&recorder, 1, &recorder_len, 0);
 
     debug_print_graph(&recorder);
@@ -183,6 +189,7 @@ int main(void) {
     sf_write_double(f, CAST_OBJECT(double *, sample), vector_get_size(sample));
     sf_write_sync(f);
     sf_close(f);
+
 
     /*
     // Soundcard 
