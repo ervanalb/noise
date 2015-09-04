@@ -6,24 +6,24 @@
 #include "error.h"
 #include "ntypes.h"
 
-struct node;
-struct port;
+struct nz_node;
+struct nz_port;
 
-enum pull_rc {
-    PULL_RC_ERROR  = -1,
-    PULL_RC_NULL   = 0,
-    PULL_RC_OBJECT = 1,
+enum nz_pull_rc {
+    NZ_PULL_RC_ERROR  = -1,
+    NZ_PULL_RC_NULL   = 0,
+    NZ_PULL_RC_OBJECT = 1,
 };
 
-typedef enum pull_rc (*port_pull_fn_pt)(struct port * port);
-typedef void (*node_term_fn_pt)(struct node  * node);
+typedef enum nz_pull_rc (*nz_port_pull_fpt)(struct nz_port * port);
+typedef void (*nz_node_term_fpt)(struct nz_node * node);
 
 // Block instances are nodes
 
-struct port {
-    struct node * port_node;
-    port_pull_fn_pt port_pull;
-    object_t * port_value; 
+struct nz_port {
+    struct nz_node * port_node;
+    nz_port_pull_fpt port_pull;
+    object_t * nz_port_value; 
 
     const struct type * port_type;
     char * port_name;
@@ -37,7 +37,7 @@ struct inport {
 
 typedef struct node {
     char * node_name;
-    node_term_fn_pt node_term;
+    node_term_fpt node_term;
     struct {
         int flag_can_copy:1;
     } node_flags;

@@ -2,23 +2,24 @@
 #C_SRC  = $(wildcard *.c)
 #OBJECTS := $(patsubst %.c,%.o,$(C_SRC))
 OBJECTS = \
-		  block.o \
+		  app/test.o \
+		  core/block.o \
+		  core/error.o \
+		  core/ntype.o \
+		  blocks/audio/function_gen.o \
+		  blocks/audio/impulse.o \
+		  blocks/audio/lpf.o \
+		  blocks/audio/mixer.o \
+		  blocks/audio/recorder.o \
+		  blocks/audio/sample.o \
+		  blocks/audio/wave.o \
+		  blocks/io/portaudio.o \
 		  blocks/accumulator.o \
 		  blocks/constant.o \
 		  blocks/debug.o \
 		  blocks/fittings.o \
-		  blocks/function_gen.o \
-		  blocks/impulse.o \
-		  blocks/lpf.o \
 		  blocks/maths.o \
-		  blocks/mixer.o \
-		  blocks/recorder.o \
-		  blocks/sample.o \
-		  blocks/sequencer.o \
-		  blocks/wave.o \
-		  error.o \
-		  test.o \
-		  ntypes.o 
+		  blocks/sequencer.o 
 
 TARGET = noise
 

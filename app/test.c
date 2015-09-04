@@ -2,12 +2,11 @@
 #include <stdio.h>
 #include <math.h>
 #include <sndfile.h>
-#include "block.h"
-#include "blockdef.h"
-#include "debug.h"
 #include "noise.h"
-#include "util.h"
-#include "noise.h"
+#include "blocks/blocks.h"
+#include "core/block.h"
+#include "core/debug.h"
+#include "core/util.h"
 
 const size_t nz_chunk_size = 128;
 const double nz_frame_rate = 44100;

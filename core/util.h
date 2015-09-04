@@ -1,5 +1,7 @@
-#ifndef __UTIL_H__
-#define __UTIL_H__
+#ifndef __CORE_UTIL_H__
+#define __CORE_UTIL_H__
+
+// Do not include any noise header files
 
 #include <stdlib.h>
 #include <stdio.h>
