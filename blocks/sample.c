@@ -56,14 +56,14 @@ static enum pull_rc sampler_pull(struct port * port) {
     if ((cmd == SAMPLER_COMMAND_PLAY || cmd == SAMPLER_COMMAND_RESTART) && state->t < length) {
         double * sample = CAST_OBJECT(double *, state->sample);
 
-        for (size_t i = 0; i < noise_chunk_size; i++) {
+        for (size_t i = 0; i < nz_chunk_size; i++) {
             if (state->t < length)
                 chunk[i] = sample[state->t++];
             else
                 chunk[i] = 0;
         }
     } else { // SAMPLER_COMMAND_PAUSE, STOP & otherwise
-        memset(chunk, 0, sizeof(double) * noise_chunk_size);
+        memset(chunk, 0, sizeof(double) * nz_chunk_size);
     }
 
     return PULL_RC_OBJECT;

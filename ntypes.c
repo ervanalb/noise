@@ -360,7 +360,7 @@ struct type * make_tuple_type(size_t length) {
 static char * chunk_str (const object_t * obj) {
     double * chunk = &CAST_OBJECT(double, obj);
     return rsprintf("chunk {%f, %f, %f, ... %f} ",
-            chunk[0], chunk[1], chunk[2], chunk[noise_chunk_size-1]);
+            chunk[0], chunk[1], chunk[2], chunk[nz_chunk_size-1]);
 }
 
 static struct type chunk_type = {
@@ -371,7 +371,7 @@ static struct type chunk_type = {
 };
 
 const struct type * get_chunk_type() {
-    chunk_type.type_data_size = noise_chunk_size * sizeof(double);
+    chunk_type.type_data_size = nz_chunk_size * sizeof(double);
     return &chunk_type;
 }
 
@@ -401,15 +401,13 @@ static char * double_str (const object_t * obj) {
     return rsprintf("%f", CAST_OBJECT(double, obj));
 }
 
-static const struct type _double_type = {
+const struct type double_type[1] = {{
     .type_data_size = sizeof(double),
     .type_alloc = &simple_alloc,
     .type_copy = &simple_copy,
     .type_free = &simple_free,
     .type_str = &double_str,
-};
-
-const struct type * double_type = &_double_type;
+}};
 
 // -
 
@@ -418,15 +416,13 @@ static char * long_str (const object_t * obj)
     return rsprintf("%ld", CAST_OBJECT(long, obj));
 }
 
-static const struct type _long_type = {
+const struct type long_type[1] = {{
     .type_data_size = sizeof(long),
     .type_alloc = &simple_alloc,
     .type_copy = &simple_copy,
     .type_free = &simple_free,
     .type_str = &long_str,
-};
-
-const struct type * long_type = &_long_type;
+}};
 
 // -
 
@@ -452,12 +448,10 @@ char * string_str(const object_t * obj) {
     return strdup(CAST_OBJECT(char *, obj));
 }
 
-static const struct type _string_type = {
+const struct type string_type[1] = {{
     .type_data_size = sizeof(char *),
     .type_alloc = &simple_alloc,
     .type_copy = &string_copy,
     .type_free = &string_free,
     .type_str = &string_str
-};
-
-const struct type * string_type = &_string_type;
+}};

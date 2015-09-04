@@ -9,7 +9,7 @@
 static enum pull_rc mixer_pull(struct port * port) {
     node_t * node = port->port_node;
     
-    for (size_t j = 0; j < noise_chunk_size; j++) {
+    for (size_t j = 0; j < nz_chunk_size; j++) {
         (&CAST_OBJECT(double, port->port_value))[j] = 0.;
     }
     
@@ -19,7 +19,7 @@ static enum pull_rc mixer_pull(struct port * port) {
 
         if (input_chunk == NULL || input_gain == NULL) continue;
 
-        for (size_t j = 0; j < noise_chunk_size; j++) {
+        for (size_t j = 0; j < nz_chunk_size; j++) {
             (&CAST_OBJECT(double, port->port_value))[j] += CAST_OBJECT(double, input_gain) * (&CAST_OBJECT(double, input_chunk))[j];
         }
     }
@@ -69,7 +69,7 @@ static enum pull_rc cmixer_pull(struct port * port) {
     node_t * node = port->port_node;
     double * output = &CAST_OBJECT(double, port->port_value);
     
-    memset(output, 0, sizeof(double) * noise_chunk_size);
+    memset(output, 0, sizeof(double) * nz_chunk_size);
     
     for (size_t i = 0; i < node->node_n_inputs; ) {
         object_t * input_chunk = NODE_PULL(node, i++);
@@ -80,7 +80,7 @@ static enum pull_rc cmixer_pull(struct port * port) {
         double * chunk = &CAST_OBJECT(double, input_chunk);
         double * gains = &CAST_OBJECT(double, input_gains);
 
-        for (size_t j = 0; j < noise_chunk_size; j++) {
+        for (size_t j = 0; j < nz_chunk_size; j++) {
             output[j] = gains[j] * chunk[j];
         }
     }

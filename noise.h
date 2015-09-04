@@ -6,7 +6,7 @@
 
 #include "error.h"
 
-extern const size_t noise_chunk_size;
-extern const double noise_frame_rate;
+extern const size_t nz_chunk_size;
+extern const double nz_frame_rate;
 
 #endif

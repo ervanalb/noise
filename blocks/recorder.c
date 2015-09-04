@@ -33,9 +33,9 @@ static enum pull_rc recorder_pull(struct port * port) {
         }
 
         double * chunk = &CAST_OBJECT(double, inp_chunk);
-        if (t + noise_chunk_size < length) {
-            memcpy(&samples[t], chunk, sizeof(double) * noise_chunk_size);
-            t += noise_chunk_size;
+        if (t + nz_chunk_size < length) {
+            memcpy(&samples[t], chunk, sizeof(double) * nz_chunk_size);
+            t += nz_chunk_size;
         } else {
             while(t < length)
                 samples[t++] = *chunk++;

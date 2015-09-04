@@ -33,14 +33,14 @@ static enum pull_rc wave_pull(struct port * port) {
 
 	if (inp_freq == NULL || inp_wave == NULL) {
         state->phase = 0.;
-        memset(chunk, 0, noise_chunk_size * sizeof(double));
+        memset(chunk, 0, nz_chunk_size * sizeof(double));
         return PULL_RC_OBJECT;
 	}
 
     double freq = CAST_OBJECT(double, inp_freq);
     enum wave_type wave = CAST_OBJECT(long, inp_wave);
 
-	for (size_t i=0; i < noise_chunk_size; i++) {
+	for (size_t i=0; i < nz_chunk_size; i++) {
         switch(wave) {
             case WAVE_SINE:
                 chunk[i] = sine(state->phase);
@@ -56,7 +56,7 @@ static enum pull_rc wave_pull(struct port * port) {
                 break;
         }
 
-        state->phase = fmod(state->phase + freq / noise_frame_rate, 1.0);
+        state->phase = fmod(state->phase + freq / nz_frame_rate, 1.0);
 	}
 
     return PULL_RC_OBJECT;
@@ -106,7 +106,7 @@ int wave_init(node_t * node) {
 static enum pull_rc white_pull(struct port * port) {
     double * chunk = &CAST_OBJECT(double, port->port_value);
 
-	for (size_t i=0; i < noise_chunk_size; i++) {
+	for (size_t i=0; i < nz_chunk_size; i++) {
         chunk[i] = (rand() / (double) (RAND_MAX / 2)) - 1.0;
 	}
 

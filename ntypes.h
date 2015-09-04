@@ -77,9 +77,12 @@ size_t vector_get_size(const object_t * obj);
 #define CAST_OBJECT(type, obj) (*((type *)((union { char * c; type* x;})(char *)((obj)->object_data)).x))
 #define CAST_TUPLE(type, idx, obj) CAST_OBJECT(type, (&CAST_OBJECT(object_t *, (obj)))[(idx)])
 
-extern const struct type * double_type;
-extern const struct type * long_type;
-extern const struct type * string_type;
+// Single-element array to make a pointer
+// E.g. double_type is a (const struct type *)
+// As in `object_alloc(double_type)` not `object_alloc(&double_type)`
+extern const struct type double_type[1];
+extern const struct type long_type[1];
+extern const struct type string_type[1];
 const struct type * get_chunk_type();
 const struct type * get_sample_type();
 const struct type * get_object_vector_type();

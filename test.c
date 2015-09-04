@@ -9,8 +9,8 @@
 #include "util.h"
 #include "noise.h"
 
-const size_t noise_chunk_size = 128;
-const double noise_frame_rate = 44100;
+const size_t nz_chunk_size = 128;
+const double nz_frame_rate = 44100;
 
 
 // TODO: Come up with a way better way of specifying constants
@@ -70,7 +70,7 @@ node_t * make_drum(node_t * record, const long * hits, size_t hits_len, node_t *
 }
 
 int record_and_write(node_t * recorder_node, const char * filename, double time_seconds) {
-    MAKE_LONG_CONSTANT(recorder_len, noise_frame_rate * time_seconds);
+    MAKE_LONG_CONSTANT(recorder_len, nz_frame_rate * time_seconds);
     node_connect(recorder_node, 1, &recorder_len, 0);
 
     // Trigger the computation
@@ -79,7 +79,7 @@ int record_and_write(node_t * recorder_node, const char * filename, double time_
 
     SF_INFO fdata = {
         .frames = vector_get_size(sample),
-        .samplerate = noise_frame_rate,
+        .samplerate = nz_frame_rate,
         .channels = 1,
         .format = SF_FORMAT_WAV | SF_FORMAT_PCM_16,
         .sections = 1,
@@ -97,7 +97,10 @@ int main(void) {
     //type_t * chunk_type = get_chunk_type();
 
     // Timebase
-    MAKE_DOUBLE_CONSTANT(delta_t, 0.01);
+    // (frames / chunk) / (frames / second) * (beats / minute) / (seconds / minute) 
+    // = (frames * second * beats * minute) / (chunk * frames * minute * second) 
+    // = (beats / chunk)
+    MAKE_DOUBLE_CONSTANT(delta_t, nz_chunk_size / nz_frame_rate * 280 / 60.);
     node_t timebase, time_tee, time_wye;
     accumulator_init(&timebase);
     tee_init(&time_tee, 4);
@@ -169,7 +172,7 @@ int main(void) {
     node_connect(&snare_mix, 1, &snare_lpf, 0);
 
     recorder_init(&snare_rec);
-    MAKE_LONG_CONSTANT(snare_len, noise_frame_rate * 0.5);
+    MAKE_LONG_CONSTANT(snare_len, nz_frame_rate * 0.5);
     node_connect(&snare_rec, 0, &snare_mix, 0);
     node_connect(&snare_rec, 1, &snare_len, 0);
     //record_and_write(&snare_rec, "snare.wav", 0.5);
@@ -193,7 +196,7 @@ int main(void) {
     node_connect(&kick_mix, 1, &kick_lpf, 0);
 
     recorder_init(&kick_rec);
-    MAKE_LONG_CONSTANT(kick_len, noise_frame_rate * 0.5);
+    MAKE_LONG_CONSTANT(kick_len, nz_frame_rate * 0.5);
     node_connect(&kick_rec, 0, &kick_mix, 0);
     node_connect(&kick_rec, 1, &kick_len, 0);
     
@@ -234,9 +237,9 @@ int main(void) {
     // Mixer
     node_t  mixer;
     mixer_init(&mixer, 3);
-    MAKE_DOUBLE_CONSTANT(wave_vol, 0.1);
-    MAKE_DOUBLE_CONSTANT(snare_vol, 0.3);
-    MAKE_DOUBLE_CONSTANT(kick_vol, 0.6);
+    MAKE_DOUBLE_CONSTANT(wave_vol, 0.00);
+    MAKE_DOUBLE_CONSTANT(snare_vol, 0.1);
+    MAKE_DOUBLE_CONSTANT(kick_vol, 0.9);
 
     node_connect(&mixer, 0, &wave, 0);
     node_connect(&mixer, 1, &wave_vol, 0);
@@ -254,7 +257,7 @@ int main(void) {
 
     node_t recorder;
     recorder_init(&recorder);
-    //MAKE_LONG_CONSTANT(recorder_len, noise_chunk_size * 5);
+    //MAKE_LONG_CONSTANT(recorder_len, nz_chunk_size * 5);
     node_connect(&recorder, 0, &debug_ch, 0);
 
     debug_print_graph(&recorder);

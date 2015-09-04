@@ -100,14 +100,14 @@ static enum pull_rc clpf_pull(struct port * port) {
 
     double prev_value = 0.;
     if (state->active) {
-        prev_value = output[noise_chunk_size-1];
+        prev_value = output[nz_chunk_size-1];
     } else {
         state->active = 1;
         prev_value = input[0];
     }
 
 
-    for (size_t i = 0; i < noise_chunk_size; i++) {
+    for (size_t i = 0; i < nz_chunk_size; i++) {
         prev_value = output[i] = prev_value + alpha * (input[i] - prev_value);
     }
 

@@ -5,9 +5,9 @@
 #include <assert.h>
 
 // Random number to prevent collisions
-#define NOISE_ERRNOBASE 829410
+#define NZ_ERRNOBASE 829410
 
-int noise_errno(void);
-const char * noise_strerror(int errnum);
+int nz_errno(void);
+const char * nz_strerror(int errnum);
 
 #endif

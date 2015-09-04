@@ -1,11 +1,11 @@
 #include "error.h"
 #include <string.h>
 
-int noise_errno(void) {
+int nz_errno(void) {
     return errno;    
 }
 
-const char * noise_strerror(int errnum) {
+const char * nz_strerror(int errnum) {
     switch(errnum) {
         default: 
             return strerror(errnum);
