@@ -87,3 +87,29 @@ void nz_debug_print_graph(struct nz_node * node) {
         //debug_print_graph(node->outputs[i].node);
     }
 }
+
+static void print_dot_recurse(struct nz_node * node, FILE * f);
+
+void nz_debug_print_dot(struct nz_node * node, const char * filename) {
+    FILE * f = fopen(filename, "w");
+
+    fprintf(f, "strict digraph {\n");
+    print_dot_recurse(node, f);
+    fprintf(f, "}\n");
+
+    fclose(f);
+}
+
+
+static void print_dot_recurse(struct nz_node * node, FILE * f) {
+    fprintf(f, "    n%p [label=\"%s\"];\n", node, node->node_name);
+    for (size_t i = 0; i < node->node_n_inputs; i++) {
+        struct nz_port * port = node->node_inputs[i].inport_connection;
+        if (port) {
+            print_dot_recurse(port->port_node, f);
+            fprintf(f, "        n%p -> n%p [label=\"%s/%s\"];\n", 
+                    port->port_node, node,
+                    port->port_name, node->node_inputs[i].inport_name);
+        }
+    }
+}

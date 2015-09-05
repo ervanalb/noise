@@ -40,6 +40,7 @@ struct nz_node {
     struct {
         int flag_can_copy:1;
         int flag_pure:1;
+        //int flag_visited:1;
     } node_flags;
 
     void * node_state;

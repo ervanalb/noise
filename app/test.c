@@ -249,6 +249,7 @@ int main(void) {
     CONNECT(_blk, 0, _pipe, 0);
 
     nz_debug_print_graph(recorder);
+    nz_debug_print_dot(recorder, "unison.dot");
 
     // This triggers everything!
     record_and_write(recorder, "unison.wav", 10);
