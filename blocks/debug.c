@@ -49,7 +49,7 @@ int debug_init(struct nz_node * node, const char * name, char on) {
 
     // Init state
     node->node_state = calloc(1, sizeof(struct state));
-    if (node->node_state == NULL) return (node_term(node), -1);
+    if (node->node_state == NULL) return (nz_node_term(node), -1);
 
     struct state * state = (struct state *) node->node_state;
     state->on = on;
@@ -58,8 +58,7 @@ int debug_init(struct nz_node * node, const char * name, char on) {
     return 0;
 }
 
-void debug_print_graph(struct nz_node * node)
-{
+void nz_debug_print_graph(struct nz_node * node) {
     printf("%p %s:\n", node, node->node_name);
 
     for (size_t i = 0; i < node->node_n_inputs; i++) {
@@ -81,7 +80,7 @@ void debug_print_graph(struct nz_node * node)
     for (size_t i = 0; i < node->node_n_inputs; i++) {
         struct nz_port * port = node->node_inputs[i].inport_connection;
         if (port) 
-            debug_print_graph(port->port_node);
+            nz_debug_print_graph(port->port_node);
     }
 
     for (size_t i = 0; i < node->node_n_outputs; i++) {

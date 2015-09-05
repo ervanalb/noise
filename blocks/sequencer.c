@@ -17,7 +17,7 @@ static enum nz_pull_rc sequencer_pull(struct nz_port * port) {
 
     int t = (int) NZ_CAST(double, inp_time);
 
-    size_t stream_idx = t % vector_get_size(inp_stream);
+    size_t stream_idx = t % nz_vector_get_size(inp_stream);
     struct nz_obj ** sequence = NZ_CAST(struct nz_obj **, inp_stream);
     struct nz_obj * out = nz_obj_swap(&port->port_value, sequence[stream_idx]);
 
@@ -25,8 +25,6 @@ static enum nz_pull_rc sequencer_pull(struct nz_port * port) {
 }
 
 int sequencer_init(struct nz_node * node) {
-    const struct type * nz_obj_vector_type = get_nz_obj_vector_type();
-
     int rc = nz_node_alloc_ports(node, 2, 1);
     if (rc != 0) return rc;
 
@@ -39,7 +37,7 @@ int sequencer_init(struct nz_node * node) {
         .inport_name = strdup("time"),
     };
     node->node_inputs[1] = (struct nz_inport) {
-        .inport_type = nz_obj_vector_type,
+        .inport_type = object_vector_type,
         .inport_name = strdup("sequence"),
     };
     

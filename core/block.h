@@ -59,7 +59,7 @@ void nz_node_term_generic(struct nz_node * node);
 void nz_node_term_generic_objstate(struct nz_node * node);
 void nz_node_free_ports(struct nz_node * node);
 
-static inline void node_term(struct nz_node * node) {
+static inline void nz_node_term(struct nz_node * node) {
     if (node == NULL) return;
     if (node->node_term) node->node_term(node);
 }

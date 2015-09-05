@@ -1,51 +1,50 @@
 #include <math.h>
 #include <stdlib.h>
 
-#include "block.h"
-#include "blockdef.h"
 #include "noise.h"
-#include "util.h"
+#include "blocks/audio/blocks.h"
+#include "core/util.h"
 
 static double f(double t) {
 	return sin(t*2*M_PI);
 }
 
-static enum pull_rc fungen_pull(struct port * port) {
-    node_t * node = port->port_node;
-    object_t * input0 = NODE_PULL(node, 0);
+static enum nz_pull_rc fungen_pull(struct nz_port * port) {
+    struct nz_node * node = port->port_node;
+    struct nz_obj * input0 = NZ_NODE_PULL(node, 0);
 
     if (input0 == NULL) {
-        return PULL_RC_NULL;
+        return NZ_PULL_RC_NULL;
     }
 
-    CAST_OBJECT(double, port->port_value) = f(CAST_OBJECT(double, input0));
-    return PULL_RC_OBJECT;
+    NZ_CAST(double, port->port_value) = f(NZ_CAST(double, input0));
+    return NZ_PULL_RC_OBJECT;
 }
 
-int fungen_init(node_t * node) {
-    int rc = node_alloc_connections(node, 1, 1);
+int fungen_init(struct nz_node * node) {
+    int rc = nz_node_alloc_ports(node, 1, 1);
     if (rc != 0) return rc;
 
-    node->node_term = &node_term_generic;
+    node->node_term = &nz_node_term_generic;
     node->node_name = strdup("Sine");
 
     // Define inputs
-    node->node_inputs[0] = (struct inport) {
+    node->node_inputs[0] = (struct nz_inport) {
         .inport_type = double_type,
         .inport_name = strdup("time"),
     };
     
     // Define outputs
-    node->node_outputs[0] = (struct port) {
+    node->node_outputs[0] = (struct nz_port) {
         .port_node = node,
         .port_name = strdup("sin(t)"),
         .port_pull = &fungen_pull,
         .port_type = double_type,
-        .port_value = object_alloc(double_type),
+        .port_value = nz_obj_create(double_type),
     };
 
     if (node->node_outputs[0].port_value == NULL)
-        return (node_term(node), -1);
+        return (nz_node_term(node), -1);
 
     return 0;
 }

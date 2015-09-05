@@ -3,6 +3,6 @@
 
 #include "noise.h"
 
-void debug_print_graph(struct nz_node * node);
+void nz_debug_print_graph(struct nz_node * node);
 
 #endif
