@@ -1,20 +1,16 @@
 #include <stdlib.h>
 #include <string.h>
 #include <portaudio.h>
-#include "globals.h"
-#include "block.h"
-#include "typefns.h"
-#include "blockdef.h"
-#include "util.h"
 
-size_t global_chunk_size = 128;
-double global_frame_rate = 48000;
+#include "noise.h"
+#include "blocks/io/blocks.h"
 
 PaStreamParameters outputParameters;
 PaError err;
 PaStream* stream;
 float* buffer;
-static node_t * sc_node;
+static struct nz_node sc_node[1];
+int sc_init = 0;
 
 static int soundcard_api_init()
 {
@@ -33,8 +29,8 @@ static int soundcard_api_init()
 		  &stream,
 		  0,
 		  &outputParameters,
-		  global_frame_rate,
-		  global_chunk_size,
+		  nz_frame_rate,
+		  nz_chunk_size,
 		  0,
 		  0, /* no callback, use blocking API */
 		  0 ); /* no callback, so no callback userData */
@@ -43,18 +39,18 @@ static int soundcard_api_init()
 	err = Pa_StartStream( stream );
 	if( err != paNoError ) return 1;
 
-	buffer=malloc(global_chunk_size*sizeof(float));
+	buffer=malloc(nz_chunk_size*sizeof(float));
 
 	return 0;
 }
 
 static int soundcard_api_write(double* chunk)
 {
-    //memcpy(buffer, chunk, global_chunk_size * sizeof(double));
-    for (size_t i = 0; i < global_chunk_size; i++) {
+    //memcpy(buffer, chunk, nz_chunk_size * sizeof(double));
+    for (size_t i = 0; i < nz_chunk_size; i++) {
         buffer[i] = (float) chunk[i];
     }
-	err = Pa_WriteStream( stream, buffer, global_chunk_size);
+	err = Pa_WriteStream( stream, buffer, nz_chunk_size);
 	if( err ) return 1;
 	return 0;
 }
@@ -74,28 +70,25 @@ static int soundcard_api_deinit()
 
 // --- Block methods ---
 
-void soundcard_destroy(node_t * node)
-{
+void soundcard_destroy(struct nz_node * node) {
     soundcard_api_deinit();
-    node_destroy_generic(node);
-    sc_node = NULL;
+    nz_node_term_generic(node);
+    sc_init = 0;
 }
 
 // Public
 
-node_t * soundcard_get()
-{
-    if (sc_node) return sc_node;
+struct nz_node * soundcard_get() {
+    int rc = nz_node_alloc_ports(sc_node, 1, 0);
+    if (rc != 0) return NULL;
 
-    type_t * chunk_type = get_chunk_type();
-    sc_node = node_alloc(1, 0, NULL);
-    sc_node->name = strdup("Soundcard");
-    sc_node->destroy = &soundcard_destroy;
+    sc_node->node_term = &soundcard_destroy;
+    sc_node->node_name = strdup("Soundcard");
 
     // Define inputs
-    sc_node->inputs[0] = (struct node_input) {
-        .type = chunk_type,
-        .name = strdup("chunks"),
+    sc_node->node_inputs[0] = (struct nz_inport) {
+        .inport_type = chunk_type,
+        .inport_name = strdup("chunks"),
     };
     
     // Setup
@@ -105,12 +98,13 @@ node_t * soundcard_get()
     (void) soundcard_api_init;
     (void) soundcard_api_write;
 
+    sc_init = 1;
+
     return sc_node;
 }
 
-void soundcard_run()
-{
-    if (!sc_node) {
+void soundcard_run() {
+    if (!sc_init) {
         printf("Soundcard not initialized!\n");
         return;
     }
@@ -122,13 +116,12 @@ void soundcard_run()
 #endif
     //while (1) {
     for (int i = 0; i < iters; i++) {
-        object_t * chunk = NULL;
-        node_pull(sc_node, 0, &chunk);
+        struct nz_obj * chunk = NZ_NODE_PULL(sc_node, 0);
 
         if (chunk == NULL) return;
 
 #ifndef FAKESOUND
-        if (soundcard_api_write(&CAST_OBJECT(double, chunk))) {
+        if (soundcard_api_write(&NZ_CAST(double, chunk))) {
             printf("pa error\n");
         }
 #endif
