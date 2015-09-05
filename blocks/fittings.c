@@ -16,7 +16,7 @@ static enum nz_pull_rc wye_pull(struct nz_port * port) {
     return (out == NULL) ? NZ_PULL_RC_NULL : NZ_PULL_RC_OBJECT;
 }
 
-int wye_init(struct nz_node * node, size_t n_inputs) {
+int nz_wye_init(struct nz_node * node, size_t n_inputs) {
     if (n_inputs < 1) return (errno = EINVAL, -1);
 
     int rc = nz_node_alloc_ports(node, n_inputs, 1);
@@ -62,7 +62,7 @@ static enum nz_pull_rc tee_pull_aux(struct nz_port * port) {
     return NZ_PULL_RC_OBJECT;
 }
 
-int tee_init(struct nz_node * node, size_t n_outputs) {
+int nz_tee_init(struct nz_node * node, size_t n_outputs) {
     if (n_outputs < 1) return (errno = EINVAL, -1);
 
     int rc = nz_node_alloc_ports(node, 1, n_outputs);

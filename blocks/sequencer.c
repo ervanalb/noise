@@ -24,7 +24,7 @@ static enum nz_pull_rc sequencer_pull(struct nz_port * port) {
     return (out == NULL) ? NZ_PULL_RC_NULL : NZ_PULL_RC_OBJECT;
 }
 
-int sequencer_init(struct nz_node * node) {
+int nz_sequencer_init(struct nz_node * node) {
     int rc = nz_node_alloc_ports(node, 2, 1);
     if (rc != 0) return rc;
 

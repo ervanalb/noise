@@ -8,7 +8,7 @@ static enum nz_pull_rc constant_pull(struct nz_port * port) {
     return NZ_PULL_RC_OBJECT;
 }
 
-int constant_init(struct nz_node * node, struct nz_obj * constant_value) {
+int nz_constant_init(struct nz_node * node, struct nz_obj * constant_value) {
     int rc = nz_node_alloc_ports(node, 0, 1);
     if (rc != 0) return rc;
 

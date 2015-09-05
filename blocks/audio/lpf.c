@@ -37,7 +37,7 @@ static enum nz_pull_rc lpf_pull(struct nz_port * port) {
     return NZ_PULL_RC_OBJECT;
 }
 
-int lpf_init(struct nz_node * node) {
+int nz_lpf_init(struct nz_node * node) {
     int rc = nz_node_alloc_ports(node, 2, 1);
     if (rc != 0) return rc;
 
@@ -113,7 +113,7 @@ static enum nz_pull_rc clpf_pull(struct nz_port * port) {
     return NZ_PULL_RC_OBJECT;
 }
 
-int clpf_init(struct nz_node* node) {
+int nz_clpf_init(struct nz_node* node) {
     int rc = nz_node_alloc_ports(node, 2, 1);
     if (rc != 0) return rc;
 

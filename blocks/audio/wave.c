@@ -61,7 +61,7 @@ static enum nz_pull_rc wave_pull(struct nz_port * port) {
     return NZ_PULL_RC_OBJECT;
 }
 
-int wave_init(struct nz_node * node) {
+int nz_wave_init(struct nz_node * node) {
     int rc = nz_node_alloc_ports(node, 2, 1);
     if (rc != 0) return rc;
 
@@ -111,7 +111,7 @@ static enum nz_pull_rc white_pull(struct nz_port * port) {
     return NZ_PULL_RC_OBJECT;
 }
 
-int white_init(struct nz_node * node) {
+int nz_white_init(struct nz_node * node) {
     int rc = nz_node_alloc_ports(node, 0, 1);
     if (rc != 0) return rc;
 

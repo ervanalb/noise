@@ -78,7 +78,7 @@ void soundcard_destroy(struct nz_node * node) {
 
 // Public
 
-struct nz_node * soundcard_get() {
+struct nz_node * nz_soundcard_get() {
     int rc = nz_node_alloc_ports(sc_node, 1, 0);
     if (rc != 0) return NULL;
 
@@ -103,7 +103,7 @@ struct nz_node * soundcard_get() {
     return sc_node;
 }
 
-void soundcard_run() {
+void nz_soundcard_run() {
     if (!sc_init) {
         printf("Soundcard not initialized!\n");
         return;

@@ -37,8 +37,8 @@ DEPS = $(OBJECTS:.o=.d)
 	gcc -MM $(CFLAGS) $*.c > $*.d
 
 # Assembler, compiler, and linker flags
-#override CFLAGS += $(INC) -O0 -g -Wall -Wextra -Werror -Wno-unused-parameter -Wno-unused -Wwrite-strings -std=c99 
-override CFLAGS += $(INC) -O3 -g -Wall -Wextra -Werror -Wno-unused-parameter -Wno-unused -Wwrite-strings -std=c99 
+override CFLAGS += $(INC) -O0 -g -Wall -Wextra -Werror -Wno-unused-parameter -Wno-unused -Wwrite-strings -std=c99 
+#override CFLAGS += $(INC) -O3 -g -Wall -Wextra -Werror -Wno-unused-parameter -Wno-unused -Wwrite-strings -std=c99 
 override LFLAGS += $(LIB) $(CFLAGS)
 LIBS = -lm -lportaudio -lsndfile
 

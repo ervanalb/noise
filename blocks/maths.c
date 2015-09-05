@@ -105,7 +105,7 @@ static enum nz_pull_rc note_to_freq_pull(struct nz_port * port) {
     return NZ_PULL_RC_OBJECT;
 }
  
-int math_init(struct nz_node * node, enum nz_math_op op) {
+int nz_math_init(struct nz_node * node, enum nz_math_op op) {
     if (node == NULL) return (errno = EINVAL, -1);
 
     size_t n_inputs = 2;
@@ -154,7 +154,7 @@ int math_init(struct nz_node * node, enum nz_math_op op) {
     };
 
     if (node->node_outputs[0].port_value == NULL)
-        return (node_term(node), -1);
+        return (nz_node_term(node), -1);
 
     switch(op) {
         case NZ_MATH_ADD:

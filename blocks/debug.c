@@ -25,7 +25,7 @@ static enum nz_pull_rc debug_pull(struct nz_port * port){
     return (out == NULL) ? NZ_PULL_RC_NULL : NZ_PULL_RC_OBJECT;
 }
 
-int debug_init(struct nz_node * node, const char * name, char on) {
+int nz_debug_init(struct nz_node * node, const char * name, char on) {
     int rc = nz_node_alloc_ports(node, 1, 1);
     if (rc != 0) return rc;
 

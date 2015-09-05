@@ -26,7 +26,7 @@ static enum nz_pull_rc mixer_pull(struct nz_port * port) {
     return NZ_PULL_RC_OBJECT;
 }
 
-int mixer_init(struct nz_node * node, size_t n_channels) {
+int nz_mixer_init(struct nz_node * node, size_t n_channels) {
     int rc = nz_node_alloc_ports(node, 2 * n_channels, 1);
     if (rc != 0) return rc;
 
@@ -85,7 +85,7 @@ static enum nz_pull_rc cmixer_pull(struct nz_port * port) {
     return NZ_PULL_RC_OBJECT;
 }
 
-int cmixer_init(struct nz_node * node, size_t n_channels) {
+int nz_cmixer_init(struct nz_node * node, size_t n_channels) {
     int rc = nz_node_alloc_ports(node, 2 * n_channels, 1);
     if (rc != 0) return rc;
 

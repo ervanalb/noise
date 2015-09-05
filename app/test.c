@@ -246,9 +246,9 @@ int main(void) {
     // Mixer
     struct nz_node mixer[1];
     nz_mixer_init(mixer, 3);
-    MAKE_DOUBLE_CONSTANT(wave_vol, 0.00);
-    MAKE_DOUBLE_CONSTANT(snare_vol, 0.1);
-    MAKE_DOUBLE_CONSTANT(kick_vol, 0.9);
+    MAKE_DOUBLE_CONSTANT(wave_vol, 0.10);
+    MAKE_DOUBLE_CONSTANT(snare_vol, 0.2);
+    MAKE_DOUBLE_CONSTANT(kick_vol, 0.6);
 
     nz_node_connect(mixer, 0, wave, 0);
     nz_node_connect(mixer, 1, wave_vol, 0);

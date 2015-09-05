@@ -21,7 +21,7 @@ static enum nz_pull_rc fungen_pull(struct nz_port * port) {
     return NZ_PULL_RC_OBJECT;
 }
 
-int fungen_init(struct nz_node * node) {
+int nz_fungen_init(struct nz_node * node) {
     int rc = nz_node_alloc_ports(node, 1, 1);
     if (rc != 0) return rc;
 
