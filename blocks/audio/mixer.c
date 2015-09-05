@@ -36,11 +36,11 @@ int nz_mixer_init(struct nz_node * node, size_t n_channels) {
     // Define inputs
     for (size_t i = 0; i < n_channels; i++) {
         node->node_inputs[2 * i + 0] = (struct nz_inport) {
-            .inport_type = chunk_type,
+            .inport_type = nz_chunk_type,
             .inport_name = rsprintf("ch %lu", i),
         };
         node->node_inputs[2 * i + 1] = (struct nz_inport) {
-            .inport_type = double_type,
+            .inport_type = nz_double_type,
             .inport_name = rsprintf("gain %lu", i),
         };
     }
@@ -50,8 +50,8 @@ int nz_mixer_init(struct nz_node * node, size_t n_channels) {
         .port_node = node,
         .port_name = strdup("mixout"),
         .port_pull = &mixer_pull,
-        .port_type = chunk_type,
-        .port_value = nz_obj_create(chunk_type),
+        .port_type = nz_chunk_type,
+        .port_value = nz_obj_create(nz_chunk_type),
     };
 
     if (node->node_outputs[0].port_value == NULL)
@@ -95,11 +95,11 @@ int nz_cmixer_init(struct nz_node * node, size_t n_channels) {
     // Define inputs
     for (size_t i = 0; i < n_channels; i++) {
         node->node_inputs[2 * i + 0] = (struct nz_inport) {
-            .inport_type = chunk_type,
+            .inport_type = nz_chunk_type,
             .inport_name = rsprintf("ch %lu", i),
         };
         node->node_inputs[2 * i + 1] = (struct nz_inport) {
-            .inport_type = chunk_type,
+            .inport_type = nz_chunk_type,
             .inport_name = rsprintf("gain %lu", i),
         };
     }
@@ -109,8 +109,8 @@ int nz_cmixer_init(struct nz_node * node, size_t n_channels) {
         .port_node = node,
         .port_name = strdup("mixout"),
         .port_pull = &cmixer_pull,
-        .port_type = chunk_type,
-        .port_value = nz_obj_create(chunk_type),
+        .port_type = nz_chunk_type,
+        .port_value = nz_obj_create(nz_chunk_type),
     };
 
     if (node->node_outputs[0].port_value == NULL)

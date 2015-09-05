@@ -371,7 +371,7 @@ static char * double_str (const struct nz_obj * obj) {
     return rsprintf("%f", NZ_CAST(double, obj));
 }
 
-const struct nz_type double_type[1] = {{
+const struct nz_type nz_double_type[1] = {{
     .type_size = sizeof(double),
     .type_create = &nz_simple_create_,
     .type_destroy = &nz_simple_destroy_,
@@ -386,7 +386,7 @@ static char * long_str (const struct nz_obj * obj)
     return rsprintf("%ld", NZ_CAST(long, obj));
 }
 
-const struct nz_type long_type[1] = {{
+const struct nz_type nz_long_type[1] = {{
     .type_size = sizeof(long),
     .type_create = &nz_simple_create_,
     .type_destroy = &nz_simple_destroy_,
@@ -418,7 +418,7 @@ char * string_str(const struct nz_obj * obj) {
     return strdup(NZ_CAST(char *, obj));
 }
 
-const struct nz_type string_type[1] = {{
+const struct nz_type nz_string_type[1] = {{
     .type_size = sizeof(char *),
     .type_create = &nz_simple_create_,
     .type_destroy = &string_destroy,
@@ -434,33 +434,33 @@ static char * chunk_str (const struct nz_obj * obj) {
             chunk[0], chunk[1], chunk[2], chunk[nz_chunk_size-1]);
 }
 
-struct nz_type chunk_type[1] = {{
+struct nz_type nz_chunk_type[1] = {{
     .type_create = &nz_simple_create_,
     .type_destroy = &nz_simple_destroy_,
     .type_copy = &nz_simple_copy_,
     .type_str = &chunk_str,
 }};
 
-struct nz_type * sample_type = NULL;
+struct nz_type * nz_sample_type = NULL;
 
-struct nz_type * object_vector_type = NULL;
+struct nz_type * nz_object_vector_type = NULL;
 
 // Some types can't be statically created (easily), so build at runtime
 static int types_init() {
     if (types_have_been_inited) return 0;
 
     // Chunk type (fixed-size audio buffer)
-    chunk_type->type_size = nz_chunk_size * sizeof(double);
+    nz_chunk_type->type_size = nz_chunk_size * sizeof(double);
 
     // Sample type (variable-length recording)
-    if (sample_type == NULL)
-        sample_type = nz_type_create_vector(sizeof(double)); 
+    if (nz_sample_type == NULL)
+        nz_sample_type = nz_type_create_vector(sizeof(double)); 
 
     // Object vector type
-    if (object_vector_type == NULL)
-    object_vector_type = nz_type_create_vector(sizeof(struct nz_obj *));
+    if (nz_object_vector_type == NULL)
+    nz_object_vector_type = nz_type_create_vector(sizeof(struct nz_obj *));
 
-    if (sample_type == NULL || object_vector_type == NULL)
+    if (nz_sample_type == NULL || nz_object_vector_type == NULL)
         return -1;
 
     types_have_been_inited = 1;

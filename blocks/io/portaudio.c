@@ -87,7 +87,7 @@ struct nz_node * nz_soundcard_get() {
 
     // Define inputs
     sc_node->node_inputs[0] = (struct nz_inport) {
-        .inport_type = chunk_type,
+        .inport_type = nz_chunk_type,
         .inport_name = strdup("chunks"),
     };
     

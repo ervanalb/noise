@@ -6,6 +6,7 @@ OBJECTS = \
 		  core/block.o \
 		  core/error.o \
 		  core/ntype.o \
+		  blocks/audio/compressor.o \
 		  blocks/audio/function_gen.o \
 		  blocks/audio/impulse.o \
 		  blocks/audio/lpf.o \

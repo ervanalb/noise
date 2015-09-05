@@ -90,12 +90,12 @@ size_t nz_vector_get_size(const struct nz_obj * obj);
 // Single-element array to make a pointer
 // E.g. double_type is a (const struct nz_type *)
 // As in `object_create(double_type)` not `object_create(&double_type)`
-extern const struct nz_type double_type[1];
-extern const struct nz_type long_type[1];
-extern const struct nz_type string_type[1];
-extern struct nz_type chunk_type[1];
-extern struct nz_type * sample_type;
-extern struct nz_type * object_vector_type;
+extern const struct nz_type nz_double_type[1];
+extern const struct nz_type nz_long_type[1];
+extern const struct nz_type nz_string_type[1];
+extern struct nz_type nz_chunk_type[1];
+extern struct nz_type * nz_sample_type;
+extern struct nz_type * nz_object_vector_type;
 
 // nb: there is no way to 'destroy' or 'free' types once created.
 

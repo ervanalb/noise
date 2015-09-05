@@ -16,7 +16,7 @@ static enum nz_pull_rc recorder_pull(struct nz_port * port) {
     size_t t = 0;
 
     free(port->port_value);
-    port->port_value = nz_obj_create(sample_type);
+    port->port_value = nz_obj_create(nz_sample_type);
     nz_vector_set_size(port->port_value, length); //TODO this can fail
     double * samples = NZ_CAST(double *, port->port_value);
 
@@ -50,11 +50,11 @@ int nz_recorder_init(struct nz_node * node) {
 
     // Define inputs
     node->node_inputs[0] = (struct nz_inport) {
-        .inport_type = chunk_type,
+        .inport_type = nz_chunk_type,
         .inport_name = strdup("chunks"),
     };
     node->node_inputs[1] = (struct nz_inport) {
-        .inport_type = long_type,
+        .inport_type = nz_long_type,
         .inport_name = strdup("sizecmd"),
     };
     
@@ -63,7 +63,7 @@ int nz_recorder_init(struct nz_node * node) {
         .port_node = node,
         .port_name = strdup("sample"),
         .port_pull = &recorder_pull,
-        .port_type = sample_type,
+        .port_type = nz_sample_type,
         .port_value = NULL,
     };
 

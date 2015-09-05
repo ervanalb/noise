@@ -131,16 +131,16 @@ int nz_math_init(struct nz_node * node, enum nz_math_op op) {
     // Define inputs
     if (n_inputs == 1) {
         node->node_inputs[0] = (struct nz_inport) {
-            .inport_type = double_type,
+            .inport_type = nz_double_type,
             .inport_name = strdup("freq"),
         };
     } else {
         node->node_inputs[0] = (struct nz_inport) {
-            .inport_type = double_type,
+            .inport_type = nz_double_type,
             .inport_name = strdup("x"),
         };
         node->node_inputs[1] = (struct nz_inport) {
-            .inport_type = double_type,
+            .inport_type = nz_double_type,
             .inport_name = strdup("y"),
         };
     }
@@ -149,8 +149,8 @@ int nz_math_init(struct nz_node * node, enum nz_math_op op) {
     node->node_outputs[0] = (struct nz_port) {
         .port_node = node,
         .port_name = strdup("result"),
-        .port_type = double_type,
-        .port_value = nz_obj_create(double_type),
+        .port_type = nz_double_type,
+        .port_value = nz_obj_create(nz_double_type),
     };
 
     if (node->node_outputs[0].port_value == NULL)

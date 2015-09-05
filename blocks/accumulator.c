@@ -25,7 +25,7 @@ int nz_accumulator_init(struct nz_node * node) {
 
     // Define inputs
     node->node_inputs[0] = (struct nz_inport) {
-        .inport_type = double_type,
+        .inport_type = nz_double_type,
         .inport_name = strdup("delta"),
     };
     
@@ -34,8 +34,8 @@ int nz_accumulator_init(struct nz_node * node) {
         .port_node = node,
         .port_name = strdup("sum"),
         .port_pull = &accumulator_pull,
-        .port_type = double_type,
-        .port_value = nz_obj_create(double_type)
+        .port_type = nz_double_type,
+        .port_value = nz_obj_create(nz_double_type)
     };
 
     // Initialize state

@@ -33,11 +33,11 @@ int nz_sequencer_init(struct nz_node * node) {
 
     // Define inputs
     node->node_inputs[0] = (struct nz_inport) {
-        .inport_type = double_type,
+        .inport_type = nz_double_type,
         .inport_name = strdup("time"),
     };
     node->node_inputs[1] = (struct nz_inport) {
-        .inport_type = object_vector_type,
+        .inport_type = nz_object_vector_type,
         .inport_name = strdup("sequence"),
     };
     

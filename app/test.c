@@ -16,20 +16,43 @@ const double nz_frame_rate = 44100;
     struct nz_obj * name ## _obj = nz_obj_create(otype);    \
     NZ_CAST(ctype, name ## _obj) = (value);                 \
     struct nz_node name[1];                                 \
-    nz_constant_init(name, name ## _obj); 
+    nz_constant_init(name, name ## _obj);                   \
+    _cons = name;
 
-#define MAKE_DOUBLE_CONSTANT(name, value) MAKE_CONSTANT(name, double_type, double, value)
-#define MAKE_LONG_CONSTANT(name, value) MAKE_CONSTANT(name, long_type, long, value)
+#define MAKE_DOUBLE_CONSTANT(name, value) MAKE_CONSTANT(name, nz_double_type, double, value)
+#define MAKE_LONG_CONSTANT(name, value) MAKE_CONSTANT(name, nz_long_type, long, value)
+
+#define BLOCK(varname, name, ...)                   \
+    struct nz_node varname[1];                      \
+    nz_ ## name ## _init(varname, ## __VA_ARGS__);  \
+    _blk = varname;
+
+#define MBLOCK(varname, name, ...)                  \
+    struct nz_node * varname =                      \
+            calloc(1, sizeof(struct nz_node *));    \
+    assert(varname != NULL);                        \
+    nz_ ## name ## _init(varname, ## __VA_ARGS__);  \
+    _blk = varname;
+
+#define CONNECT(out, ox, in, ix)        \
+    nz_node_connect(out, ox, in, ix);   \
+    _pipe = out;
+
+#define DSL_DECLS           \
+    struct nz_node * _pipe; \
+    struct nz_node * _cons; \
+    struct nz_node * _blk;  
 
 #define None -1
 struct nz_obj * make_double_vector(double * array, size_t len) {
-    struct nz_obj * obj = nz_obj_create(object_vector_type);
+    DSL_DECLS;
+    struct nz_obj * obj = nz_obj_create(nz_object_vector_type);
     nz_vector_set_size(obj, len);
 
     for (size_t i = 0; i < len; i++) {
         if (array[i] == None) continue;
 
-        struct nz_obj * v = nz_obj_create(double_type);
+        struct nz_obj * v = nz_obj_create(nz_double_type);
         NZ_CAST(double, v) = array[i];
         NZ_CAST(struct nz_obj **, obj)[i] = v;
     }
@@ -37,11 +60,12 @@ struct nz_obj * make_double_vector(double * array, size_t len) {
 }
 
 struct nz_node * make_drum(struct nz_node * record, const long * hits, size_t hits_len, struct nz_node * time_tee, size_t tinp) {
-    struct nz_obj * hits_obj = nz_obj_create(object_vector_type);
+    struct nz_obj * hits_obj = nz_obj_create(nz_object_vector_type);
+    DSL_DECLS;
     nz_vector_set_size(hits_obj, hits_len);
 
     for (size_t i = 0; i < hits_len; i++) {
-        struct nz_obj * v = nz_obj_create(long_type);
+        struct nz_obj * v = nz_obj_create(nz_long_type);
         NZ_CAST(long, v) = hits[i];
         NZ_CAST(struct nz_obj **, hits_obj)[i] = v;
     }
@@ -67,6 +91,7 @@ struct nz_node * make_drum(struct nz_node * record, const long * hits, size_t hi
 }
 
 int record_and_write(struct nz_node * recorder_node, const char * filename, double time_seconds) {
+    DSL_DECLS;
     MAKE_LONG_CONSTANT(recorder_len, nz_frame_rate * time_seconds);
     nz_node_connect(recorder_node, 1, recorder_len, 0);
 
@@ -91,8 +116,7 @@ int record_and_write(struct nz_node * recorder_node, const char * filename, doub
 }
 
 int main(void) {
-    //type_t * chunk_type = get_chunk_type();
-
+    DSL_DECLS;
     // Timebase
     // (frames / chunk) / (frames / second) * (beats / minute) / (seconds / minute) 
     // = (frames * second * beats * minute) / (chunk * frames * minute * second) 
@@ -125,38 +149,32 @@ int main(void) {
     nz_constant_init(melody, melody_obj);
 
     // Sequencer
-    struct nz_node seq[1];
-    nz_sequencer_init(seq);
-    nz_node_connect(seq, 0, time_tee, 1);
-    nz_node_connect(seq, 1, melody, 0);
+    BLOCK(seq, sequencer);
+    CONNECT(_blk, 0, time_tee, 1);
+    CONNECT(_blk, 1, melody, 0);
 
     // Debug
-    struct nz_node debug_seq[1];
-    nz_debug_init(debug_seq, "seq", 0);
-    nz_node_connect(debug_seq, 0, seq, 0);
+    BLOCK(debug_seq, debug, "seq", 0);
+    CONNECT(_blk, 0, seq, 0);
 
-    struct nz_node lpf[1];
-    nz_lpf_init(lpf);
-    MAKE_CONSTANT(lpf_alpha, double_type, double, 2);
-    nz_node_connect(lpf, 0, debug_seq, 0);
-    nz_node_connect(lpf, 1, lpf_alpha, 0);
+    BLOCK(lpf, lpf);
+    CONNECT(_blk, 0, _pipe, 0);
+    MAKE_CONSTANT(lpf_alpha, nz_double_type, double, 2);
+    CONNECT(_blk, 1, _cons, 0);
 
     // Debug
-    struct nz_node debug_lpf[1];
-    nz_debug_init(debug_lpf, "lpf", 0);
-    nz_node_connect(debug_lpf, 0, lpf, 0);
+    BLOCK(debug_lpf, debug, "lpf", 0);
+    CONNECT(_blk, 0, _pipe, 0);
 
     // Math
-    struct nz_node n2f[1]; 
-    nz_math_init(n2f, NZ_MATH_NOTE_TO_FREQ);
-    nz_node_connect(n2f, 0, debug_lpf, 0);
+    BLOCK(n2f, math, NZ_MATH_NOTE_TO_FREQ);
+    CONNECT(_blk, 0, _pipe, 0);
 
     // Instrument
-    MAKE_CONSTANT(wtype, long_type, long, NZ_WAVE_SAW);
-    struct nz_node wave[1];
-    nz_wave_init(wave);
-    nz_node_connect(wave, 0, n2f, 0);
-    nz_node_connect(wave, 1, wtype, 0);
+    BLOCK(wave, wave);
+    CONNECT(_blk, 0, _pipe, 0);
+    MAKE_CONSTANT(wtype, nz_long_type, long, NZ_WAVE_SAW);
+    CONNECT(_blk, 1, _cons, 0);
 
     // Snare
     struct nz_node snare_imp[1];
@@ -246,9 +264,9 @@ int main(void) {
     // Mixer
     struct nz_node mixer[1];
     nz_mixer_init(mixer, 3);
-    MAKE_DOUBLE_CONSTANT(wave_vol, 0.10);
-    MAKE_DOUBLE_CONSTANT(snare_vol, 0.2);
-    MAKE_DOUBLE_CONSTANT(kick_vol, 0.6);
+    MAKE_DOUBLE_CONSTANT(wave_vol, 0.40);
+    MAKE_DOUBLE_CONSTANT(snare_vol, 0.80);
+    MAKE_DOUBLE_CONSTANT(kick_vol, 2.0);
 
     nz_node_connect(mixer, 0, wave, 0);
     nz_node_connect(mixer, 1, wave_vol, 0);
@@ -264,10 +282,15 @@ int main(void) {
     nz_debug_init(debug_ch, "ch", 0);
     nz_node_connect(debug_ch, 0, time_wye, 0);
 
+    // Compressor
+    struct nz_node compressor[1];
+    nz_compressor_init(compressor);
+    nz_node_connect(compressor, 0, debug_ch, 0);
+
     struct nz_node recorder[1];
     nz_recorder_init(recorder);
     //MAKE_LONG_CONSTANT(recorder_len, nz_chunk_size * 5);
-    nz_node_connect(recorder, 0, debug_ch, 0);
+    nz_node_connect(recorder, 0, compressor, 0);
 
     nz_debug_print_graph(recorder);
 

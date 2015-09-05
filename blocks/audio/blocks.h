@@ -25,6 +25,9 @@ enum nz_sampler_command {
 
 // Block defs
 
+// Compressor<> :: (chunk s) -> (chunk s);
+int nz_compressor_init(struct nz_node * node);
+
 // FunGen<> :: (double t) -> (double x); Sine fn generator. Computes x = sin(t)
 int nz_fungen_init(struct nz_node * node);
 

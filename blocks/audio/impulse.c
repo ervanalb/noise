@@ -52,7 +52,7 @@ int nz_impulse_init(struct nz_node * node) {
 
     // Define inputs
     node->node_inputs[0] = (struct nz_inport) {
-        .inport_type = double_type,
+        .inport_type = nz_double_type,
         .inport_name = strdup("trigger"),
     };
     
@@ -61,8 +61,8 @@ int nz_impulse_init(struct nz_node * node) {
         .port_node = node,
         .port_name = strdup("impulse"),
         .port_pull = &impulse_pull,
-        .port_type = chunk_type,
-        .port_value = nz_obj_create(chunk_type),
+        .port_type = nz_chunk_type,
+        .port_value = nz_obj_create(nz_chunk_type),
     };
 
     if (node->node_outputs[0].port_value == NULL)
