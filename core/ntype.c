@@ -32,7 +32,7 @@ struct nz_obj * nz_obj_dup(const struct nz_obj * src) {
     if (dst == NULL) return NULL;
 
     if (nz_obj_copy(dst, src) == NULL)
-        return (nz_obj_destroy(dst), NULL);
+        return (nz_obj_destroy(&dst), NULL);
 
     return dst;
 }
@@ -49,17 +49,22 @@ struct nz_obj * nz_obj_swap(struct nz_obj ** store, const struct nz_obj * src) {
     }
 
     if (!nz_obj_type_compatible(*store, src)) {
-        nz_obj_destroy(*store);
+        nz_obj_destroy(store);
         return *store = nz_obj_dup(src);
     }
         
     return nz_obj_copy(*store, src);
 }
 
-void nz_obj_destroy(struct nz_obj * obj) {
+void nz_obj_destroy(struct nz_obj ** obj_p) {
+    if (obj_p == NULL) return;
+    struct nz_obj * obj = *obj_p;
+
     if (obj == NULL) return;
     assert(obj->obj_type);
+
     obj->obj_type->type_destroy(obj);
+    *obj_p = NULL;
 }
 
 char * nz_obj_str(const struct nz_obj * obj) {

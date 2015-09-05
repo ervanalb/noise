@@ -1,45 +1,45 @@
 #include <stdlib.h>
-#include "block.h"
-#include "blockdef.h"
-#include "debug.h"
+
 #include "noise.h"
-#include "util.h"
+#include "blocks/blocks.h"
+#include "core/util.h"
+#include "debug.h" //TODO
 
 struct state {
     char on;
 	char name[32];
 };
 
-static enum pull_rc debug_pull(struct port * port){
-    node_t * node = port->port_node;
+static enum nz_pull_rc debug_pull(struct nz_port * port){
+    struct nz_node * node = port->port_node;
     struct state * state = (struct state *) node->node_state;
 
-    object_t * out = object_swap(&port->port_value, NODE_PULL(node, 0));
+    struct nz_obj * out = nz_obj_swap(&port->port_value, NZ_NODE_PULL(node, 0));
 
     if (state->on) {
-        char * ostr = object_str(port->port_value);
+        char * ostr = nz_obj_str(port->port_value);
         printf("%s: %s\n", state->name, ostr);
         free(ostr);
     }
 
-    return (out == NULL) ? PULL_RC_NULL : PULL_RC_OBJECT;
+    return (out == NULL) ? NZ_PULL_RC_NULL : NZ_PULL_RC_OBJECT;
 }
 
-int debug_init(node_t * node, const char * name, char on) {
-    int rc = node_alloc_connections(node, 1, 1);
+int debug_init(struct nz_node * node, const char * name, char on) {
+    int rc = nz_node_alloc_ports(node, 1, 1);
     if (rc != 0) return rc;
 
-    node->node_term = &node_term_generic;
+    node->node_term = &nz_node_term_generic;
     node->node_name = rsprintf("Debug printer '%.32s'", name);
 
     // Define inputs
-    node->node_inputs[0] = (struct inport) {
+    node->node_inputs[0] = (struct nz_inport) {
         .inport_type = NULL,
         .inport_name = strdup("in"),
     };
 
     // Define outputs
-    node->node_outputs[0] = (struct port) {
+    node->node_outputs[0] = (struct nz_port) {
         .port_node = node,
         .port_name = strdup("out"),
         .port_pull = debug_pull,
@@ -58,7 +58,7 @@ int debug_init(node_t * node, const char * name, char on) {
     return 0;
 }
 
-void debug_print_graph(node_t * node)
+void debug_print_graph(struct nz_node * node)
 {
     printf("%p %s:\n", node, node->node_name);
 
@@ -79,7 +79,7 @@ void debug_print_graph(node_t * node)
     }
     
     for (size_t i = 0; i < node->node_n_inputs; i++) {
-        struct port * port = node->node_inputs[i].inport_connection;
+        struct nz_port * port = node->node_inputs[i].inport_connection;
         if (port) 
             debug_print_graph(port->port_node);
     }

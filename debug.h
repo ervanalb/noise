@@ -1,9 +1,8 @@
 #ifndef __DEBUG_H__
 #define __DEBUG_H__
 
-#include "block.h"
-#include "ntypes.h"
+#include "noise.h"
 
-void debug_print_graph(node_t * node);
+void debug_print_graph(struct nz_node * node);
 
 #endif

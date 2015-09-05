@@ -1,41 +1,40 @@
 #include <stdlib.h>
 
-#include "error.h"
-#include "block.h"
-#include "blockdef.h"
-#include "util.h"
+#include "noise.h"
+#include "blocks/blocks.h"
+#include "core/util.h"
 
 
-static int wye_pull(struct port * port) {
-    node_t * node = port->port_node;
-    object_t * out = object_swap(&port->port_value, NODE_PULL(node, 0));
+static enum nz_pull_rc wye_pull(struct nz_port * port) {
+    struct nz_node * node = port->port_node;
+    struct nz_obj * out = nz_obj_swap(&port->port_value, NZ_NODE_PULL(node, 0));
 
     for (size_t i = 1; i < node->node_n_inputs; i++) {
-        NODE_PULL(node, i);
+        NZ_NODE_PULL(node, i);
     }
 
-    return (out == NULL) ? PULL_RC_NULL : PULL_RC_OBJECT;
+    return (out == NULL) ? NZ_PULL_RC_NULL : NZ_PULL_RC_OBJECT;
 }
 
-int wye_init(node_t * node, size_t n_inputs) {
+int wye_init(struct nz_node * node, size_t n_inputs) {
     if (n_inputs < 1) return (errno = EINVAL, -1);
 
-    int rc = node_alloc_connections(node, n_inputs, 1);
+    int rc = nz_node_alloc_ports(node, n_inputs, 1);
     if (rc != 0) return rc;
 
-    node->node_term = &node_term_generic;
+    node->node_term = &nz_node_term_generic;
     node->node_name = rsprintf("Wye %lu", n_inputs);
 
     // Define inputs
     for (size_t i = 0; i < n_inputs; i++) {
-        node->node_inputs[i] = (struct inport) {
+        node->node_inputs[i] = (struct nz_inport) {
             .inport_type = NULL,
             .inport_name = (i == 0) ? strdup("main") : rsprintf("aux %lu", i),
         };
     }
     
     // Define outputs 
-    node->node_outputs[0] = (struct port) {
+    node->node_outputs[0] = (struct nz_port) {
         .port_node = node,
         .port_name = strdup("out"),
         .port_pull = &wye_pull,
@@ -48,38 +47,38 @@ int wye_init(node_t * node, size_t n_inputs) {
 
 //
 
-static enum pull_rc tee_pull_main(struct port * port) {
-    node_t * node = port->port_node;
-    object_t * out = object_swap(&port->port_value, NODE_PULL(node, 0));
+static enum nz_pull_rc tee_pull_main(struct nz_port * port) {
+    struct nz_node * node = port->port_node;
+    struct nz_obj * out = nz_obj_swap(&port->port_value, NZ_NODE_PULL(node, 0));
 
     for (size_t i = 1; i < node->node_n_outputs; i++) {
         node->node_outputs[i].port_value = out;
     }
     
-    return (out == NULL) ? PULL_RC_NULL : PULL_RC_OBJECT;
+    return (out == NULL) ? NZ_PULL_RC_NULL : NZ_PULL_RC_OBJECT;
 }
 
-static enum pull_rc tee_pull_aux(struct port * port) {
-    return PULL_RC_OBJECT;
+static enum nz_pull_rc tee_pull_aux(struct nz_port * port) {
+    return NZ_PULL_RC_OBJECT;
 }
 
-int tee_init(node_t * node, size_t n_outputs) {
+int tee_init(struct nz_node * node, size_t n_outputs) {
     if (n_outputs < 1) return (errno = EINVAL, -1);
 
-    int rc = node_alloc_connections(node, 1, n_outputs);
+    int rc = nz_node_alloc_ports(node, 1, n_outputs);
     if (rc != 0) return rc;
 
-    node->node_term = &node_term_generic;
+    node->node_term = &nz_node_term_generic;
     node->node_name = rsprintf("Tee %lu", n_outputs);
 
     // Define inputs
-    node->node_inputs[0] = (struct inport) {
+    node->node_inputs[0] = (struct nz_inport) {
         .inport_type = NULL,
         .inport_name = strdup("in"),
     };
     
     // Define outputs 
-    node->node_outputs[0] = (struct port) {
+    node->node_outputs[0] = (struct nz_port) {
         .port_node = node,
         .port_name = strdup("main"),
         .port_pull = &tee_pull_main,
@@ -88,7 +87,7 @@ int tee_init(node_t * node, size_t n_outputs) {
     };
     
     for (size_t i = 1; i < n_outputs; i++) {
-        node->node_outputs[i] = (struct port) {
+        node->node_outputs[i] = (struct nz_port) {
             .port_node = node,
             .port_name = rsprintf("aux %lu", i),
             .port_pull = &tee_pull_aux,

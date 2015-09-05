@@ -1,12 +1,12 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "block.h"
-#include "error.h"
-#include "ntypes.h"
-#include "util.h"
+#include "noise.h"
+#include "core/block.h"
+#include "core/ntype.h"
+#include "core/util.h"
 
-int node_alloc_connections(node_t * node, size_t n_inputs, size_t n_outputs) {
+int nz_node_alloc_ports(struct nz_node * node, size_t n_inputs, size_t n_outputs) {
     assert(node);
 
     // Set up inputs array
@@ -26,7 +26,7 @@ fail:
     return (errno = ENOMEM, -1);
 }
 
-void node_free_connections(node_t * node) {
+void nz_node_free_ports(struct nz_node * node) {
     for (size_t i = 0; i < node->node_n_inputs; i++) {
         free(node->node_inputs[i].inport_name);
     }
@@ -39,19 +39,20 @@ void node_free_connections(node_t * node) {
     free(node->node_name);
 }
 
-void node_term_generic(node_t * node) {
-    node_free_connections(node);
+void nz_node_term_generic(struct nz_node * node) {
+    nz_node_free_ports(node);
     free(node->node_state);
 }
 
-void node_term_generic_objstate(node_t * node) {
-    node_free_connections(node);
-    object_free(node->node_state);
+void nz_node_term_generic_objstate(struct nz_node * node) {
+    nz_node_free_ports(node);
+    nz_obj_destroy((struct nz_obj **) &node->node_state);
 }
 
+/*
 // Return a copy of the node, *and* any input connections
 // If flags.can_copy is set, node->node_state must be NULL or an object_t
-node_t * node_dup(const node_t * src) {
+struct nz_node * node_dup(const node_t * src) {
     if (src == NULL || !src->node_flags.flag_can_copy) return (errno = EINVAL, NULL);
 
     node_t * dst = calloc(1, sizeof(*dst));
@@ -82,17 +83,18 @@ fail:
     free(dst);
     return NULL;
 }
+*/
 
 // 
 
-int port_connect(struct inport * input, struct port * output) {
-    if (!type_compatible(output->port_type, input->inport_type))
+int nz_port_connect(struct nz_inport * input, struct nz_port * output) {
+    if (!nz_type_compatible(output->port_type, input->inport_type))
         return (errno = EINVAL, -errno);
 
     input->inport_connection = output;
     return 0;
 }
 
-int node_connect(node_t * input, size_t in_idx, node_t * output, size_t out_idx){
-    return port_connect(&input->node_inputs[in_idx], &output->node_outputs[out_idx]);
+int nz_node_connect(struct nz_node * input, size_t in_idx, struct nz_node * output, size_t out_idx){
+    return nz_port_connect(&input->node_inputs[in_idx], &output->node_outputs[out_idx]);
 }
