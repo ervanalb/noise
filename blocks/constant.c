@@ -24,7 +24,8 @@ int nz_constant_init(struct nz_node * node, struct nz_obj * constant_value) {
         .port_pull = constant_pull,
         .port_type = nz_obj_type(constant_value),
         .port_name = strdup("constant"),
-        .port_value = nz_obj_dup(constant_value),
+        //.port_value = nz_obj_dup(constant_value),
+        .port_value = constant_value,
     };
 
     return 0;

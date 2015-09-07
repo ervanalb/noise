@@ -36,4 +36,8 @@ int nz_tee_init(struct nz_node * node, size_t n_inputs);
 // Wye<int n_inputs> :: (type val[, type discard, type discard, ...]) -> (type val); Pulls from all inputs, returning the first
 int nz_wye_init(struct nz_node * node, size_t n_inputs);
 
+int nz_timefilter_init(struct nz_node * node);
+
+int nz_synth_init(struct nz_node * node);
+
 #endif

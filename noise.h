@@ -6,6 +6,7 @@
 
 #include "core/error.h"
 #include "core/block.h"
+#include "core/note.h"
 #include "core/ntype.h"
 
 extern const size_t nz_chunk_size;

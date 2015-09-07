@@ -2,9 +2,10 @@
 #C_SRC  = $(wildcard *.c)
 #OBJECTS := $(patsubst %.c,%.o,$(C_SRC))
 OBJECTS = \
-		  app/test.o \
+		  app/test_synth.o \
 		  core/block.o \
 		  core/error.o \
+		  core/note.o \
 		  core/ntype.o \
 		  blocks/audio/compressor.o \
 		  blocks/audio/function_gen.o \
@@ -19,8 +20,10 @@ OBJECTS = \
 		  blocks/constant.o \
 		  blocks/debug.o \
 		  blocks/fittings.o \
+		  blocks/instrument.o \
 		  blocks/maths.o \
-		  blocks/sequencer.o 
+		  blocks/sequencer.o \
+		  blocks/synth.o \
 
 TARGET = noise
 

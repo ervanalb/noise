@@ -4,6 +4,7 @@
 
 #include "noise.h"
 #include "core/ntype.h"
+#include "core/note.h"
 #include "core/util.h"
 
 int types_have_been_inited = 0;
@@ -214,6 +215,51 @@ size_t nz_vector_set_size(struct nz_obj * obj, size_t new_size) {
 
 size_t nz_vector_get_size(const struct nz_obj * obj) {
     return NZ_CAST(struct vector_data, obj).vector_size;
+}
+
+int nz_vector_push_back(struct nz_obj * vec, void * data) {
+    struct vector_data * vdata = &NZ_CAST(struct vector_data, vec);
+    size_t size = vdata->vector_size + 1;
+    if (nz_vector_set_size(vec, size) != size) return -1;
+
+    struct vector_parameters * params = (struct vector_parameters *) &vec->obj_type->type_parameters;
+    size_t el_size = params->param_element_size;
+
+    char * dst = &NZ_CAST(char *, vec)[(size - 1) * el_size];
+    memcpy(dst, data, el_size);
+
+    return 0;
+}
+
+void * nz_vector_at(struct nz_obj * vec, size_t idx) {
+    if (idx >= nz_vector_get_size(vec)) 
+        return (errno = EINVAL, NULL);
+
+    struct vector_parameters * params = (struct vector_parameters *) &vec->obj_type->type_parameters;
+    size_t el_size = params->param_element_size;
+
+    char * el = &NZ_CAST(char *, vec)[idx * el_size];
+    return (void *) el;
+}
+
+void nz_vector_erase(struct nz_obj * vec, size_t idx) {
+    size_t size = nz_vector_get_size(vec);
+    if (idx >= size) return;
+    size--;
+
+    struct vector_parameters * params = (struct vector_parameters *) &vec->obj_type->type_parameters;
+    size_t el_size = params->param_element_size;
+
+    char * el = &NZ_CAST(char *, vec)[idx * el_size];
+    memmove(el, el + el_size, el_size * (size - idx));
+
+    // This shouldn't fail because we're making it smaller
+    assert(nz_vector_set_size(vec, size) == size);
+}
+
+size_t nz_vector_sizeofel(struct nz_obj * vec) {
+    struct vector_parameters * params = (struct vector_parameters *) &vec->obj_type->type_parameters;
+    return params->param_element_size;
 }
 
 // ---
@@ -442,8 +488,9 @@ struct nz_type nz_chunk_type[1] = {{
 }};
 
 struct nz_type * nz_sample_type = NULL;
-
 struct nz_type * nz_object_vector_type = NULL;
+struct nz_type * nz_note_vector_type = NULL;
+struct nz_type * nz_vector_vector_type = NULL;
 
 // Some types can't be statically created (easily), so build at runtime
 static int types_init() {
@@ -455,6 +502,10 @@ static int types_init() {
     // Sample type (variable-length recording)
     if (nz_sample_type == NULL)
         nz_sample_type = nz_type_create_vector(sizeof(double)); 
+
+    // Note vector type
+    if (nz_note_vector_type == NULL)
+    nz_note_vector_type = nz_type_create_vector(sizeof(struct nz_note));
 
     // Object vector type
     if (nz_object_vector_type == NULL)

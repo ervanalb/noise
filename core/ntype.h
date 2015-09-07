@@ -74,8 +74,13 @@ static inline size_t tuple_length(const struct nz_obj * object) {
 }
 */
 
+//TODO: rename set_size -> resize, get_size -> size
 size_t nz_vector_set_size(struct nz_obj * obj, size_t new_size);
 size_t nz_vector_get_size(const struct nz_obj * obj);
+void * nz_vector_at(struct nz_obj * vec, size_t idx);
+int nz_vector_push_back(struct nz_obj * vec, void * data);
+void nz_vector_erase(struct nz_obj * vec, size_t idx);
+size_t nz_vector_sizeofel(struct nz_obj * vec);
 
 // We're abusing type punning here, but it's OK!
 // `obj_data` will only be accessed through exactly one pointer type
@@ -95,6 +100,7 @@ extern const struct nz_type nz_long_type[1];
 extern const struct nz_type nz_string_type[1];
 extern struct nz_type nz_chunk_type[1];
 extern struct nz_type * nz_sample_type;
+extern struct nz_type * nz_note_vector_type;
 extern struct nz_type * nz_object_vector_type;
 
 // nb: there is no way to 'destroy' or 'free' types once created.
