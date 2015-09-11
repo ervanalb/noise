@@ -7,10 +7,15 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
+#include <math.h>
 
 #ifndef M_PI
     #define M_PI 3.14159265358979323846
 #endif
+
+static inline double nz_note_to_freq(double note) {
+    return pow(2,(note-69)/12)*440;
+}
 
 static inline char * strdup(const char * s) {
     size_t len = strlen(s);

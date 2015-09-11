@@ -10,7 +10,7 @@ struct state {
     double phase;
     double envelope;
 
-    struct nz_osc oscbank[2];
+    struct nz_osc oscbank[4];
     //double env_decay;
 };
 
@@ -36,14 +36,18 @@ static int synth_render(void * _state, const struct nz_note * note, enum nz_inst
         default: return -1;
     }
 
-    double freq = pow(2,(note->note_pitch-69)/12)*440;
+    double freq = nz_note_to_freq(note->note_pitch);
 
     state->oscbank[0].osc_freq = freq * 1.0;
     state->oscbank[0].osc_amp = 1.0;
     state->oscbank[1].osc_freq = freq * 2.0;
-    state->oscbank[1].osc_amp = 1.5;
+    state->oscbank[1].osc_amp = 1 / 2.;
+    state->oscbank[2].osc_freq = freq * 3.0;
+    state->oscbank[2].osc_amp = 1 / 3.;
+    state->oscbank[3].osc_freq = freq * 4.0;
+    state->oscbank[3].osc_amp = 1 / 4.;
 
-    nz_oscbank_render(state->oscbank, 2, chunk);
+    nz_oscbank_render(state->oscbank, 4, chunk);
 
     for (size_t i = 0; i < nz_chunk_size; i++) {
         chunk[i] *= state->envelope;

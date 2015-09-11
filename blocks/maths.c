@@ -99,7 +99,7 @@ static enum nz_pull_rc note_to_freq_pull(struct nz_port * port) {
     }
 
     double note = NZ_CAST(double, input0);
-    double freq = pow(2,(note-69)/12)*440;
+    double freq = nz_note_to_freq(note);
     NZ_CAST(double, port->port_value) = freq;
 
     return NZ_PULL_RC_OBJECT;
