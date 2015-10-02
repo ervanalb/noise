@@ -20,6 +20,7 @@ static enum nz_pull_rc recorder_pull(struct nz_port * port) {
     nz_vector_set_size(port->port_value, length); //TODO this can fail
     double * samples = NZ_CAST(double *, port->port_value);
 
+    int count = 0;
     while (t < length) {
         struct nz_obj * inp_chunk = NZ_NODE_PULL(node, 0);
 
@@ -31,6 +32,12 @@ static enum nz_pull_rc recorder_pull(struct nz_port * port) {
         }
 
         double * chunk = &NZ_CAST(double, inp_chunk);
+
+        count++;
+        if (chunk[0] == 0 && chunk[1] == 0 && chunk[40] == 0 && count < 500) {
+            printf("empty chunk %d %ld\n", count, count * nz_chunk_size);
+        }
+
         if (t + nz_chunk_size < length) {
             memcpy(&samples[t], chunk, sizeof(double) * nz_chunk_size);
             t += nz_chunk_size;

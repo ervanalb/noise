@@ -55,7 +55,7 @@ static enum nz_pull_rc midiintegrator_pull(struct nz_port * port) {
     }
 
     assert(nz_vector_get_size(port->port_value) == nz_vector_get_size(state->notes));
-    printf("note len: %ld\n", nz_vector_get_size(port->port_value));
+    //printf("note len: %ld\n", nz_vector_get_size(port->port_value));
     return NZ_PULL_RC_OBJECT;
 }
 

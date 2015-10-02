@@ -134,12 +134,12 @@ int main(void) {
     CONNECT(time_wye, 1, _pipe, 0);
 
     // MIDI
-    BLOCK(midi_events, midireader, "example.smf");
+    BLOCK(midi_events, midireader, "unison.midi");
     CONNECT(midi_events, 0, time_tee, 4);
     BLOCK(midi_notes, midiintegrator);
     CONNECT(midi_notes, 0, midi_events, 0);
     
-    BLOCK(instrument, instrument, nz_sine_state_size, nz_sine_render);
+    BLOCK(instrument, instrument_saw);
     CONNECT(_blk, 0, _pipe, 0);
 
     //CONNECT(time_wye, 2, midi_notes, 0);

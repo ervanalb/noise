@@ -5,7 +5,7 @@
 #include "blocks/blocks.h"
 #include "core/util.h"
 
-#include "blocks/instrument.h"
+#include "blocks/instruments/instrument.h"
 
 struct state {
     struct nz_obj * note_states; // Vector
@@ -41,7 +41,7 @@ static enum nz_pull_rc nz_instrument_pull(struct nz_port * port) {
         BOTH
     };
 
-    printf("n notes %ld\n", n_st_notes);
+    //printf("n notes %ld\n", n_st_notes);
 
     enum fset note_sets[n_st_notes + n_inp_notes];
     memset(note_sets, 0, sizeof(note_sets));
@@ -53,7 +53,7 @@ static enum nz_pull_rc nz_instrument_pull(struct nz_port * port) {
         for (size_t j = 0; j < n_st_notes; j++) {
             if (note_sets[j] != NONE) continue;
 
-            if (inp_notes[i].note_pitch == orig_st_notes[j].note_pitch) {
+            if (inp_notes[i].note_id == orig_st_notes[j].note_id) {
                 found = 1;
                 note_sets[j] = BOTH;
                 void * render_state = nz_vector_at(state->note_states, j);
@@ -62,6 +62,8 @@ static enum nz_pull_rc nz_instrument_pull(struct nz_port * port) {
                     for(size_t k = 0; k < nz_chunk_size; k++) {
                         output[k] += chunk[k];
                     }
+                } else {
+                    printf("render returned nonzero in existing %d\n", rc);
                 }
                 //if (rc == 0)  TODO
             }
@@ -80,6 +82,8 @@ static enum nz_pull_rc nz_instrument_pull(struct nz_port * port) {
                 for(size_t k = 0; k < nz_chunk_size; k++) {
                     output[k] += chunk[k];
                 }
+            } else {
+                printf("render returned nonzero in new %d\n", rc);
             }
             //if (rc == 0)  TODO
         }
@@ -88,6 +92,7 @@ static enum nz_pull_rc nz_instrument_pull(struct nz_port * port) {
     for (size_t j = 0; j < n_st_notes; j++) {
         if (note_sets[j] == NONE) {
             note_sets[j] = OLD;
+            //printf("old note %d\n", orig_st_notes[j].note_id);
             void * render_state = nz_vector_at(state->note_states, j);
             int rc = state->render(render_state, &orig_st_notes[j], NZ_INSTR_NOTE_OFF, chunk); // Old
             if (rc == 0) {
@@ -100,6 +105,7 @@ static enum nz_pull_rc nz_instrument_pull(struct nz_port * port) {
                 nz_vector_erase(state->note_states, j);
                 j--;
                 n_st_notes--;
+                memmove(&note_sets[j], &note_sets[j+1], sizeof(note_sets[0]) * (n_st_notes - j));
             }
         }
     }
@@ -148,28 +154,68 @@ int nz_instrument_init(struct nz_node * node, size_t state_size, nz_instr_render
     return 0;
 }
 
-void nz_oscbank_render(struct nz_osc * osc, size_t n_oscs, double * chunk) {
+// Oscillator bank helper
+
+void nz_oscbank_render(struct nz_osc * oscs, size_t n_oscs, double * chunk) {
     memset(chunk, 0, sizeof(double) * nz_chunk_size);
     while(n_oscs--) {
         for (size_t i = 0; i < nz_chunk_size; i++) {
-            osc->osc_phase += osc->osc_freq / nz_frame_rate;
-            chunk[i] += sin(osc->osc_phase * 2 * M_PI) * osc->osc_amp;
+            oscs->osc_phase += oscs->osc_freq / nz_frame_rate;
+            chunk[i] += sin(oscs->osc_phase * 2 * M_PI) * oscs->osc_amp;
         }
-        osc->osc_phase = fmod(osc->osc_phase, 1.0);
-        osc++;
+        oscs->osc_phase = fmod(oscs->osc_phase, 1.0);
+        oscs++;
     }
 }
 
-struct nz_sine_state {
-    struct nz_osc oscs[1];
-};
+// Envelope helper
 
-size_t nz_sine_state_size = sizeof(struct nz_sine_state);
+int nz_envl_simple(struct nz_envl * envl, enum nz_instr_note_state note_state, double * chunk) {
+    // State transitions only happen once per chunk
+    switch(note_state) {
+        case NZ_INSTR_NOTE_NEW:
+            envl->envl_state = NZ_ENVL_ATTACK;
+            envl->envl_value = 0;
+            break;
+        case NZ_INSTR_NOTE_OFF:
+            envl->envl_state = NZ_ENVL_DECAY;
+            break;
+        default: break;
+    }
 
-int nz_sine_render(void * _state, const struct nz_note * note, enum nz_instr_note_state note_state, double * chunk) {
-    struct nz_sine_state * state = (struct nz_sine_state *) _state;
-    state->oscs[0].osc_freq = note->note_pitch;
-    state->oscs[0].osc_amp = 1.0;
-    nz_oscbank_render(state->oscs, 1, chunk);
-    return 0;
+    switch (envl->envl_state) {
+        case NZ_ENVL_ATTACK: ;
+            // envl_attack :: seconds
+            // attack_rate :: % / frame = 1 / fenvl_attack * frames_per_second)
+            double attack_rate = 1.0 / (envl->envl_attack * nz_frame_rate);
+            for (size_t i = 0; i < nz_chunk_size; i++) {
+                chunk[i] *= envl->envl_value;
+                envl->envl_value += attack_rate;
+                if (envl->envl_value >= 1.0) {
+                    envl->envl_state = NZ_ENVL_SUSTAIN;
+                    envl->envl_value = 1.0;
+                    break;
+                }
+            }
+            break;
+        case NZ_ENVL_SUSTAIN:
+            break;
+        case NZ_ENVL_DECAY: ;
+            double alpha = exp(- 1.0 / (nz_frame_rate * envl->envl_decay));
+            for (size_t i = 0; i < nz_chunk_size; i++) {
+                chunk[i] *= envl->envl_value;
+                envl->envl_value *= alpha;
+            }
+            if (envl->envl_value < NZ_ENVL_CUTOFF) {
+                envl->envl_state = NZ_ENVL_OFF;
+                envl->envl_value = 0.0;
+            }
+            break;
+        case NZ_ENVL_OFF:
+            memset(chunk, 0, sizeof(double) * nz_chunk_size);
+            break;
+    }
+
+    return envl->envl_state == NZ_ENVL_OFF;
 }
+

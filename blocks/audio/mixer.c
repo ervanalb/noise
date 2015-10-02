@@ -7,10 +7,9 @@
 
 static enum nz_pull_rc mixer_pull(struct nz_port * port) {
     struct nz_node * node = port->port_node;
+    double * out_chunk = &NZ_CAST(double, port->port_value);
     
-    for (size_t j = 0; j < nz_chunk_size; j++) {
-        (&NZ_CAST(double, port->port_value))[j] = 0.;
-    }
+    memset(out_chunk, 0, sizeof(double) * nz_chunk_size);
     
     for (size_t i = 0; i < node->node_n_inputs; ) {
         struct nz_obj * input_chunk = NZ_NODE_PULL(node, i++);
@@ -18,9 +17,13 @@ static enum nz_pull_rc mixer_pull(struct nz_port * port) {
 
         if (input_chunk == NULL || input_gain == NULL) continue;
 
+        double gain = NZ_CAST(double, input_gain);
+        double * mix_chunk = &NZ_CAST(double, input_chunk);
+
         for (size_t j = 0; j < nz_chunk_size; j++) {
-            (&NZ_CAST(double, port->port_value))[j] += NZ_CAST(double, input_gain) * (&NZ_CAST(double, input_chunk))[j];
+            out_chunk[j] += gain * mix_chunk[j];
         }
+        break;
     }
 
     return NZ_PULL_RC_OBJECT;
