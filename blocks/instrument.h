@@ -21,5 +21,7 @@ struct nz_osc {
 };
 
 void nz_oscbank_render(struct nz_osc * oscs, size_t n_oscs, double * chunk);
+int nz_sine_render(void * _state, const struct nz_note * note, enum nz_instr_note_state note_state, double * chunk);
+extern size_t nz_sine_state_size;
 
 #endif

@@ -2,7 +2,7 @@
 #C_SRC  = $(wildcard *.c)
 #OBJECTS := $(patsubst %.c,%.o,$(C_SRC))
 OBJECTS = \
-		  app/test_synth.o \
+		  app/test_midi.o \
 		  core/block.o \
 		  core/error.o \
 		  core/note.o \
@@ -16,6 +16,8 @@ OBJECTS = \
 		  blocks/audio/sample.o \
 		  blocks/audio/wave.o \
 		  blocks/io/portaudio.o \
+		  blocks/io/midi_reader.o \
+		  blocks/io/midi_integrator.o \
 		  blocks/accumulator.o \
 		  blocks/constant.o \
 		  blocks/debug.o \

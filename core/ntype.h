@@ -68,12 +68,6 @@ struct nz_obj * nz_simple_create_(const struct nz_type * type);
 void nz_simple_destroy_(struct nz_obj * obj);
 struct nz_obj * nz_simple_copy_(struct nz_obj * dst, const struct nz_obj * src);
 
-/*
-static inline size_t tuple_length(const struct nz_obj * object) {
-    return object->object_type->type_data_size / sizeof(struct nz_obj *);
-}
-*/
-
 //TODO: rename set_size -> resize, get_size -> size
 size_t nz_vector_set_size(struct nz_obj * obj, size_t new_size);
 size_t nz_vector_get_size(const struct nz_obj * obj);

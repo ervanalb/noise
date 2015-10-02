@@ -4,6 +4,7 @@
 #include "core/block.h"
 #include "blocks/audio/blocks.h"
 #include "blocks/io/blocks.h"
+#include "blocks/instrument.h"
 
 enum nz_math_op {
     NZ_MATH_ADD,
@@ -39,5 +40,6 @@ int nz_wye_init(struct nz_node * node, size_t n_inputs);
 int nz_timefilter_init(struct nz_node * node);
 
 int nz_synth_init(struct nz_node * node);
+
 
 #endif

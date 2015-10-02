@@ -41,6 +41,8 @@ static enum nz_pull_rc nz_instrument_pull(struct nz_port * port) {
         BOTH
     };
 
+    printf("n notes %ld\n", n_st_notes);
+
     enum fset note_sets[n_st_notes + n_inp_notes];
     memset(note_sets, 0, sizeof(note_sets));
     double chunk[nz_chunk_size];
@@ -151,9 +153,23 @@ void nz_oscbank_render(struct nz_osc * osc, size_t n_oscs, double * chunk) {
     while(n_oscs--) {
         for (size_t i = 0; i < nz_chunk_size; i++) {
             osc->osc_phase += osc->osc_freq / nz_frame_rate;
-            chunk[i] += sin(osc->osc_phase * 2 * M_PI);
+            chunk[i] += sin(osc->osc_phase * 2 * M_PI) * osc->osc_amp;
         }
         osc->osc_phase = fmod(osc->osc_phase, 1.0);
         osc++;
     }
+}
+
+struct nz_sine_state {
+    struct nz_osc oscs[1];
+};
+
+size_t nz_sine_state_size = sizeof(struct nz_sine_state);
+
+int nz_sine_render(void * _state, const struct nz_note * note, enum nz_instr_note_state note_state, double * chunk) {
+    struct nz_sine_state * state = (struct nz_sine_state *) _state;
+    state->oscs[0].osc_freq = note->note_pitch;
+    state->oscs[0].osc_amp = 1.0;
+    nz_oscbank_render(state->oscs, 1, chunk);
+    return 0;
 }
