@@ -23,7 +23,6 @@ static enum nz_pull_rc mixer_pull(struct nz_port * port) {
         for (size_t j = 0; j < nz_chunk_size; j++) {
             out_chunk[j] += gain * mix_chunk[j];
         }
-        break;
     }
 
     return NZ_PULL_RC_OBJECT;

@@ -77,7 +77,7 @@ static enum nz_pull_rc nz_instrument_pull(struct nz_port * port) {
             void * render_state = nz_vector_at(state->note_states, n_st_notes - 1);
             memset(render_state, 0, nz_vector_sizeofel(state->note_states));
             int rc = state->render(render_state, &inp_notes[i], NZ_INSTR_NOTE_NEW, chunk); // New 
-            printf("New note: pitch=%f, vel=%f\n", inp_notes[i].note_pitch, inp_notes[i].note_velocity);
+            //printf("New note: pitch=%f, vel=%f\n", inp_notes[i].note_pitch, inp_notes[i].note_velocity);
             if (rc == 0) {
                 for(size_t k = 0; k < nz_chunk_size; k++) {
                     output[k] += chunk[k];

@@ -3,7 +3,7 @@
 
 #include "noise.h"
 #include "blocks/blocks.h"
-#include "blocks/instrument.h"
+#include "blocks/instruments/instrument.h"
 #include "core/util.h"
 
 struct state {

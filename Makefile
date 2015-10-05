@@ -2,7 +2,6 @@
 #C_SRC  = $(wildcard *.c)
 #OBJECTS := $(patsubst %.c,%.o,$(C_SRC))
 OBJECTS = \
-		  app/test_midi.o \
 		  core/block.o \
 		  core/error.o \
 		  core/note.o \
@@ -15,9 +14,11 @@ OBJECTS = \
 		  blocks/audio/recorder.o \
 		  blocks/audio/sample.o \
 		  blocks/audio/wave.o \
-		  blocks/io/portaudio.o \
-		  blocks/io/midi_reader.o \
 		  blocks/io/midi_integrator.o \
+		  blocks/io/midi_reader.o \
+		  blocks/io/midi_smf.o \
+		  blocks/io/midi_writer.o \
+		  blocks/io/portaudio.o \
 		  blocks/accumulator.o \
 		  blocks/constant.o \
 		  blocks/debug.o \
@@ -29,14 +30,21 @@ OBJECTS = \
 		  blocks/sequencer.o \
 		  blocks/synth.o \
 
-TARGET = noise
+APP_OBJECTS = \
+				app/test.o \
+				app/test_midi.o \
+				app/test_synth.o \
+
+APP_TARGETS = $(APP_OBJECTS:app/%.o=noise_%)
+
+TARGET = libnoise.so
 
 CC = gcc
 
 INC = -I.
 LIB = -L/usr/local/lib
 
-DEPS = $(OBJECTS:.o=.d)
+DEPS = $(OBJECTS:.o=.d) $(APP_OBJECTS:.o=.d)
 -include $(DEPS)
 
 # compile and generate dependency info;
@@ -45,7 +53,7 @@ DEPS = $(OBJECTS:.o=.d)
 	gcc -MM $(CFLAGS) $*.c > $*.d
 
 # Assembler, compiler, and linker flags
-override CFLAGS += $(INC) -O0 -g -Wall -Wextra -Werror -Wno-unused-parameter -Wno-unused -Wwrite-strings -std=c99 
+override CFLAGS += $(INC) -O0 -g -Wall -Wextra -Werror -Wno-unused-parameter -Wno-unused -Wwrite-strings -std=c99 -fPIC
 #override CFLAGS += $(INC) -O3 -g -Wall -Wextra -Werror -Wno-unused-parameter -Wno-unused -Wwrite-strings -std=c99 
 override LFLAGS += $(LIB) $(CFLAGS)
 LIBS = -lm -lportaudio -lsndfile
@@ -53,10 +61,12 @@ LIBS = -lm -lportaudio -lsndfile
 # Targets
 .PHONY: clean all
 .DEFAULT_GOAL = all
-all: $(TARGET)
+all: $(TARGET) $(APP_TARGETS)
 clean:
-	-rm -f $(OBJECTS) $(OUTPUT) $(DEPS)
+	-rm -f $(OBJECTS) $(APP_OBJECTS:.o=.d) $(OUTPUT) $(DEPS)
 
 $(TARGET): $(OBJECTS)
-	$(CC) $(LFLAGS) -o $@ $^ $(LIBS)
+	$(CC) -shared -Wl,-soname,$@ -o $@ $^ $(LIBS)
 
+noise_%: app/%.o $(OBJECTS)
+	$(CC) $(LFLAGS) -o $@ $^ $(LIBS) -lnoise -L.

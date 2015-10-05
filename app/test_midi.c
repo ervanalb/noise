@@ -238,8 +238,8 @@ int main(void) {
     BLOCK(mixer, mixer, 3);
 
     MAKE_DOUBLE_CONSTANT(wave_vol, 0.40);
-    MAKE_DOUBLE_CONSTANT(snare_vol, 0.00);
-    MAKE_DOUBLE_CONSTANT(kick_vol, 0.0);
+    MAKE_DOUBLE_CONSTANT(snare_vol, 0.80);
+    MAKE_DOUBLE_CONSTANT(kick_vol, 2.0);
 
     CONNECT(mixer, 0, instrument, 0);
     CONNECT(mixer, 1, wave_vol, 0);
