@@ -63,9 +63,8 @@ static enum nz_pull_rc nz_instrument_pull(struct nz_port * port) {
                         output[k] += chunk[k];
                     }
                 } else {
-                    printf("render returned nonzero in existing %d\n", rc);
+                    printf("render returned nonzero in existing %d, skipping\n", rc);
                 }
-                //if (rc == 0)  TODO
             }
         }
         if (found == 0) {
@@ -83,9 +82,8 @@ static enum nz_pull_rc nz_instrument_pull(struct nz_port * port) {
                     output[k] += chunk[k];
                 }
             } else {
-                printf("render returned nonzero in new %d\n", rc);
+                printf("render returned nonzero in new %d, skipping\n", rc);
             }
-            //if (rc == 0)  TODO
         }
     }
 

@@ -17,17 +17,22 @@ static enum nz_pull_rc recorder_pull(struct nz_port * port) {
 
     free(port->port_value);
     port->port_value = nz_obj_create(nz_sample_type);
-    nz_vector_set_size(port->port_value, length); //TODO this can fail
     double * samples = NZ_CAST(double *, port->port_value);
+
+    // Resize sample size & fail if there's a problem
+    size_t new_length = nz_vector_set_size(port->port_value, length);
+    if (new_length != length) return NZ_PULL_RC_ERROR;
 
     int count = 0;
     while (t < length) {
         struct nz_obj * inp_chunk = NZ_NODE_PULL(node, 0);
 
         if (inp_chunk == NULL) {
-            // We don't want to loop forever... 
-            // TODO: actually handle or something
-            assert(0);
+            // We don't want to loop forever, if `inp_chunk` continues to be NULL
+            // TODO: how should this be handled? 
+            fprintf(stderr, "Recorder pulled a null chunk; could loop forever; returning error.\n");
+            return NZ_PULL_RC_ERROR;
+            //assert(0);
             continue;
         }
 

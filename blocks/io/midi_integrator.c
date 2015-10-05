@@ -59,6 +59,12 @@ static enum nz_pull_rc midiintegrator_pull(struct nz_port * port) {
     return NZ_PULL_RC_OBJECT;
 }
 
+void midiintegrator_term(struct nz_node * node) {
+    struct state * state = (struct state *) node->node_state;
+    nz_obj_destroy(&state->notes);
+    nz_node_term_generic(node);
+}
+
 int nz_midiintegrator_init(struct nz_node * node) {
     if (nz_midi_vector_type == NULL) {
         nz_midi_vector_type = nz_type_create_vector(sizeof(struct nz_midiev));
@@ -68,7 +74,7 @@ int nz_midiintegrator_init(struct nz_node * node) {
     int rc = nz_node_alloc_ports(node, 1, 1);
     if (rc != 0) return rc;
 
-    node->node_term = &nz_node_term_generic; // FIXME: need to del midi vector
+    node->node_term = &midiintegrator_term;
     node->node_name = strdup("Midi Integrator");
 
     // Define inputs
