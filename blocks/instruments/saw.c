@@ -23,8 +23,7 @@ int saw_render(void * _state, const struct nz_note * note, enum nz_instr_note_st
             state->oscs[i].osc_amp = 1.0 / (double) (i + 1);
         }
 
-        state->envl.envl_attack = 0.01;
-        state->envl.envl_decay = 0.02;
+        nz_envl_init(&state->envl, 0.01, 0.02);
     }
 
     nz_oscbank_render(state->oscs, N_SAW_HARMONICS, chunk);
@@ -32,5 +31,9 @@ int saw_render(void * _state, const struct nz_note * note, enum nz_instr_note_st
 }
 
 int nz_instrument_saw_init(struct nz_node * node) {
-    return nz_instrument_init(node, sizeof(struct state), &saw_render);
+    int rc = nz_instr_init(node, sizeof(struct state), &saw_render);
+    if (rc != 0) return rc;
+
+    node->node_name = rsprintf("Saw Instrument");
+    return 0;
 }

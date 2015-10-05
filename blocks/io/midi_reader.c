@@ -61,6 +61,16 @@ static enum nz_pull_rc midireader_pull(struct nz_port * port) {
     return NZ_PULL_RC_OBJECT;
 }
 
+void midireader_term(struct nz_node * node) {
+    struct state * state = (struct state *) node->node_state;
+
+    assert(fclose(state->smf_file) == 0);
+    free(state->header);
+    free(state->track);
+
+    nz_node_term_generic(node);
+}
+
 int nz_midireader_init(struct nz_node * node, const char * filename) {
     if (nz_midi_vector_type == NULL) {
         nz_midi_vector_type = nz_type_create_vector(sizeof(struct nz_midiev));
@@ -70,7 +80,7 @@ int nz_midireader_init(struct nz_node * node, const char * filename) {
     int rc = nz_node_alloc_ports(node, 1, 1);
     if (rc != 0) return rc;
 
-    node->node_term = &nz_node_term_generic; // FIXME: need to close file handle
+    node->node_term = &midireader_term; 
     node->node_name = rsprintf("Midi Reader<%s>", filename);
 
     // Define inputs

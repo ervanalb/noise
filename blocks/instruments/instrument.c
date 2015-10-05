@@ -113,18 +113,18 @@ static enum nz_pull_rc nz_instrument_pull(struct nz_port * port) {
     return NZ_PULL_RC_OBJECT;
 }
 
-static void instrument_term(struct nz_node * node) { 
+static void instr_term(struct nz_node * node) { 
     struct state * state = (struct state *) node->node_state;
     nz_obj_destroy(&state->notes);
     nz_obj_destroy(&state->note_states);
     nz_node_free_ports(node);
 }
 
-int nz_instrument_init(struct nz_node * node, size_t state_size, nz_instr_render_fpt render) {
+int nz_instr_init(struct nz_node * node, size_t state_size, nz_instr_render_fpt render) {
     int rc = nz_node_alloc_ports(node, 1, 1);
     if (rc != 0) return rc;
 
-    node->node_term = &instrument_term;
+    node->node_term = &instr_term;
 
     // Define inputs
     node->node_inputs[0] = (struct nz_inport) {
@@ -169,6 +169,12 @@ void nz_oscbank_render(struct nz_osc * oscs, size_t n_oscs, double * chunk) {
 }
 
 // Envelope helper
+
+void nz_envl_init(struct nz_envl * envl, double attack, double decay) {
+    memset(envl, 0, sizeof(*envl));
+    envl->envl_attack = attack;
+    envl->envl_decay = decay;
+}
 
 int nz_envl_simple(struct nz_envl * envl, enum nz_instr_note_state note_state, double * chunk) {
     // State transitions only happen once per chunk

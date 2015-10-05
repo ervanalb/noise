@@ -24,11 +24,11 @@ OBJECTS = \
 		  blocks/debug.o \
 		  blocks/fittings.o \
 		  blocks/instruments/instrument.o \
-		  blocks/instruments/sine.o \
 		  blocks/instruments/saw.o \
+		  blocks/instruments/sine.o \
+		  blocks/instruments/snare.o \
 		  blocks/maths.o \
 		  blocks/sequencer.o \
-		  blocks/synth.o \
 
 APP_OBJECTS = \
 				app/test.o \

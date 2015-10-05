@@ -164,7 +164,7 @@ int main(void) {
     CONNECT(_blk, 0, seq, 0);
 
     // Instrument
-    BLOCK(synth, synth);
+    BLOCK(synth, instrument_saw);
     CONNECT(_blk, 0, _pipe, 0);
 
 

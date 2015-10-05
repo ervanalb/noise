@@ -15,8 +15,7 @@ enum nz_instr_note_state {
 
 typedef int (*nz_instr_render_fpt)(void * state, const struct nz_note * note, enum nz_instr_note_state note_state, double * chunk);
 
-int nz_instrument_init(struct nz_node * node, size_t state_size, nz_instr_render_fpt render);
-
+int nz_instr_init(struct nz_node * node, size_t state_size, nz_instr_render_fpt render);
 
 // Oscillator bank + simple envelope helpers
 struct nz_osc {
@@ -44,12 +43,7 @@ struct nz_envl {
     double envl_value;
 };
 
+void nz_envl_init(struct nz_envl * envl, double attack, double decay);
 int nz_envl_simple(struct nz_envl * envl, enum nz_instr_note_state note_state, double * chunk);
-
-// --- Actual instrument blocks  ---
-
-// Basic sine wave instrument
-int nz_instrument_sine_init(struct nz_node * node); 
-int nz_instrument_saw_init(struct nz_node * node);
 
 #endif

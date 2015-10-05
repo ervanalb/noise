@@ -4,7 +4,7 @@
 #include "core/block.h"
 #include "blocks/audio/blocks.h"
 #include "blocks/io/blocks.h"
-#include "blocks/instruments/instrument.h"
+#include "blocks/instruments/blocks.h"
 
 enum nz_math_op {
     NZ_MATH_ADD,
