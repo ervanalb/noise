@@ -17,6 +17,7 @@ static inline double nz_note_to_freq(double note) {
     return pow(2,(note-69)/12)*440;
 }
 
+#ifndef __USE_BSD
 static inline char * strdup(const char * s) {
     size_t len = strlen(s);
     char * r = malloc(len + 1);
@@ -34,6 +35,7 @@ static inline char * strndup(const char * s, size_t maxlen) {
     r[len] = '\0';
     return r;
 }
+#endif
 
 static int asprintf(char ** buf, const char * fmt, ...) __attribute__ ((format (printf, 2, 3)));
 static inline int asprintf(char ** buf, const char * fmt, ...) 

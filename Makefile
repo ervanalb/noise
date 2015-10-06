@@ -59,14 +59,21 @@ override LFLAGS += $(LIB) $(CFLAGS)
 LIBS = -lm -lportaudio -lsndfile
 
 # Targets
-.PHONY: clean all
+.PHONY: clean all python
 .DEFAULT_GOAL = all
-all: $(TARGET) $(APP_TARGETS)
+all: $(TARGET) $(APP_TARGETS) python
 clean:
-	-rm -f $(OBJECTS) $(APP_OBJECTS:.o=.d) $(OUTPUT) $(DEPS)
+	-rm -f $(OBJECTS) $(APP_OBJECTS:.o=.d) $(OUTPUT) $(DEPS) $(PYTHONLIB) python/build
 
 $(TARGET): $(OBJECTS)
 	$(CC) -shared -Wl,-soname,$@ -o $@ $^ $(LIBS)
 
 noise_%: app/%.o $(OBJECTS)
 	$(CC) $(LFLAGS) -o $@ $^ $(LIBS) -lnoise -L.
+
+PYTHONLIB = python/_noise.so
+
+$(PYTHONLIB): $(TARGET)
+	cd python; python setup.py build_ext --inplace
+
+python: $(PYTHONLIB)
