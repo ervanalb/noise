@@ -29,6 +29,7 @@ static enum nz_pull_rc midiintegrator_pull(struct nz_port * port) {
             case 0x90: ; // Note on
                 double pitch = nz_note_to_freq((double) ev->midiev_data1);
                 double velocity = ((double) ev->midiev_data2) / 127.0;
+                printf("pitch %d\n",ev->midiev_data1);
 
                 struct nz_note note;
                 nz_note_init(&note, pitch, velocity);

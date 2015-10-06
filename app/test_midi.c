@@ -142,46 +142,6 @@ int main(void) {
     BLOCK(instrument, instrument_saw);
     CONNECT(_blk, 0, _pipe, 0);
 
-    //CONNECT(time_wye, 2, midi_notes, 0);
-/*
-    // Melody
-    // TODO: Come up with a better way of specifying these
-    double unison[] = {None, None, None, 65, 75, None, 72, 67, 67, 68, None, 65, 70, 72, 70, 65, 65, None, None, 65, 75, None, 72, 67, 67, 68, 65, 72, 75, None, 72, 77};
-    size_t unison_len = sizeof(unison) / sizeof(*unison);
-
-    struct nz_obj * melody_obj = make_double_vector(unison,  unison_len);
-    BLOCK(melody, constant, melody_obj);
-
-    // Sequencer
-    BLOCK(seq, sequencer);
-    CONNECT(_blk, 0, time_tee, 1);
-    CONNECT(_blk, 1, melody, 0);
-
-    // Debug
-    BLOCK(debug_seq, debug, "seq", 0);
-    CONNECT(_blk, 0, seq, 0);
-
-    BLOCK(lpf, lpf);
-    CONNECT(_blk, 0, _pipe, 0);
-    MAKE_CONSTANT(lpf_alpha, nz_double_type, double, 2);
-    CONNECT(_blk, 1, _cons, 0);
-
-    // Debug
-    BLOCK(debug_lpf, debug, "lpf", 0);
-    CONNECT(_blk, 0, _pipe, 0);
-
-    // Math
-    BLOCK(n2f, math, NZ_MATH_NOTE_TO_FREQ);
-    CONNECT(_blk, 0, _pipe, 0);
-
-    // Instrument
-    BLOCK(wave, wave);
-    CONNECT(_blk, 0, _pipe, 0);
-    MAKE_CONSTANT(wtype, nz_long_type, long, NZ_WAVE_SAW);
-    CONNECT(_blk, 1, _cons, 0);
-
-    */
-
     // --- Percussion ---
 
     // -- Snare --
@@ -238,7 +198,7 @@ int main(void) {
     BLOCK(mixer, mixer, 3);
 
     MAKE_DOUBLE_CONSTANT(wave_vol, 0.40);
-    MAKE_DOUBLE_CONSTANT(snare_vol, 0.80);
+    MAKE_DOUBLE_CONSTANT(snare_vol, 0.40);
     MAKE_DOUBLE_CONSTANT(kick_vol, 2.0);
 
     CONNECT(mixer, 0, instrument, 0);

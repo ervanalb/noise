@@ -7,7 +7,7 @@
 
 #include "blocks/instruments/instrument.h"
 
-#define N_SAW_HARMONICS 8
+#define N_SAW_HARMONICS 50
 
 struct state {
     struct nz_osc oscs[N_SAW_HARMONICS];
@@ -20,7 +20,7 @@ int saw_render(void * _state, const struct nz_note * note, enum nz_instr_note_st
     if (note_state == NZ_INSTR_NOTE_NEW) {
         for (size_t i = 0; i < N_SAW_HARMONICS; i++) {
             state->oscs[i].osc_freq = note->note_pitch * (i + 1);
-            state->oscs[i].osc_amp = 1.0 / (double) (i + 1);
+            state->oscs[i].osc_amp = pow((double) (i + 1), -1.0);
         }
 
         nz_envl_init(&state->envl, 0.01, 0.02);
