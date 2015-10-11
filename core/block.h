@@ -76,24 +76,5 @@ int nz_node_connect(struct nz_node* input, size_t in_idx, struct nz_node * outpu
 // Useful sugar
 #define NZ_NODE_PULL(node, idx) nz_port_pull((node)->node_inputs[(idx)].inport_connection)
 
-static inline struct nz_obj * nz_port_pull(struct nz_port * port) {
-    if (port == NULL)
-        return (errno = EINVAL, NULL);
-
-    assert(port->port_pull);
-    enum nz_pull_rc rc = port->port_pull(port);
-
-    switch(rc) {
-        case NZ_PULL_RC_ERROR:
-            // TODO: log errors or something?
-            return NULL;
-        case NZ_PULL_RC_NULL:
-            return NULL;
-        case NZ_PULL_RC_OBJECT:
-            return port->port_value;
-        default:
-            assert(0);
-    }
-}
-
+struct nz_obj * nz_port_pull(struct nz_port * port);
 #endif

@@ -102,7 +102,7 @@ struct nz_obj * nz_simple_copy_(struct nz_obj * dst, const struct nz_obj * src) 
     return dst;
 }
 
-struct nz_type * nz_type_simple_create(size_t size) {
+struct nz_type * nz_type_create_simple(size_t size) {
     if (size <= 0) return (errno = EINVAL, NULL);
 
     struct nz_type * type = calloc(1, sizeof(*type) + 0);

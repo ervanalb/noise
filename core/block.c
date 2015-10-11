@@ -6,6 +6,11 @@
 #include "core/ntype.h"
 #include "core/util.h"
 
+#pragma weak nz_chunk_size
+#pragma weak nz_frame_rate
+const size_t nz_chunk_size = 128;
+const double nz_frame_rate = 44100;
+
 int nz_node_alloc_ports(struct nz_node * node, size_t n_inputs, size_t n_outputs) {
     assert(node);
 
@@ -98,3 +103,27 @@ int nz_port_connect(struct nz_inport * input, struct nz_port * output) {
 int nz_node_connect(struct nz_node * input, size_t in_idx, struct nz_node * output, size_t out_idx){
     return nz_port_connect(&input->node_inputs[in_idx], &output->node_outputs[out_idx]);
 }
+
+
+//
+
+struct nz_obj * nz_port_pull(struct nz_port * port) {
+    if (port == NULL)
+        return (errno = EINVAL, NULL);
+
+    assert(port->port_pull);
+    enum nz_pull_rc rc = port->port_pull(port);
+
+    switch(rc) {
+        case NZ_PULL_RC_ERROR:
+            // TODO: log errors or something?
+            return NULL;
+        case NZ_PULL_RC_NULL:
+            return NULL;
+        case NZ_PULL_RC_OBJECT:
+            return port->port_value;
+        default:
+            assert(0);
+    }
+}
+
