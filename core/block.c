@@ -54,6 +54,7 @@ void nz_node_term_generic_objstate(struct nz_node * node) {
     nz_obj_destroy((struct nz_obj **) &node->node_state);
 }
 
+
 /*
 // Return a copy of the node, *and* any input connections
 // If flags.can_copy is set, node->node_state must be NULL or an object_t
@@ -90,7 +91,18 @@ fail:
 }
 */
 
+void nz_node_term(struct nz_node * node) {
+    if (node == NULL) return;
+    if (node->node_term) node->node_term(node);
+}
+
 // 
+
+char * nz_node_str(struct nz_node * node) {
+    if(node == NULL) return NULL;
+    if(node->node_name == NULL) return NULL;
+    return strdup(node->node_name);
+}
 
 int nz_port_connect(struct nz_inport * input, struct nz_port * output) {
     if (!nz_type_compatible(output->port_type, input->inport_type))
@@ -127,3 +139,6 @@ struct nz_obj * nz_port_pull(struct nz_port * port) {
     }
 }
 
+struct nz_obj * nz_node_pull(struct nz_node * node, size_t idx) {
+    return nz_port_pull(node->node_inputs[idx].inport_connection);
+}

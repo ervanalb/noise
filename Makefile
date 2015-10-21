@@ -63,7 +63,7 @@ LIBS = -lm -lportaudio -lsndfile
 # Targets
 .PHONY: clean all python
 .DEFAULT_GOAL = all
-all: $(TARGET) $(APP_TARGETS) python
+all: $(TARGET) $(APP_TARGETS)
 clean:
 	-rm -f $(OBJECTS) $(APP_OBJECTS:.o=.d) $(OUTPUT) $(DEPS) $(PYTHONLIB) python/build
 

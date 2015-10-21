@@ -1,10 +1,12 @@
 import ctypes
 import os
 
-def load_so(soname):
+from ctypes import byref, pointer
+
+def _load_so(soname):
     return ctypes.cdll.LoadLibrary(os.path.join(os.path.abspath(os.path.dirname(__file__)),soname))
 
-libnoise = load_so("../libnoise.so")
+libnoise = _load_so("../libnoise.so")
 
 class NzType(ctypes.Structure):
     pass
@@ -14,13 +16,30 @@ class NzObj(ctypes.Structure):
     _fields_ = [("type", NzTypeP)]
 NzObjP = ctypes.POINTER(NzObj)
 
-class NzNode(ctypes.Structure):
-    pass
-NzNodeP = ctypes.POINTER(NzNode)
-
 class NzPort(ctypes.Structure):
     pass
 NzPortP = ctypes.POINTER(NzPort)
+
+class NzInport(ctypes.Structure):
+    _fields = [
+        ("type", NzTypeP),
+        ("name", ctypes.c_char_p),
+        ("port", NzPortP),
+    ]
+NzInportP = ctypes.POINTER(NzInport)
+
+class NzNode(ctypes.Structure):
+    _fields_ = [
+        ("name", ctypes.c_char_p),
+        ("_term", ctypes.c_void_p),
+        ("_state", ctypes.c_void_p),
+        ("n_inputs", ctypes.c_size_t),
+        ("inputs", NzInportP),
+        ("n_outputs", ctypes.c_size_t),
+        ("outputs", NzPortP),
+        ("_flags", ctypes.c_int)
+    ]
+NzNodeP = ctypes.POINTER(NzNode)
 
 class NzNote(ctypes.Structure):
     pass
@@ -38,7 +57,7 @@ def check_negative(result, func, args):
     if result < 0:
         raise Exception("Negative rc {} returned from {}, errno = {}".format(result, func, ctypes.get_errno()))
 
-FUNCTIONS = {
+_FUNCTIONS = {
     # ntypes.h
     "nz_obj_create": (NzObjP, [NzTypeP], check_null),
     "nz_obj_destroy": (None, [ctypes.POINTER(NzObjP)], None),
@@ -55,7 +74,10 @@ FUNCTIONS = {
 
     # block.h
     "nz_node_connect": (ctypes.c_int, [NzNodeP, ctypes.c_size_t, NzNodeP, ctypes.c_size_t], check_rc),
+    "nz_node_term": (None, [NzNodeP], None),
+    "nz_node_str": (ctypes.c_char_p, [NzNodeP], check_null),
     "nz_port_pull": (NzObjP, [NzPortP], check_null),
+    "nz_node_pull": (NzObjP, [NzNodeP, ctypes.c_size_t], check_null),
 
     # note.h
     "nz_note_init": (None, [NzNoteP, ctypes.c_double, ctypes.c_double], None),
@@ -65,7 +87,7 @@ FUNCTIONS = {
     #"soundcard_run": (None, [], None),
 }
 
-BLOCKS = {
+_BLOCKS = {
     "accumulator": [],
     "constant": [NzObjP],
     "debug": [ctypes.c_char_p, ctypes.c_bool],
@@ -94,28 +116,34 @@ BLOCKS = {
     "instrument_snare": [],
 }
 
-nz_double_type = NzTypeP(libnoise.nz_double_type)
-nz_long_type = NzTypeP(libnoise.nz_long_type)
-nz_string_type = NzTypeP(libnoise.nz_string_type)
-nz_chunk_type = NzTypeP(libnoise.nz_chunk_type)
-nz_sample_type = NzTypeP(libnoise.nz_sample_type)
-nz_note_vector_type = NzTypeP(libnoise.nz_note_vector_type)
-nz_object_vector_type = NzTypeP(libnoise.nz_object_vector_type)
+_TYPES = [
+    "double",
+    "long",
+    "string",
+    "chunk",
+    "sample",
+    "note_vector",
+    "object_vector"
+]
 
-exports = globals()
+_exports = globals()
 
-for func_name, (return_type, arg_types, err_check) in FUNCTIONS.items():
-    exports[func_name] = getattr(libnoise, func_name)
-    exports[func_name].restype = return_type
-    exports[func_name].argtypes = arg_types
+for func_name, (return_type, arg_types, err_check) in _FUNCTIONS.items():
+    _exports[func_name] = getattr(libnoise, func_name)
+    _exports[func_name].restype = return_type
+    _exports[func_name].argtypes = arg_types
     if err_check is not None:
-        exports[func_name].errcheck = err_check
+        _exports[func_name].errcheck = err_check
 
 blocks = {}
 
-for block_name, args in BLOCKS.items():
-    blocks[func_name] = getattr(libnoise, "nz_{}_init".format(block_name))
-    blocks[func_name].argtypes = [NzNodeP] + args
-    blocks[func_name].restype = ctypes.c_int
-    blocks[func_name].errcheck = check_rc
+for block_name, args in _BLOCKS.items():
+    blocks[block_name] = getattr(libnoise, "nz_{}_init".format(block_name))
+    blocks[block_name].argtypes = [NzNodeP] + args
+    blocks[block_name].restype = ctypes.c_int
+    blocks[block_name].errcheck = check_rc
 
+types = {}
+
+for type_name in _TYPES:
+    types[type_name] = NzTypeP(getattr(libnoise, "nz_{}_type".format(type_name)))

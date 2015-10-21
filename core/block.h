@@ -37,12 +37,6 @@ struct nz_node {
     char * node_name;
     void (*node_term)(struct nz_node * node);
 
-    struct {
-        int flag_can_copy:1;
-        int flag_pure:1;
-        //int flag_visited:1;
-    } node_flags;
-
     void * node_state;
 
     size_t node_n_inputs;
@@ -50,6 +44,12 @@ struct nz_node {
 
     size_t node_n_outputs;
     struct nz_port * node_outputs;
+
+    struct {
+        int flag_can_copy:1;
+        int flag_pure:1;
+        //int flag_visited:1;
+    } node_flags;
 };
 
 // Helper function to allocate arrays of input & output ports
@@ -60,10 +60,10 @@ void nz_node_term_generic(struct nz_node * node);
 void nz_node_term_generic_objstate(struct nz_node * node);
 void nz_node_free_ports(struct nz_node * node);
 
-static inline void nz_node_term(struct nz_node * node) {
-    if (node == NULL) return;
-    if (node->node_term) node->node_term(node);
-}
+void nz_node_term(struct nz_node * node);
+
+// Get the name of a node, caller owns the resulting pointer
+char * nz_node_str(struct nz_node * node);
 
 // Connect blocks & pull
 int nz_port_connect(struct nz_inport * input, struct nz_port * nz_output);
@@ -77,4 +77,6 @@ int nz_node_connect(struct nz_node* input, size_t in_idx, struct nz_node * outpu
 #define NZ_NODE_PULL(node, idx) nz_port_pull((node)->node_inputs[(idx)].inport_connection)
 
 struct nz_obj * nz_port_pull(struct nz_port * port);
+// Use the macro if you can
+struct nz_obj * nz_node_pull(struct nz_node * node, size_t idx);
 #endif
