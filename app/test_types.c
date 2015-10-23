@@ -6,27 +6,30 @@ const size_t nz_chunk_size = 128;
 nz_rc run()
 {
     nz_rc rc = NZ_SUCCESS;
-    nz_type_data_p my_int_type;
-    nz_obj_p my_int;
+    nz_type_p my_chunk_type;
+    nz_obj_p my_chunk;
     char* string;
 
-    // Create an int type
-    if((rc = nz_int_type_create(&my_int_type)) == NZ_SUCCESS)
+    // Create a chunk type
+    if((rc = nz_chunk_type_create(&my_chunk_type)) == NZ_SUCCESS)
     {
-        // Use this int type to instantiate an int
-        if((rc = nz_int_type.type_create_obj(my_int_type, &my_int)) == NZ_SUCCESS)
+        // Use this chunk type to instantiate a chunk
+        if((rc = nz_chunk_type.type_create_obj(my_chunk_type, &my_chunk)) == NZ_SUCCESS)
         {
-            // Set the int
-            *(int*)my_int = 5;
-
-            if((nz_int_type.type_str_obj(my_int_type, my_int, &string)) == NZ_SUCCESS)
+            // Set the chunk
+            for(size_t i = 0; i < nz_chunk_size; i++)
             {
-                printf("my_int value: %s\n", string);
+                ((double*)my_chunk)[i] = i;
+            }
+
+            if((nz_chunk_type.type_str_obj(my_chunk_type, my_chunk, &string)) == NZ_SUCCESS)
+            {
+                printf("my_chunk value: %s\n", string);
                 free(string);
             }
-            nz_int_type.type_destroy_obj(my_int_type, my_int);
+            nz_chunk_type.type_destroy_obj(my_chunk_type, my_chunk);
         }
-        nz_int_type_destroy(my_int_type);
+        nz_chunk_type_destroy(my_chunk_type);
     }
     return rc;
 }
