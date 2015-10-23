@@ -2,40 +2,41 @@
 #C_SRC  = $(wildcard *.c)
 #OBJECTS := $(patsubst %.c,%.o,$(C_SRC))
 OBJECTS = \
-		  core/block.o \
-		  core/error.o \
-		  core/note.o \
-		  core/ntype.o \
-		  blocks/audio/compressor.o \
-		  blocks/audio/function_gen.o \
-		  blocks/audio/impulse.o \
-		  blocks/audio/lpf.o \
-		  blocks/audio/mixer.o \
-		  blocks/audio/recorder.o \
-		  blocks/audio/sample.o \
-		  blocks/audio/wave.o \
-		  blocks/io/midi_integrator.o \
-		  blocks/io/midi_reader.o \
-		  blocks/io/midi_smf.o \
-		  blocks/io/midi_writer.o \
-		  blocks/io/portaudio.o \
-		  blocks/accumulator.o \
-		  blocks/constant.o \
-		  blocks/debug.o \
-		  blocks/fittings.o \
-		  blocks/instruments/instrument.o \
-		  blocks/instruments/saw.o \
-		  blocks/instruments/sine.o \
-		  blocks/instruments/snare.o \
-		  blocks/maths.o \
-		  blocks/sequencer.o \
-		  samples/drum.o \
+		core/error.o \
+		core/ntype.o
+#		core/block.o \
+#		core/note.o \
+#		blocks/audio/compressor.o \
+#		blocks/audio/function_gen.o \
+#		blocks/audio/impulse.o \
+#		blocks/audio/lpf.o \
+#		blocks/audio/mixer.o \
+#		blocks/audio/recorder.o \
+#		blocks/audio/sample.o \
+#		blocks/audio/wave.o \
+#		blocks/io/midi_integrator.o \
+#		blocks/io/midi_reader.o \
+#		blocks/io/midi_smf.o \
+#		blocks/io/midi_writer.o \
+#		blocks/io/portaudio.o \
+#		blocks/accumulator.o \
+#		blocks/constant.o \
+#		blocks/debug.o \
+#		blocks/fittings.o \
+#		blocks/instruments/instrument.o \
+#		blocks/instruments/saw.o \
+#		blocks/instruments/sine.o \
+#		blocks/instruments/snare.o \
+#		blocks/maths.o \
+#		blocks/sequencer.o \
+#		samples/drum.o \
 
 APP_OBJECTS = \
-				app/test.o \
-				app/test_midi.o \
-				app/test_synth.o \
-				app/test_sample.o \
+		app/test_types.o
+#				app/test.o \
+#				app/test_midi.o \
+#				app/test_synth.o \
+#				app/test_sample.o \
 
 APP_TARGETS = $(APP_OBJECTS:app/%.o=noise_%)
 

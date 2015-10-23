@@ -7,45 +7,110 @@
 #include "core/note.h"
 #include "core/util.h"
 
-static int types_init();
+int nz_types_are_equal(const struct nz_type * type_1_p, const nz_type_data_p type_1_data_p,
+                       const struct nz_type * type_2_p, const nz_type_data_p type_2_data_p)
+{
+    if(strcmp(type_1_p->type_id, type_2_p->type_id)) return 0;
+    return type_1_p->type_is_equal(type_1_data_p, type_2_data_p);
+}
 
 // --
 
-#define GEN_STATIC_OBJ_FNS(NAME, CTYPE) \
-static nz_obj_p type_create_ ## NAME (const struct nz_type * type) { \
-    return calloc(1, sizeof(CTYPE)); \
+#define GEN_SIMPLE_TYPE_FNS(NAME) \
+nz_rc nz_ ## NAME ## _type_create (nz_type_data_p * type_data_pp) {\
+    *type_data_pp = 0; \
+    return NZ_SUCCESS; \
+}\
+void nz_ ## NAME ## _type_destroy (nz_type_data_p type_data_p) {}\
+static int NAME ## _type_is_equal (nz_type_data_p type_data_p, nz_type_data_p other_type_data_p) { \
+    return 1; \
 } \
-static void type_destroy_ ## NAME (const struct nz_type * type, nz_obj_p obj_p) { \
-    return free(obj_p); \
+
+#define GEN_STATIC_OBJ_FNS(NAME, SIZE) \
+static nz_rc NAME ## _type_create_obj (nz_type_data_p type_data_p, nz_obj_p * obj_pp) { \
+    *obj_pp = calloc(1, SIZE); \
+    if(*obj_pp == 0) return NZ_NOMEM; \
+    return NZ_SUCCESS; \
 } \
-static int type_copy_ ## NAME (const struct nz_type * type, nz_obj_p dst_p, const nz_obj_p src_p) { \
-    memcpy(dst_p, src_p, sizeof(CTYPE)); \
-    return 0; \
+static void NAME ## _type_destroy_obj (nz_type_data_p type_data_p, nz_obj_p obj_p) { \
+    free(obj_p); \
+} \
+
+#define GEN_SHALLOW_COPY_FN(NAME, SIZE) \
+static nz_rc NAME ## _type_copy_obj (nz_type_data_p type_data_p, nz_obj_p dst_p, const nz_obj_p src_p) { \
+    memcpy(dst_p, src_p, SIZE); \
+    return NZ_SUCCESS; \
 }
 
 #define GEN_PRIMITIVE_STRING_FNS(NAME, CTYPE, FORMAT_STR) \
-static char * type_str_ ## NAME (const struct nz_type * type, const nz_obj_p obj_p) \
+static nz_rc NAME ## _type_str_obj (nz_type_data_p type_data_p, const nz_obj_p obj_p, char ** string) \
 { \
-    return rsprintf(FORMAT_STR, *((CTYPE)*)obj_p); \
+    *string = rsprintf(FORMAT_STR, *(CTYPE *)obj_p); \
+    if(*string == 0) return NZ_NOMEM; \
+    return NZ_SUCCESS; \
 }
 
 #define DECLARE_TYPE(NAME) \
-const struct nz_type_ ## NAME { \
-    struct nz_type; \
-} nz_type_ ## NAME = {{ \
-    .type_create = &type_create_ ## NAME, \
-    .type_destroy = &type_destroy_ ## NAME, \
-    .type_copy = &type_copy_ ## NAME, \
-    .type_str = &type_str_ ## NAME, \
-}};
+static const char NAME ## _type_id[] = #NAME; \
+const struct nz_type nz_ ## NAME ## _type = { \
+    .type_id = NAME ## _type_id, \
+    .type_is_equal = & NAME ## _type_is_equal, \
+    .type_create_obj = & NAME ## _type_create_obj, \
+    .type_destroy_obj = & NAME ## _type_destroy_obj, \
+    .type_copy_obj = & NAME ## _type_copy_obj, \
+    .type_str_obj = & NAME ## _type_str_obj, \
+};
 
-#define DECLARE_PRIMITIVE_TYPE(CTYPE, FORMAT_STR) \
-GEN_STATIC_OBJ_FNS(CTYPE, CTYPE) \
-GEN_PRIMITIVE_STRING_FNS(CTYPE, CTYPE, FORMAT_STR) \
-GEN_STATIC_OBJ_FNS(CTYPE)
+#define DECLARE_PRIMITIVE_TYPE(NAME, CTYPE, FORMAT_STR) \
+GEN_SIMPLE_TYPE_FNS(NAME) \
+GEN_STATIC_OBJ_FNS(NAME, sizeof(CTYPE)) \
+GEN_SHALLOW_COPY_FN(NAME, sizeof(CTYPE)) \
+GEN_PRIMITIVE_STRING_FNS(NAME, CTYPE, FORMAT_STR) \
+DECLARE_TYPE(NAME) \
 
 // --
+// C Primitives
 
+DECLARE_PRIMITIVE_TYPE(int, int, "%d")
+DECLARE_PRIMITIVE_TYPE(long, long, "%ld")
+DECLARE_PRIMITIVE_TYPE(real, double, "%lf")
+
+// --
+// Simple noise types
+
+// Chunk
+GEN_SIMPLE_TYPE_FNS(chunk)
+GEN_STATIC_OBJ_FNS(chunk, (sizeof(double) * nz_chunk_size))
+GEN_SHALLOW_COPY_FN(chunk, (sizeof(double) * nz_chunk_size))
+
+static nz_rc chunk_type_str_obj (const nz_type_data_p type_data_p, const nz_obj_p obj_p, char ** string) \
+{
+    char* output;
+    output = malloc(sizeof(char) * (5 * nz_chunk_size + 2));
+    if(output == 0) return NZ_NOMEM;
+
+    output[0] = '{';
+
+    size_t n = 1;
+    for(size_t i = 0; i < nz_chunk_size; i++)
+    {
+        int len;
+        snprintf(&output[n], 5, "%1.2lf %n", ((double*)obj_p)[i], &len);
+        n += len;
+    }
+
+    output[n - 1] = '}';
+    output[n] = '\0';
+
+    *string = output;
+
+    return NZ_SUCCESS;
+}
+DECLARE_TYPE(chunk)
+
+// OLD SHIT
+
+/*
 #define VECTOR_INITIAL_CAPACITY 32
 #define VECTOR_FACTOR 2
 
@@ -189,7 +254,6 @@ size_t nz_vector_sizeofel(nz_obj_p vec) {
 
 // ---
 
-/*
 typedef struct
 {
     size_t length;
@@ -275,12 +339,10 @@ type_t * make_array_type(size_t length, const type_t * element_type)
     
     return type;
 }
-*/
 
 // --- 
 // Consider getting rid of this? XXX Vector<object_t *> instead?
 
-/*
 void tuple_free(object_t * obj) {
     object_t ** member = NZ_CAST(object_t **, obj);
     object_t ** first_member = member;
@@ -335,85 +397,3 @@ struct nz_type * make_tuple_type(size_t length) {
     return type;
 }
 */
-
-// ---
-
-DECLARE_PRIMITIVE_TYPE(float, "%f")
-DECLARE_PRIMITIVE_TYPE(double, "%lf")
-DECLARE_PRIMITIVE_TYPE(int, "%d")
-DECLARE_PRIMITIVE_TYPE(long, "%ld")
-
-// -
-
-// Untested: string_type
-void string_destroy(nz_obj_p obj) {
-    free(NZ_CAST(char *, obj));
-    free(obj);
-}
-
-nz_obj_p string_copy(nz_obj_p dst, const nz_obj_p src) {
-    assert(nz_obj_type_compatible(dst, src));
-
-    char ** dst_str = &NZ_CAST(char *, dst);
-    free(*dst_str);
-    *dst_str = strdup(NZ_CAST(char *, src));
-
-    if (*dst_str == NULL) return NULL;
-
-    return dst;
-}
-
-char * string_str(const nz_obj_p obj) {
-    return strdup(NZ_CAST(char *, obj));
-}
-
-const struct nz_type nz_string_type[1] = {{
-    .type_size = sizeof(char *),
-    .type_create = &nz_simple_create_,
-    .type_destroy = &string_destroy,
-    .type_copy = &string_copy,
-    .type_str = &string_str
-}};
-
-// Other types!
-
-static char * chunk_str (const nz_obj_p obj) {
-    double * chunk = &NZ_CAST(double, obj);
-    return rsprintf("chunk {%f, %f, %f, ... %f} ",
-            chunk[0], chunk[1], chunk[2], chunk[nz_chunk_size-1]);
-}
-
-struct nz_type nz_chunk_type[1] = {{
-    .type_create = &nz_simple_create_,
-    .type_destroy = &nz_simple_destroy_,
-    .type_copy = &nz_simple_copy_,
-    .type_str = &chunk_str,
-}};
-
-struct nz_type * nz_sample_type = NULL;
-struct nz_type * nz_object_vector_type = NULL;
-struct nz_type * nz_note_vector_type = NULL;
-struct nz_type * nz_vector_vector_type = NULL;
-
-// Some types can't be statically created (easily), so build at runtime
-static int types_init() {
-    // Chunk type (fixed-size audio buffer)
-    nz_chunk_type->type_size = nz_chunk_size * sizeof(double);
-
-    // Sample type (variable-length recording)
-    if (nz_sample_type == NULL)
-        nz_sample_type = nz_type_create_vector(sizeof(double)); 
-
-    // Note vector type
-    if (nz_note_vector_type == NULL)
-    nz_note_vector_type = nz_type_create_vector(sizeof(struct nz_note));
-
-    // Object vector type
-    if (nz_object_vector_type == NULL)
-    nz_object_vector_type = nz_type_create_vector(sizeof(nz_obj_p));
-
-    if (nz_sample_type == NULL || nz_object_vector_type == NULL)
-        return -1;
-
-    return 0;
-}
