@@ -12,7 +12,7 @@ struct nz_typeclass {
 
     // Class methods
     nz_rc (*type_create)     (nz_type_p * type_p);
-    void (*type_destroy)     (nz_type_p type_p);
+    void  (*type_destroy)    (nz_type_p type_p);
     nz_rc (*type_copy)       (nz_type_p dst_p, const nz_type_p src_p);
     int   (*type_is_equal)   (const nz_type_p type_p, const nz_type_p other_type_p);
     nz_rc (*type_create_obj) (const nz_type_p type_p, nz_obj_p * obj_pp);
