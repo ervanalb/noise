@@ -28,17 +28,17 @@ int nz_types_are_equal(const struct nz_typeclass * type_1_p, const nz_type_p typ
 
 // --
 
-extern const struct nz_typeclass nz_int_type;
-extern const struct nz_typeclass nz_long_type;
-extern const struct nz_typeclass nz_real_type;
-extern const struct nz_typeclass nz_string_type;
-extern const struct nz_typeclass nz_chunk_type;
-extern const struct nz_typeclass nz_sample_type;
-extern const struct nz_typeclass nz_array_type;
-extern const struct nz_typeclass nz_vector_type;
+extern const struct nz_typeclass nz_int_typeclass;
+extern const struct nz_typeclass nz_long_typeclass;
+extern const struct nz_typeclass nz_real_typeclass;
+extern const struct nz_typeclass nz_string_typeclass;
+extern const struct nz_typeclass nz_chunk_typeclass;
+extern const struct nz_typeclass nz_sample_typeclass;
+extern const struct nz_typeclass nz_array_typeclass;
+extern const struct nz_typeclass nz_vector_typeclass;
 //extern const struct nz_typeclass nz_note_vector_type;
 
-nz_rc nz_array_type_init(nz_type_p type_p, int n, const struct nz_typeclass * typeclass_p, nz_type_p type_p);
-nz_rc nz_vector_type_init(nz_type_p type_p, const struct nz_typeclass * typeclass_p, nz_type_p type_p);
+nz_rc nz_array_type_init(nz_type_p type_p, int n, const struct nz_typeclass * inner_typeclass_p, nz_type_p inner_type_p);
+nz_rc nz_vector_type_init(nz_type_p type_p, const struct nz_typeclass * inner_typeclass_p, nz_type_p inner_type_p);
 
 #endif

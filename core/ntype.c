@@ -53,9 +53,9 @@ static nz_rc NAME ## _type_str_obj (nz_type_p type_p, const nz_obj_p obj_p, char
     return NZ_SUCCESS; \
 }
 
-#define DECLARE_TYPE(NAME) \
+#define DECLARE_TYPECLASS(NAME) \
 static const char NAME ## _type_id[] = #NAME; \
-const struct nz_typeclass nz_ ## NAME ## _type = { \
+const struct nz_typeclass nz_ ## NAME ## _typeclass = { \
     .type_id = NAME ## _type_id, \
     .type_create = & NAME ## _type_create, \
     .type_destroy = & NAME ## _type_destroy, \
@@ -67,19 +67,19 @@ const struct nz_typeclass nz_ ## NAME ## _type = { \
     .type_str_obj = & NAME ## _type_str_obj, \
 };
 
-#define DECLARE_PRIMITIVE_TYPE(NAME, CTYPE, FORMAT_STR) \
+#define DECLARE_PRIMITIVE_TYPECLASS(NAME, CTYPE, FORMAT_STR) \
 GEN_SIMPLE_TYPE_FNS(NAME) \
 GEN_STATIC_OBJ_FNS(NAME, sizeof(CTYPE)) \
 GEN_SHALLOW_COPY_FN(NAME, sizeof(CTYPE)) \
 GEN_PRIMITIVE_STRING_FNS(NAME, CTYPE, FORMAT_STR) \
-DECLARE_TYPE(NAME) \
+DECLARE_TYPECLASS(NAME) \
 
 // --
 // C Primitives
 
-DECLARE_PRIMITIVE_TYPE(int, int, "%d")
-DECLARE_PRIMITIVE_TYPE(long, long, "%ld")
-DECLARE_PRIMITIVE_TYPE(real, double, "%lf")
+DECLARE_PRIMITIVE_TYPECLASS(int, int, "%d")
+DECLARE_PRIMITIVE_TYPECLASS(long, long, "%ld")
+DECLARE_PRIMITIVE_TYPECLASS(real, double, "%lf")
 
 // --
 // Simple noise types
@@ -112,7 +112,7 @@ static nz_rc chunk_type_str_obj (const nz_type_p type_p, const nz_obj_p obj_p, c
 
     return NZ_SUCCESS;
 }
-DECLARE_TYPE(chunk)
+DECLARE_TYPECLASS(chunk)
 
 // OLD SHIT
 
