@@ -44,6 +44,7 @@ void nz_node_free_ports(struct nz_node * node) {
     free(node->node_name);
 }
 
+/*
 void nz_node_term_generic(struct nz_node * node) {
     nz_node_free_ports(node);
     free(node->node_state);
@@ -51,9 +52,9 @@ void nz_node_term_generic(struct nz_node * node) {
 
 void nz_node_term_generic_objstate(struct nz_node * node) {
     nz_node_free_ports(node);
-    nz_obj_destroy((struct nz_obj **) &node->node_state);
+    nz_obj_destroy((nz_obj_p*) &node->node_state);
 }
-
+*/
 
 /*
 // Return a copy of the node, *and* any input connections
@@ -119,7 +120,7 @@ int nz_node_connect(struct nz_node * input, size_t in_idx, struct nz_node * outp
 
 //
 
-struct nz_obj * nz_port_pull(struct nz_port * port) {
+nz_obj_p nz_port_pull(struct nz_port * port) {
     if (port == NULL)
         return (errno = EINVAL, NULL);
 
@@ -139,6 +140,6 @@ struct nz_obj * nz_port_pull(struct nz_port * port) {
     }
 }
 
-struct nz_obj * nz_node_pull(struct nz_node * node, size_t idx) {
+nz_obj_p nz_node_pull(struct nz_node * node, size_t idx) {
     return nz_port_pull(node->node_inputs[idx].inport_connection);
 }

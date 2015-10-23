@@ -21,7 +21,7 @@ enum nz_pull_rc {
 struct nz_port {
     struct nz_node * port_node;
     enum nz_pull_rc (*port_pull)(struct nz_port * port);
-    struct nz_obj * port_value; 
+    nz_obj_p port_value; 
 
     const struct nz_type * port_type;
     char * port_name;
@@ -76,7 +76,7 @@ int nz_node_connect(struct nz_node* input, size_t in_idx, struct nz_node * outpu
 // Useful sugar
 #define NZ_NODE_PULL(node, idx) nz_port_pull((node)->node_inputs[(idx)].inport_connection)
 
-struct nz_obj * nz_port_pull(struct nz_port * port);
+nz_obj_p nz_port_pull(struct nz_port * port);
 // Use the macro if you can
-struct nz_obj * nz_node_pull(struct nz_node * node, size_t idx);
+nz_obj_p nz_node_pull(struct nz_node * node, size_t idx);
 #endif

@@ -8,8 +8,8 @@
 static enum nz_pull_rc sequencer_pull(struct nz_port * port) {
     struct nz_node * node = port->port_node; 
 
-    struct nz_obj * inp_time = NZ_NODE_PULL(node, 0);
-    struct nz_obj * inp_stream = NZ_NODE_PULL(node, 1);
+    nz_obj_p inp_time = NZ_NODE_PULL(node, 0);
+    nz_obj_p inp_stream = NZ_NODE_PULL(node, 1);
 
     if (inp_time == NULL || inp_stream == NULL) {
         return NZ_PULL_RC_NULL;
@@ -18,8 +18,8 @@ static enum nz_pull_rc sequencer_pull(struct nz_port * port) {
     int t = (int) NZ_CAST(double, inp_time);
 
     size_t stream_idx = t % nz_vector_get_size(inp_stream);
-    struct nz_obj ** sequence = NZ_CAST(struct nz_obj **, inp_stream);
-    struct nz_obj * out = nz_obj_swap(&port->port_value, sequence[stream_idx]);
+    nz_obj_p* sequence = NZ_CAST(nz_obj_p*, inp_stream);
+    nz_obj_p out = nz_obj_swap(&port->port_value, sequence[stream_idx]);
 
     return (out == NULL) ? NZ_PULL_RC_NULL : NZ_PULL_RC_OBJECT;
 }

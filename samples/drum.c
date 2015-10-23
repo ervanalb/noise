@@ -4,8 +4,8 @@
 #include "core/util.h"
 #include "samples/samples.h"
 
-struct nz_obj * synth_drum(size_t length) {
-    struct nz_obj * output = nz_obj_create(nz_sample_type);
+nz_obj_p synth_drum(size_t length) {
+    nz_obj_p output = nz_obj_create(nz_sample_type);
     if (output == NULL) return NULL;
 
     size_t new_length = nz_vector_set_size(output, length);

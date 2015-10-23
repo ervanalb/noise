@@ -20,13 +20,13 @@ static enum nz_pull_rc midireader_pull(struct nz_port * port) {
     struct nz_node * node = port->port_node; 
     struct state * state = (struct state *) node->node_state;
 
-    struct nz_obj * inp_time = NZ_NODE_PULL(node, 0);
+    nz_obj_p inp_time = NZ_NODE_PULL(node, 0);
 
     if (inp_time == NULL) {
         return NZ_PULL_RC_NULL;
     }
 
-    double t = NZ_CAST(double, inp_time);
+    double t = *(double*)inp_time;
     if (state->last_idx >= state->track->track_nevents) return NZ_PULL_RC_NULL;
 
     nz_vector_set_size(port->port_value, 0);

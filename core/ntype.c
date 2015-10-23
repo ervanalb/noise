@@ -7,116 +7,42 @@
 #include "core/note.h"
 #include "core/util.h"
 
-int types_have_been_inited = 0;
 static int types_init();
 
-struct nz_obj * nz_obj_create(const struct nz_type * type) {
-    if (!types_have_been_inited) {
-        if(types_init() != 0) return NULL;
-    }
-    return type->type_create(type);
+// --
+
+#define GEN_STATIC_OBJ_FNS(NAME, CTYPE) \
+static nz_obj_p type_create_ ## NAME (const struct nz_type * type) { \
+    return calloc(1, sizeof(CTYPE)); \
+} \
+static void type_destroy_ ## NAME (const struct nz_type * type, nz_obj_p obj_p) { \
+    return free(obj_p); \
+} \
+static int type_copy_ ## NAME (const struct nz_type * type, nz_obj_p dst_p, const nz_obj_p src_p) { \
+    memcpy(dst_p, src_p, sizeof(CTYPE)); \
+    return 0; \
 }
 
-struct nz_obj * nz_obj_copy(struct nz_obj * dst, const struct nz_obj * src) {
-    if (src == NULL) return NULL;
-    if (dst == NULL) return (errno = EINVAL, NULL);
-    if (!nz_obj_type_compatible(src, dst)) return (errno = EINVAL, NULL);
-
-    return src->obj_type->type_copy(dst, src);
+#define GEN_PRIMITIVE_STRING_FNS(NAME, CTYPE, FORMAT_STR) \
+static char * type_str_ ## NAME (const struct nz_type * type, const nz_obj_p obj_p) \
+{ \
+    return rsprintf(FORMAT_STR, *((CTYPE)*)obj_p); \
 }
 
-// Duplicate object
-struct nz_obj * nz_obj_dup(const struct nz_obj * src) {
-    if (src == NULL) return NULL;
+#define DECLARE_TYPE(NAME) \
+const struct nz_type_ ## NAME { \
+    struct nz_type; \
+} nz_type_ ## NAME = {{ \
+    .type_create = &type_create_ ## NAME, \
+    .type_destroy = &type_destroy_ ## NAME, \
+    .type_copy = &type_copy_ ## NAME, \
+    .type_str = &type_str_ ## NAME, \
+}};
 
-    struct nz_obj * dst = nz_obj_create(src->obj_type);
-    if (dst == NULL) return NULL;
-
-    if (nz_obj_copy(dst, src) == NULL)
-        return (nz_obj_destroy(&dst), NULL);
-
-    return dst;
-}
-
-// nz_obj_swap: Copy `src` into `*store`, allocating memory as appropriate
-// and returning a ref to a copied version of `src`.
-// Attempts to minimize new allocations
-// This fn is much more efficent than nz_obj_destroy & nz_obj_dup
-struct nz_obj * nz_obj_swap(struct nz_obj ** store, const struct nz_obj * src) {
-    if (src == NULL) return NULL;
-
-    if (*store == NULL) {
-        return *store = nz_obj_dup(src);
-    }
-
-    if (!nz_obj_type_compatible(*store, src)) {
-        nz_obj_destroy(store);
-        return *store = nz_obj_dup(src);
-    }
-        
-    return nz_obj_copy(*store, src);
-}
-
-void nz_obj_destroy(struct nz_obj ** obj_p) {
-    if (obj_p == NULL) return;
-    struct nz_obj * obj = *obj_p;
-
-    if (obj == NULL) return;
-    assert(obj->obj_type);
-
-    obj->obj_type->type_destroy(obj);
-    *obj_p = NULL;
-}
-
-char * nz_obj_str(const struct nz_obj * obj) {
-    if (obj == NULL) return strdup("(nil)");
-    assert(obj->obj_type);
-
-    if (obj->obj_type->type_str) 
-        return obj->obj_type->type_str(obj);
-
-    return rsprintf("<%p instance %p>", obj->obj_type, obj);
-}
-
-// ---
-
-struct nz_obj * nz_simple_create_(const struct nz_type * type) {
-    if (type == NULL) return (errno = EINVAL, NULL);
-    if (type->type_size <= 0) return (errno = EINVAL, NULL);
-
-    struct nz_obj * obj = calloc(1, sizeof(struct nz_obj) + type->type_size);
-    if (obj == NULL) return NULL;
-
-    obj->obj_type = type;
-    return obj;
-}
-
-void nz_simple_destroy_(struct nz_obj * obj) {
-    free(obj);
-}
-
-struct nz_obj * nz_simple_copy_(struct nz_obj * dst, const struct nz_obj * src) {
-    if (!nz_obj_type_compatible(dst, src)) return (errno = EINVAL, NULL);
-
-    memcpy(&dst->obj_data, &src->obj_data, src->obj_type->type_size);
-    return dst;
-}
-
-struct nz_type * nz_type_create_simple(size_t size) {
-    if (size <= 0) return (errno = EINVAL, NULL);
-
-    struct nz_type * type = calloc(1, sizeof(*type) + 0);
-    if (type == NULL) return (errno = ENOMEM, NULL);
-
-    type->type_size = size;
-    type->type_create = &nz_simple_create_;
-    type->type_copy = &nz_simple_copy_;
-    type->type_destroy = &nz_simple_destroy_;
-    //type->type_str = &simple_str; //TODO
-    //type->type_parameters = NULL;
-    
-    return type;
-}
+#define DECLARE_PRIMITIVE_TYPE(CTYPE, FORMAT_STR) \
+GEN_STATIC_OBJ_FNS(CTYPE, CTYPE) \
+GEN_PRIMITIVE_STRING_FNS(CTYPE, CTYPE, FORMAT_STR) \
+GEN_STATIC_OBJ_FNS(CTYPE)
 
 // --
 
@@ -129,17 +55,16 @@ struct vector_data {
     size_t vector_capacity;
 };
 
-struct vector_parameters {
+struct vector_type {
+    const struct nz_type;
     size_t param_element_size;
 };
 
-struct nz_obj * vector_create(const struct nz_type * type) {
+nz_obj_p vector_create(const struct nz_type * type) {
     struct vector_parameters * params = (struct vector_parameters *) &type->type_parameters;
 
-    struct nz_obj * obj = calloc(1, sizeof(*obj) + type->type_size);
+    nz_obj_p obj = calloc(1, type->type_size);
     if (obj == NULL) return NULL;
-
-    obj->obj_type = type;
 
     struct vector_data * vdata = &NZ_CAST(struct vector_data, obj);
     vdata->vector_contents = calloc(VECTOR_INITIAL_CAPACITY, params->param_element_size);
@@ -151,12 +76,12 @@ struct nz_obj * vector_create(const struct nz_type * type) {
     return obj;
 }
 
-void vector_destroy(struct nz_obj * obj) {
+void vector_destroy(nz_obj_p obj) {
     free(NZ_CAST(void *, obj));
     free(obj);
 }
 
-struct nz_obj * vector_copy(struct nz_obj * dst, const struct nz_obj * src) {
+nz_obj_p vector_copy(nz_obj_p dst, const nz_obj_p src) {
     if (!nz_obj_type_compatible(dst, src)) return (errno = EINVAL, NULL);
 
     size_t src_size = nz_vector_get_size(src);
@@ -191,7 +116,7 @@ struct nz_type * nz_type_create_vector(size_t element_size) {
 //
 
 // Returns new size, setting errno if != new_size
-size_t nz_vector_set_size(struct nz_obj * obj, size_t new_size) {
+size_t nz_vector_set_size(nz_obj_p obj, size_t new_size) {
     struct vector_data * vdata = &NZ_CAST(struct vector_data, obj);
 
     if (new_size > vdata->vector_capacity) {
@@ -213,11 +138,11 @@ size_t nz_vector_set_size(struct nz_obj * obj, size_t new_size) {
     return vdata->vector_size = new_size;
 }
 
-size_t nz_vector_get_size(const struct nz_obj * obj) {
+size_t nz_vector_get_size(const nz_obj_p obj) {
     return NZ_CAST(struct vector_data, obj).vector_size;
 }
 
-int nz_vector_push_back(struct nz_obj * vec, void * data) {
+int nz_vector_push_back(nz_obj_p vec, void * data) {
     struct vector_data * vdata = &NZ_CAST(struct vector_data, vec);
     size_t size = vdata->vector_size + 1;
     if (nz_vector_set_size(vec, size) != size) return -1;
@@ -231,7 +156,7 @@ int nz_vector_push_back(struct nz_obj * vec, void * data) {
     return 0;
 }
 
-void * nz_vector_at(struct nz_obj * vec, size_t idx) {
+void * nz_vector_at(nz_obj_p vec, size_t idx) {
     if (idx >= nz_vector_get_size(vec)) 
         return (errno = EINVAL, NULL);
 
@@ -242,7 +167,7 @@ void * nz_vector_at(struct nz_obj * vec, size_t idx) {
     return (void *) el;
 }
 
-void nz_vector_erase(struct nz_obj * vec, size_t idx) {
+void nz_vector_erase(nz_obj_p vec, size_t idx) {
     size_t size = nz_vector_get_size(vec);
     if (idx >= size) return;
     size--;
@@ -257,7 +182,7 @@ void nz_vector_erase(struct nz_obj * vec, size_t idx) {
     assert(nz_vector_set_size(vec, size) == size);
 }
 
-size_t nz_vector_sizeofel(struct nz_obj * vec) {
+size_t nz_vector_sizeofel(nz_obj_p vec) {
     struct vector_parameters * params = (struct vector_parameters *) &vec->obj_type->type_parameters;
     return params->param_element_size;
 }
@@ -413,42 +338,20 @@ struct nz_type * make_tuple_type(size_t length) {
 
 // ---
 
-static char * double_str (const struct nz_obj * obj) {
-    return rsprintf("%f", NZ_CAST(double, obj));
-}
-
-const struct nz_type nz_double_type[1] = {{
-    .type_size = sizeof(double),
-    .type_create = &nz_simple_create_,
-    .type_destroy = &nz_simple_destroy_,
-    .type_copy = &nz_simple_copy_,
-    .type_str = &double_str,
-}};
-
-// -
-
-static char * long_str (const struct nz_obj * obj)
-{
-    return rsprintf("%ld", NZ_CAST(long, obj));
-}
-
-const struct nz_type nz_long_type[1] = {{
-    .type_size = sizeof(long),
-    .type_create = &nz_simple_create_,
-    .type_destroy = &nz_simple_destroy_,
-    .type_copy = &nz_simple_copy_,
-    .type_str = &long_str,
-}};
+DECLARE_PRIMITIVE_TYPE(float, "%f")
+DECLARE_PRIMITIVE_TYPE(double, "%lf")
+DECLARE_PRIMITIVE_TYPE(int, "%d")
+DECLARE_PRIMITIVE_TYPE(long, "%ld")
 
 // -
 
 // Untested: string_type
-void string_destroy(struct nz_obj * obj) {
+void string_destroy(nz_obj_p obj) {
     free(NZ_CAST(char *, obj));
     free(obj);
 }
 
-struct nz_obj * string_copy(struct nz_obj * dst, const struct nz_obj * src) {
+nz_obj_p string_copy(nz_obj_p dst, const nz_obj_p src) {
     assert(nz_obj_type_compatible(dst, src));
 
     char ** dst_str = &NZ_CAST(char *, dst);
@@ -460,7 +363,7 @@ struct nz_obj * string_copy(struct nz_obj * dst, const struct nz_obj * src) {
     return dst;
 }
 
-char * string_str(const struct nz_obj * obj) {
+char * string_str(const nz_obj_p obj) {
     return strdup(NZ_CAST(char *, obj));
 }
 
@@ -474,7 +377,7 @@ const struct nz_type nz_string_type[1] = {{
 
 // Other types!
 
-static char * chunk_str (const struct nz_obj * obj) {
+static char * chunk_str (const nz_obj_p obj) {
     double * chunk = &NZ_CAST(double, obj);
     return rsprintf("chunk {%f, %f, %f, ... %f} ",
             chunk[0], chunk[1], chunk[2], chunk[nz_chunk_size-1]);
@@ -494,8 +397,6 @@ struct nz_type * nz_vector_vector_type = NULL;
 
 // Some types can't be statically created (easily), so build at runtime
 static int types_init() {
-    if (types_have_been_inited) return 0;
-
     // Chunk type (fixed-size audio buffer)
     nz_chunk_type->type_size = nz_chunk_size * sizeof(double);
 
@@ -509,11 +410,10 @@ static int types_init() {
 
     // Object vector type
     if (nz_object_vector_type == NULL)
-    nz_object_vector_type = nz_type_create_vector(sizeof(struct nz_obj *));
+    nz_object_vector_type = nz_type_create_vector(sizeof(nz_obj_p));
 
     if (nz_sample_type == NULL || nz_object_vector_type == NULL)
         return -1;
 
-    types_have_been_inited = 1;
     return 0;
 }

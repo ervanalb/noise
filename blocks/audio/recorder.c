@@ -7,12 +7,12 @@
 
 static enum nz_pull_rc recorder_pull(struct nz_port * port) {
     struct nz_node * node = port->port_node;
-    struct nz_obj * inp_len = NZ_NODE_PULL(node, 1);
+    nz_obj_p inp_len = NZ_NODE_PULL(node, 1);
 
     if (inp_len == NULL)
         return NZ_PULL_RC_NULL;
 
-    size_t length = NZ_CAST(long, inp_len);
+    size_t length = *(long*)inp_len;
     size_t t = 0;
 
     free(port->port_value);
@@ -22,11 +22,11 @@ static enum nz_pull_rc recorder_pull(struct nz_port * port) {
     size_t new_length = nz_vector_set_size(port->port_value, length);
     if (new_length != length) return NZ_PULL_RC_ERROR;
 
-    double * samples = NZ_CAST(double *, port->port_value);
+    double * samples = *(double **)port->port_value;
 
     int count = 0;
     while (t < length) {
-        struct nz_obj * inp_chunk = NZ_NODE_PULL(node, 0);
+        nz_obj_p inp_chunk = NZ_NODE_PULL(node, 0);
 
         if (inp_chunk == NULL) {
             // We don't want to loop forever, if `inp_chunk` continues to be NULL
@@ -37,7 +37,7 @@ static enum nz_pull_rc recorder_pull(struct nz_port * port) {
             continue;
         }
 
-        double * chunk = &NZ_CAST(double, inp_chunk);
+        double * chunk = &*(double*)inp_chunk;
 
         if (t + nz_chunk_size < length) {
             memcpy(&samples[t], chunk, sizeof(double) * nz_chunk_size);

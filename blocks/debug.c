@@ -14,7 +14,7 @@ static enum nz_pull_rc debug_pull(struct nz_port * port){
     struct nz_node * node = port->port_node;
     struct state * state = (struct state *) node->node_state;
 
-    struct nz_obj * out = nz_obj_swap(&port->port_value, NZ_NODE_PULL(node, 0));
+    nz_obj_p out = nz_obj_swap(&port->port_value, NZ_NODE_PULL(node, 0));
 
     if (state->on) {
         char * ostr = nz_obj_str(port->port_value);

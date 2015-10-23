@@ -8,8 +8,8 @@
 static enum nz_pull_rc add_pull(struct nz_port * port) {
     struct nz_node * node = port->port_node;
 
-    struct nz_obj * input0 = NZ_NODE_PULL(node, 0);
-    struct nz_obj * input1 = NZ_NODE_PULL(node, 1);
+    nz_obj_p input0 = NZ_NODE_PULL(node, 0);
+    nz_obj_p input1 = NZ_NODE_PULL(node, 1);
 
     if (input0 == NULL || input1 == NULL) {
         return NZ_PULL_RC_NULL;
@@ -29,8 +29,8 @@ static enum nz_pull_rc add_pull(struct nz_port * port) {
 static enum nz_pull_rc subtract_pull(struct nz_port * port) {
     struct nz_node * node = port->port_node;
 
-    struct nz_obj * input0 = NZ_NODE_PULL(node, 0);
-    struct nz_obj * input1 = NZ_NODE_PULL(node, 1);
+    nz_obj_p input0 = NZ_NODE_PULL(node, 0);
+    nz_obj_p input1 = NZ_NODE_PULL(node, 1);
 
     if (input0 == NULL || input1 == NULL) {
         return NZ_PULL_RC_NULL;
@@ -50,8 +50,8 @@ static enum nz_pull_rc subtract_pull(struct nz_port * port) {
 static enum nz_pull_rc multiply_pull(struct nz_port * port) {
     struct nz_node * node = port->port_node;
 
-    struct nz_obj * input0 = NZ_NODE_PULL(node, 0);
-    struct nz_obj * input1 = NZ_NODE_PULL(node, 1);
+    nz_obj_p input0 = NZ_NODE_PULL(node, 0);
+    nz_obj_p input1 = NZ_NODE_PULL(node, 1);
 
     if (input0 == NULL || input1 == NULL) {
         return NZ_PULL_RC_NULL;
@@ -71,8 +71,8 @@ static enum nz_pull_rc multiply_pull(struct nz_port * port) {
 static enum nz_pull_rc divide_pull(struct nz_port * port) {
     struct nz_node * node = port->port_node;
 
-    struct nz_obj * input0 = NZ_NODE_PULL(node, 0);
-    struct nz_obj * input1 = NZ_NODE_PULL(node, 1);
+    nz_obj_p input0 = NZ_NODE_PULL(node, 0);
+    nz_obj_p input1 = NZ_NODE_PULL(node, 1);
 
     if (input0 == NULL || input1 == NULL) {
         return NZ_PULL_RC_NULL;
@@ -92,7 +92,7 @@ static enum nz_pull_rc divide_pull(struct nz_port * port) {
 static enum nz_pull_rc note_to_freq_pull(struct nz_port * port) {
     struct nz_node * node = port->port_node;
 
-    struct nz_obj * input0 = NZ_NODE_PULL(node, 0);
+    nz_obj_p input0 = NZ_NODE_PULL(node, 0);
 
     if (input0 == NULL) {
         return NZ_PULL_RC_NULL;

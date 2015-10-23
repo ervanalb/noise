@@ -3,6 +3,6 @@
 
 #include "noise.h"
 
-struct nz_obj * synth_drum(size_t length);
+nz_obj_p synth_drum(size_t length);
 
 #endif

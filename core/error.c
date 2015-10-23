@@ -2,13 +2,13 @@
 
 #include "core/error.h"
 
-int nz_errno(void) {
-    return errno;    
-}
-
-const char * nz_strerror(int errnum) {
+#define DECLARE_ERROR(X) case X: return #X;
+const char * nz_strerror(nz_rc rc)
+{
     switch(errnum) {
-        default: 
-            return strerror(errnum);
+        case NZ_SUCCESS: return "NZ_SUCCESS"
+        DECLARE_ERRORS
+        default: return "NZ_UNKNOWN";
     }
 }
+#undef DECLARE_ERROR

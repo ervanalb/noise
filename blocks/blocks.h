@@ -20,7 +20,7 @@ enum nz_math_op {
 int nz_accumulator_init(struct nz_node * node);
 
 // Constant<type value> :: () -> (type value); Returns a constant value
-int nz_constant_init(struct nz_node * node, struct nz_obj * constant_value);
+int nz_constant_init(struct nz_node * node, nz_obj_p constant_value);
 
 // Debug<char name[], bool on> :: (double x) -> (); Prints output on pull; or use with debug_run(...)
 int nz_debug_init(struct nz_node * node, const char * name, char on);

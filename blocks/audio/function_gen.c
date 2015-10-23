@@ -11,13 +11,13 @@ static double f(double t) {
 
 static enum nz_pull_rc fungen_pull(struct nz_port * port) {
     struct nz_node * node = port->port_node;
-    struct nz_obj * input0 = NZ_NODE_PULL(node, 0);
+    nz_obj_p input0 = NZ_NODE_PULL(node, 0);
 
     if (input0 == NULL) {
         return NZ_PULL_RC_NULL;
     }
 
-    NZ_CAST(double, port->port_value) = f(NZ_CAST(double, input0));
+    *(double*)port->port_value = f(*(double*)input0);
     return NZ_PULL_RC_OBJECT;
 }
 

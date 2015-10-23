@@ -12,7 +12,7 @@
 const size_t nz_chunk_size = 128;
 const double nz_frame_rate = 44100;
 
-int write_sample(struct nz_obj * sample, const char * filename) {
+int write_sample(nz_obj_p sample, const char * filename) {
     printf("Writing %lu frames to %s", nz_vector_get_size(sample), filename);
 
     SF_INFO fdata = {
@@ -25,7 +25,7 @@ int write_sample(struct nz_obj * sample, const char * filename) {
     };
 
     SNDFILE * f = sf_open(filename, SFM_WRITE, &fdata);
-    sf_write_double(f, NZ_CAST(double *, sample), nz_vector_get_size(sample));
+    sf_write_double(f, *(double **)sample, nz_vector_get_size(sample));
     sf_write_sync(f);
     sf_close(f);
     return 0;
@@ -34,7 +34,7 @@ int write_sample(struct nz_obj * sample, const char * filename) {
 int main(void) {
     nz_obj_create(nz_double_type);
 
-    struct nz_obj * sample = synth_drum(2 * nz_frame_rate); // 2 seconds
+    nz_obj_p sample = synth_drum(2 * nz_frame_rate); // 2 seconds
     if (sample == NULL) return (printf("no sample\n"), -1);
     
     write_sample(sample, "drum.wav");

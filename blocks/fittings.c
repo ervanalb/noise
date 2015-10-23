@@ -7,7 +7,7 @@
 
 static enum nz_pull_rc wye_pull(struct nz_port * port) {
     struct nz_node * node = port->port_node;
-    struct nz_obj * out = nz_obj_swap(&port->port_value, NZ_NODE_PULL(node, 0));
+    nz_obj_p out = nz_obj_swap(&port->port_value, NZ_NODE_PULL(node, 0));
 
     for (size_t i = 1; i < node->node_n_inputs; i++) {
         NZ_NODE_PULL(node, i);
@@ -49,7 +49,7 @@ int nz_wye_init(struct nz_node * node, size_t n_inputs) {
 
 static enum nz_pull_rc tee_pull_main(struct nz_port * port) {
     struct nz_node * node = port->port_node;
-    struct nz_obj * out = nz_obj_swap(&port->port_value, NZ_NODE_PULL(node, 0));
+    nz_obj_p out = nz_obj_swap(&port->port_value, NZ_NODE_PULL(node, 0));
 
     for (size_t i = 1; i < node->node_n_outputs; i++) {
         node->node_outputs[i].port_value = out;

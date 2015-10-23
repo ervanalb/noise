@@ -24,11 +24,11 @@ static double square(double phi) {
 static enum nz_pull_rc wave_pull(struct nz_port * port) {
     struct nz_node * node = port->port_node;
 
-    struct nz_obj * inp_freq = NZ_NODE_PULL(node, 0);
-    struct nz_obj * inp_wave = NZ_NODE_PULL(node, 1);
+    nz_obj_p inp_freq = NZ_NODE_PULL(node, 0);
+    nz_obj_p inp_wave = NZ_NODE_PULL(node, 1);
 
     struct state * state = (struct state *) node->node_state;
-    double * chunk = &NZ_CAST(double, port->port_value);
+    double * chunk = &*(double*)port->port_value;
 
 	if (inp_freq == NULL || inp_wave == NULL) {
         state->phase = 0.;
@@ -36,8 +36,8 @@ static enum nz_pull_rc wave_pull(struct nz_port * port) {
         return NZ_PULL_RC_OBJECT;
 	}
 
-    double freq = NZ_CAST(double, inp_freq);
-    enum nz_wave_type wave = NZ_CAST(long, inp_wave);
+    double freq = *(double*)inp_freq;
+    enum nz_wave_type wave = *(long*)inp_wave;
 
 	for (size_t i=0; i < nz_chunk_size; i++) {
         switch(wave) {
@@ -102,7 +102,7 @@ int nz_wave_init(struct nz_node * node) {
 }
 
 static enum nz_pull_rc white_pull(struct nz_port * port) {
-    double * chunk = &NZ_CAST(double, port->port_value);
+    double * chunk = &*(double*)port->port_value;
 
 	for (size_t i=0; i < nz_chunk_size; i++) {
         chunk[i] = (rand() / (double) (RAND_MAX / 2)) - 1.0;

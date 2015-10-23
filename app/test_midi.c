@@ -14,8 +14,8 @@ const double nz_frame_rate = 44100;
 
 // TODO: Come up with a way better way of specifying constants
 #define MAKE_CONSTANT(name, otype, ctype, value)            \
-    struct nz_obj * name ## _obj = nz_obj_create(otype);    \
-    NZ_CAST(ctype, name ## _obj) = (value);                 \
+    nz_obj_p name ## _obj = nz_obj_create(otype);    \
+    *(ctype*)name ## _obj = (value);                 \
     struct nz_node name[1];                                 \
     nz_constant_init(name, name ## _obj);                   \
     _cons = name;
@@ -45,30 +45,30 @@ const double nz_frame_rate = 44100;
     struct nz_node * _blk;  
 
 #define None -1
-struct nz_obj * make_double_vector(double * array, size_t len) {
+nz_obj_p make_double_vector(double * array, size_t len) {
     DSL_DECLS;
-    struct nz_obj * obj = nz_obj_create(nz_object_vector_type);
+    nz_obj_p obj = nz_obj_create(nz_object_vector_type);
     nz_vector_set_size(obj, len);
 
     for (size_t i = 0; i < len; i++) {
         if (array[i] == None) continue;
 
-        struct nz_obj * v = nz_obj_create(nz_double_type);
-        NZ_CAST(double, v) = array[i];
-        NZ_CAST(struct nz_obj **, obj)[i] = v;
+        nz_obj_p v = nz_obj_create(nz_double_type);
+        *(double*)v = array[i];
+        *(nz_obj_p**)obj[i] = v;
     }
     return obj;
 }
 
 struct nz_node * make_drum(struct nz_node * record, const long * hits, size_t hits_len, struct nz_node * time_tee, size_t tinp) {
-    struct nz_obj * hits_obj = nz_obj_create(nz_object_vector_type);
+    nz_obj_p hits_obj = nz_obj_create(nz_object_vector_type);
     DSL_DECLS;
     nz_vector_set_size(hits_obj, hits_len);
 
     for (size_t i = 0; i < hits_len; i++) {
-        struct nz_obj * v = nz_obj_create(nz_long_type);
-        NZ_CAST(long, v) = hits[i];
-        NZ_CAST(struct nz_obj **, hits_obj)[i] = v;
+        nz_obj_p v = nz_obj_create(nz_long_type);
+        *(long*)v = hits[i];
+        *(nz_obj_p**)hits_obj[i] = v;
     }
 
     MBLOCK(hits_node, constant, hits_obj);
@@ -93,7 +93,7 @@ int record_and_write(struct nz_node * recorder_node, const char * filename, doub
     CONNECT(recorder_node, 1, recorder_len, 0);
 
     // Trigger the computation
-    struct nz_obj * sample = nz_port_pull(&recorder_node->node_outputs[0]);
+    nz_obj_p sample = nz_port_pull(&recorder_node->node_outputs[0]);
     printf("Writing %lu frames to %s", nz_vector_get_size(sample), filename);
 
     SF_INFO fdata = {
@@ -106,7 +106,7 @@ int record_and_write(struct nz_node * recorder_node, const char * filename, doub
     };
 
     SNDFILE * f = sf_open(filename, SFM_WRITE, &fdata);
-    sf_write_double(f, NZ_CAST(double *, sample), nz_vector_get_size(sample));
+    sf_write_double(f, *(double **)sample, nz_vector_get_size(sample));
     sf_write_sync(f);
     sf_close(f);
     return 0;

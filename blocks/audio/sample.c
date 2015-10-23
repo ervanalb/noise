@@ -6,7 +6,7 @@
 #include "core/util.h"
 
 struct state {
-    struct nz_obj * sample;
+    nz_obj_p sample;
 	size_t t;
 };
 
@@ -20,7 +20,7 @@ static void sampler_term(struct nz_node * node) {
 
 static enum nz_pull_rc sampler_pull(struct nz_port * port) {
     struct nz_node * node = port->port_node;
-    struct nz_obj * inp_cmd = NZ_NODE_PULL(node, 1);
+    nz_obj_p inp_cmd = NZ_NODE_PULL(node, 1);
 
     struct state * state = (struct state *) node->node_state;
 
@@ -29,10 +29,10 @@ static enum nz_pull_rc sampler_pull(struct nz_port * port) {
         return NZ_PULL_RC_NULL;
     }
 
-    enum nz_sampler_command cmd = NZ_CAST(long, inp_cmd);
+    enum nz_sampler_command cmd = *(long*)inp_cmd;
 
     if (cmd == NZ_SAMPLER_COMMAND_REFETCH || state->sample == NULL) {
-        struct nz_obj * inp_sample = NZ_NODE_PULL(node, 0);
+        nz_obj_p inp_sample = NZ_NODE_PULL(node, 0);
 
         nz_obj_destroy(&state->sample);
         state->sample = nz_obj_dup(inp_sample);
@@ -46,14 +46,14 @@ static enum nz_pull_rc sampler_pull(struct nz_port * port) {
     if (state->sample == NULL) 
         return NZ_PULL_RC_NULL;
 
-    double * chunk = &NZ_CAST(double, port->port_value);
+    double * chunk = &*(double*)port->port_value;
 
     if (cmd == NZ_SAMPLER_COMMAND_RESTART || cmd == NZ_SAMPLER_COMMAND_STOP)
         state->t = 0;
 
     size_t length = nz_vector_get_size(state->sample);
     if ((cmd == NZ_SAMPLER_COMMAND_PLAY || cmd == NZ_SAMPLER_COMMAND_RESTART) && state->t < length) {
-        double * sample = NZ_CAST(double *, state->sample);
+        double * sample = *(double **)state->sample;
 
         for (size_t i = 0; i < nz_chunk_size; i++) {
             if (state->t < length)

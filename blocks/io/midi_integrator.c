@@ -6,14 +6,14 @@
 #include "blocks/io/midi.h"
 
 struct state {
-    struct nz_obj * notes;
+    nz_obj_p notes;
 };
 
 static enum nz_pull_rc midiintegrator_pull(struct nz_port * port) {
     struct nz_node * node = port->port_node; 
     struct state * state = (struct state *) node->node_state;
 
-    struct nz_obj * inp_midi = NZ_NODE_PULL(node, 0);
+    nz_obj_p inp_midi = NZ_NODE_PULL(node, 0);
 
     if (inp_midi == NULL) {
         // Clear notes that are on

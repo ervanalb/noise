@@ -116,12 +116,12 @@ void nz_soundcard_run() {
 #endif
     //while (1) {
     for (int i = 0; i < iters; i++) {
-        struct nz_obj * chunk = NZ_NODE_PULL(sc_node, 0);
+        nz_obj_p chunk = NZ_NODE_PULL(sc_node, 0);
 
         if (chunk == NULL) return;
 
 #ifndef FAKESOUND
-        if (soundcard_api_write(&NZ_CAST(double, chunk))) {
+        if (soundcard_api_write(&*(double*)chunk)) {
             printf("pa error\n");
         }
 #endif

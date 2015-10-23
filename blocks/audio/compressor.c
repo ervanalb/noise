@@ -14,7 +14,7 @@ struct state {
 static enum nz_pull_rc compressor_pull(struct nz_port * port) {
     struct nz_node * node = port->port_node;
 
-    struct nz_obj * inp_chunk = NZ_NODE_PULL(node, 0);
+    nz_obj_p inp_chunk = NZ_NODE_PULL(node, 0);
 
     struct state * state = (struct state *) node->node_state;
 
@@ -23,8 +23,8 @@ static enum nz_pull_rc compressor_pull(struct nz_port * port) {
         return NZ_PULL_RC_NULL;
 	}
 
-    double * input = &(NZ_CAST(double, inp_chunk));
-    double * output = &(NZ_CAST(double, port->port_value));
+    double * input = &(*(double*)inp_chunk);
+    double * output = &(*(double*)port->port_value);
 
     double chunk_max = 0.;
     size_t max_idx = nz_chunk_size - 1;

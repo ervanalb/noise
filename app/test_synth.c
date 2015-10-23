@@ -13,8 +13,8 @@ const double nz_frame_rate = 44100;
 
 // TODO: Come up with a way better way of specifying constants
 #define MAKE_CONSTANT(name, otype, ctype, value)            \
-    struct nz_obj * name ## _obj = nz_obj_create(otype);    \
-    NZ_CAST(ctype, name ## _obj) = (value);                 \
+    nz_obj_p name ## _obj = nz_obj_create(otype);    \
+    *(ctype*)name ## _obj = (value);                 \
     struct nz_node name[1];                                 \
     nz_constant_init(name, name ## _obj);                   \
     _cons = name;
@@ -44,17 +44,17 @@ const double nz_frame_rate = 44100;
     struct nz_node * _blk;  
 
 #define None -1
-struct nz_obj * make_double_vector(double * array, size_t len) {
+nz_obj_p make_double_vector(double * array, size_t len) {
     DSL_DECLS;
-    struct nz_obj * obj = nz_obj_create(nz_object_vector_type);
+    nz_obj_p obj = nz_obj_create(nz_object_vector_type);
     nz_vector_set_size(obj, len);
 
     for (size_t i = 0; i < len; i++) {
         if (array[i] == None) continue;
 
-        struct nz_obj * v = nz_obj_create(nz_double_type);
-        NZ_CAST(double, v) = array[i];
-        NZ_CAST(struct nz_obj **, obj)[i] = v;
+        nz_obj_p v = nz_obj_create(nz_double_type);
+        *(double*)v = array[i];
+        *(nz_obj_p**)obj[i] = v;
     }
     return obj;
 }
@@ -65,7 +65,7 @@ int record_and_write(struct nz_node * recorder_node, const char * filename, doub
     CONNECT(recorder_node, 1, recorder_len, 0);
 
     // Trigger the computation
-    struct nz_obj * sample = nz_port_pull(&recorder_node->node_outputs[0]);
+    nz_obj_p sample = nz_port_pull(&recorder_node->node_outputs[0]);
     printf("Writing %lu frames to %s", nz_vector_get_size(sample), filename);
 
     SF_INFO fdata = {
@@ -78,7 +78,7 @@ int record_and_write(struct nz_node * recorder_node, const char * filename, doub
     };
 
     SNDFILE * f = sf_open(filename, SFM_WRITE, &fdata);
-    sf_write_double(f, NZ_CAST(double *, sample), nz_vector_get_size(sample));
+    sf_write_double(f, *(double **)sample, nz_vector_get_size(sample));
     sf_write_sync(f);
     sf_close(f);
     return 0;
@@ -112,9 +112,9 @@ int main(void) {
     nz_note_init(&notes[2], 69, 1);
     nz_note_init(&notes[3], 72, 1);
 
-    struct nz_obj * nvecs = nz_obj_create(nz_object_vector_type);
+    nz_obj_p nvecs = nz_obj_create(nz_object_vector_type);
     // 0
-    struct nz_obj * nv = nz_obj_create(nz_note_vector_type);
+    nz_obj_p nv = nz_obj_create(nz_note_vector_type);
     nz_vector_push_back(nvecs, &nv);
     nz_vector_push_back(nv, &notes[0]);
 

@@ -8,8 +8,8 @@
 #include "blocks/instruments/instrument.h"
 
 struct state {
-    struct nz_obj * note_states; // Vector
-    struct nz_obj * notes; // Vector<notes>
+    nz_obj_p note_states; // Vector
+    nz_obj_p notes; // Vector<notes>
     nz_instr_render_fpt render;
 };
 
@@ -18,7 +18,7 @@ struct state {
 static enum nz_pull_rc nz_instrument_pull(struct nz_port * port) {
     struct nz_node * node = port->port_node; 
 
-    struct nz_obj * input0 = NZ_NODE_PULL(node, 0);
+    nz_obj_p input0 = NZ_NODE_PULL(node, 0);
 
     struct state * state = (struct state *) node->node_state;
 
@@ -26,11 +26,11 @@ static enum nz_pull_rc nz_instrument_pull(struct nz_port * port) {
         return NZ_PULL_RC_NULL;
     }
 
-    double * output = &NZ_CAST(double, port->port_value);
+    double * output = &*(double*)port->port_value;
     memset(output, 0, sizeof(double) * nz_chunk_size);
 
-    struct nz_note * inp_notes = NZ_CAST(struct nz_note *, input0);
-    struct nz_note * orig_st_notes = NZ_CAST(struct nz_note *, state->notes);
+    struct nz_note * inp_notes = *(struct nz_note **)input0;
+    struct nz_note * orig_st_notes = *(struct nz_note **)state->notes;
     size_t n_inp_notes = nz_vector_get_size(input0);
     size_t n_st_notes = nz_vector_get_size(state->notes);
 
@@ -69,7 +69,7 @@ static enum nz_pull_rc nz_instrument_pull(struct nz_port * port) {
         }
         if (found == 0) {
             nz_vector_push_back(state->notes, &inp_notes[i]);
-            orig_st_notes = NZ_CAST(struct nz_note *, state->notes);
+            orig_st_notes = *(struct nz_note **)state->notes;
             n_st_notes++;
             nz_vector_set_size(state->note_states, n_st_notes);
             note_sets[n_st_notes - 1] = NEW;

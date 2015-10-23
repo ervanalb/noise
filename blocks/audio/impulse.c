@@ -17,24 +17,24 @@ struct state {
 
 static enum nz_pull_rc impulse_pull(struct nz_port * port) {
     struct nz_node * node = port->port_node;
-    struct nz_obj * input0 = NZ_NODE_PULL(node, 0);
+    nz_obj_p input0 = NZ_NODE_PULL(node, 0);
 
     struct state * state = (struct state *) node->node_state;
-    NZ_CAST(double, port->port_value) = 0.0;
+    *(double*)port->port_value = 0.0;
 
     switch(state->status) {
     case STATUS_NEW:
-        NZ_CAST(double, port->port_value) = 1.0;
+        *(double*)port->port_value = 1.0;
         state->status = STATUS_WAIT_LOW;
         break;
     case STATUS_WAIT_HIGH:
-        if (input0 != NULL && NZ_CAST(double, input0)) {
-            NZ_CAST(double, port->port_value) = 1.0;
+        if (input0 != NULL && *(double*)input0) {
+            *(double*)port->port_value = 1.0;
             state->status = STATUS_WAIT_LOW;
         }
         break;
     case STATUS_WAIT_LOW:
-        if (input0 == NULL || !NZ_CAST(double, input0)) {
+        if (input0 == NULL || !*(double*)input0) {
             state->status = STATUS_WAIT_HIGH;
         }
         break;

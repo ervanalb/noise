@@ -7,18 +7,18 @@
 
 static enum nz_pull_rc mixer_pull(struct nz_port * port) {
     struct nz_node * node = port->port_node;
-    double * out_chunk = &NZ_CAST(double, port->port_value);
+    double * out_chunk = &*(double*)port->port_value;
     
     memset(out_chunk, 0, sizeof(double) * nz_chunk_size);
     
     for (size_t i = 0; i < node->node_n_inputs; ) {
-        struct nz_obj * input_chunk = NZ_NODE_PULL(node, i++);
-        struct nz_obj * input_gain = NZ_NODE_PULL(node, i++);
+        nz_obj_p input_chunk = NZ_NODE_PULL(node, i++);
+        nz_obj_p input_gain = NZ_NODE_PULL(node, i++);
 
         if (input_chunk == NULL || input_gain == NULL) continue;
 
-        double gain = NZ_CAST(double, input_gain);
-        double * mix_chunk = &NZ_CAST(double, input_chunk);
+        double gain = *(double*)input_gain;
+        double * mix_chunk = &*(double*)input_chunk;
 
         for (size_t j = 0; j < nz_chunk_size; j++) {
             out_chunk[j] += gain * mix_chunk[j];
@@ -66,18 +66,18 @@ int nz_mixer_init(struct nz_node * node, size_t n_channels) {
 
 static enum nz_pull_rc cmixer_pull(struct nz_port * port) {
     struct nz_node * node = port->port_node;
-    double * output = &NZ_CAST(double, port->port_value);
+    double * output = &*(double*)port->port_value;
     
     memset(output, 0, sizeof(double) * nz_chunk_size);
     
     for (size_t i = 0; i < node->node_n_inputs; ) {
-        struct nz_obj * input_chunk = NZ_NODE_PULL(node, i++);
-        struct nz_obj * input_gains = NZ_NODE_PULL(node, i++);
+        nz_obj_p input_chunk = NZ_NODE_PULL(node, i++);
+        nz_obj_p input_gains = NZ_NODE_PULL(node, i++);
 
         if (input_chunk == NULL || input_gains == NULL) continue;
 
-        double * chunk = &NZ_CAST(double, input_chunk);
-        double * gains = &NZ_CAST(double, input_gains);
+        double * chunk = &*(double*)input_chunk;
+        double * gains = &*(double*)input_gains;
 
         for (size_t j = 0; j < nz_chunk_size; j++) {
             output[j] = gains[j] * chunk[j];

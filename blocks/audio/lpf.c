@@ -12,8 +12,8 @@ struct state {
 static enum nz_pull_rc lpf_pull(struct nz_port * port) {
     struct nz_node * node = port->port_node;
 
-    struct nz_obj * inp_value = NZ_NODE_PULL(node, 0);
-    struct nz_obj * inp_alpha = NZ_NODE_PULL(node, 1);
+    nz_obj_p inp_value = NZ_NODE_PULL(node, 0);
+    nz_obj_p inp_alpha = NZ_NODE_PULL(node, 1);
 
     struct state * state = (struct state *) node->node_state;
 
@@ -22,16 +22,16 @@ static enum nz_pull_rc lpf_pull(struct nz_port * port) {
         return NZ_PULL_RC_NULL;
 	}
 
-    double cur_value = NZ_CAST(double, inp_value);
-    double prev_value = NZ_CAST(double, port->port_value);
-    double tau = (inp_alpha == NULL) ? 1.0 : NZ_CAST(double, inp_alpha);
+    double cur_value = *(double*)inp_value;
+    double prev_value = *(double*)port->port_value;
+    double tau = (inp_alpha == NULL) ? 1.0 : *(double*)inp_alpha;
     double alpha = exp(-tau);
 
 	if (!state->active) {
 		state->active = 1;
-        NZ_CAST(double, port->port_value) = cur_value;
+        *(double*)port->port_value = cur_value;
 	} else {
-        NZ_CAST(double, port->port_value) = prev_value + alpha * (cur_value - prev_value);
+        *(double*)port->port_value = prev_value + alpha * (cur_value - prev_value);
     }
 
     return NZ_PULL_RC_OBJECT;
@@ -82,8 +82,8 @@ int nz_lpf_init(struct nz_node * node) {
 static enum nz_pull_rc clpf_pull(struct nz_port * port) {
     struct nz_node * node = port->port_node;
 
-    struct nz_obj * inp_chunk = NZ_NODE_PULL(node, 0);
-    struct nz_obj * inp_alpha = NZ_NODE_PULL(node, 1);
+    nz_obj_p inp_chunk = NZ_NODE_PULL(node, 0);
+    nz_obj_p inp_alpha = NZ_NODE_PULL(node, 1);
 
     struct state * state = (struct state *) node->node_state;
 
@@ -92,9 +92,9 @@ static enum nz_pull_rc clpf_pull(struct nz_port * port) {
         return NZ_PULL_RC_NULL;
 	}
 
-    double * input = &(NZ_CAST(double, inp_chunk));
-    double * output = &(NZ_CAST(double, port->port_value));
-    double tau = (inp_alpha == NULL) ? 1.0 : NZ_CAST(double, inp_alpha);
+    double * input = &(*(double*)inp_chunk);
+    double * output = &(*(double*)port->port_value);
+    double tau = (inp_alpha == NULL) ? 1.0 : *(double*)inp_alpha;
     double alpha = exp(-tau);
 
     double prev_value = 0.;

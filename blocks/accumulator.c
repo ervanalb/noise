@@ -5,12 +5,12 @@
 
 static enum nz_pull_rc accumulator_pull(struct nz_port * port) {
     struct nz_node * node = port->port_node;
-    struct nz_obj * input0 = NZ_NODE_PULL(node, 0);
+    nz_obj_p input0 = NZ_NODE_PULL(node, 0);
 
     if (input0 != NULL) {
-        NZ_CAST(double, port->port_value) += NZ_CAST(double, input0);
+        *(double*)port->port_value += *(double*)input0;
     } else {
-        NZ_CAST(double, port->port_value) = 0.0;
+        *(double*)port->port_value = 0.0;
     }
 
     return NZ_PULL_RC_OBJECT;
@@ -39,7 +39,7 @@ int nz_accumulator_init(struct nz_node * node) {
     };
 
     // Initialize state
-    NZ_CAST(double, NZ_NODE_OUTPUT(node, 0)) = 0.0;
+    *(double*)NZ_NODE_OUTPUT(node, 0) = 0.0;
 
     return 0;
 }
