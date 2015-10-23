@@ -11,6 +11,9 @@ struct nz_typeclass {
     const char* type_id;
 
     // Class methods
+    nz_rc (*type_create)     (nz_type_p * type_p);
+    void (*type_destroy)     (nz_type_p type_p);
+    nz_rc (*type_copy)       (nz_type_p dst_p, const nz_type_p src_p);
     int   (*type_is_equal)   (const nz_type_p type_p, const nz_type_p other_type_p);
     nz_rc (*type_create_obj) (const nz_type_p type_p, nz_obj_p * obj_pp);
 
@@ -35,22 +38,7 @@ extern const struct nz_typeclass nz_array_type;
 extern const struct nz_typeclass nz_vector_type;
 //extern const struct nz_typeclass nz_note_vector_type;
 
-nz_rc nz_int_type_create    (nz_type_p * type_pp);
-nz_rc nz_long_type_create   (nz_type_p * type_pp);
-nz_rc nz_real_type_create   (nz_type_p * type_pp);
-nz_rc nz_chunk_type_create  (nz_type_p * type_pp);
-nz_rc nz_string_type_create (nz_type_p * type_pp);
-nz_rc nz_array_type_create  (nz_type_p * type_pp, int n, const struct nz_typeclass * typeclass_p, nz_type_p type_p);
-nz_rc nz_vector_type_create (nz_type_p * type_pp, const struct nz_typeclass * typeclass_p, nz_type_p type_p);
-nz_rc nz_clip_type_create   (nz_type_p * type_pp);
-
-void nz_int_type_destroy    (nz_type_p type_p);
-void nz_long_type_destroy   (nz_type_p type_p);
-void nz_real_type_destroy   (nz_type_p type_p);
-void nz_chunk_type_destroy  (nz_type_p type_p);
-void nz_string_type_destroy (nz_type_p type_p);
-void nz_array_type_destroy  (nz_type_p type_p);
-void nz_vector_type_destroy (nz_type_p type_p);
-void nz_clip_type_destroy   (nz_type_p type_p);
+nz_rc nz_array_type_init(nz_type_p type_p, int n, const struct nz_typeclass * typeclass_p, nz_type_p type_p);
+nz_rc nz_vector_type_init(nz_type_p type_p, const struct nz_typeclass * typeclass_p, nz_type_p type_p);
 
 #endif

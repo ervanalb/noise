@@ -17,14 +17,17 @@ int nz_types_are_equal(const struct nz_typeclass * typeclass_1_p, const nz_type_
 // --
 
 #define GEN_SIMPLE_TYPE_FNS(NAME) \
-nz_rc nz_ ## NAME ## _type_create (nz_type_p * type_pp) {\
+static nz_rc NAME ## _type_create (nz_type_p * type_pp) {\
     *type_pp = 0; \
     return NZ_SUCCESS; \
 }\
-void nz_ ## NAME ## _type_destroy (nz_type_p type_p) {}\
+static void NAME ## _type_destroy (nz_type_p type_p) {}\
 static int NAME ## _type_is_equal (nz_type_p type_p, nz_type_p other_type_p) { \
     return 1; \
 } \
+static nz_rc NAME ## _type_copy (nz_type_p dst_p, const nz_type_p src_p) { \
+    return NZ_SUCCESS; \
+}
 
 #define GEN_STATIC_OBJ_FNS(NAME, SIZE) \
 static nz_rc NAME ## _type_create_obj (nz_type_p type_p, nz_obj_p * obj_pp) { \
@@ -54,6 +57,9 @@ static nz_rc NAME ## _type_str_obj (nz_type_p type_p, const nz_obj_p obj_p, char
 static const char NAME ## _type_id[] = #NAME; \
 const struct nz_typeclass nz_ ## NAME ## _type = { \
     .type_id = NAME ## _type_id, \
+    .type_create = & NAME ## _type_create, \
+    .type_destroy = & NAME ## _type_destroy, \
+    .type_copy = & NAME ## _type_copy, \
     .type_is_equal = & NAME ## _type_is_equal, \
     .type_create_obj = & NAME ## _type_create_obj, \
     .type_destroy_obj = & NAME ## _type_destroy_obj, \

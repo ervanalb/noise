@@ -11,7 +11,7 @@ nz_rc run()
     char* string;
 
     // Create a chunk type
-    if((rc = nz_chunk_type_create(&my_chunk_type)) == NZ_SUCCESS)
+    if((rc = nz_chunk_type.type_create(&my_chunk_type)) == NZ_SUCCESS)
     {
         // Use this chunk type to instantiate a chunk
         if((rc = nz_chunk_type.type_create_obj(my_chunk_type, &my_chunk)) == NZ_SUCCESS)
@@ -29,7 +29,7 @@ nz_rc run()
             }
             nz_chunk_type.type_destroy_obj(my_chunk_type, my_chunk);
         }
-        nz_chunk_type_destroy(my_chunk_type);
+        nz_chunk_type.type_destroy(my_chunk_type);
     }
     return rc;
 }
