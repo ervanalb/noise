@@ -20,8 +20,7 @@ struct strbuf {
 
 char * strbuf_alloc  (struct strbuf * buf);
 char * strbuf_clear  (struct strbuf * buf, char * str);
-char * strbuf_grow   (struct strbuf * buf, char * str, size_t capacity);
-char * strbuf_shrink (struct strbuf * buf, char * str, size_t capacity);
+char * strbuf_resize (struct strbuf * buf, char * str, size_t capacity);
 char * strbuf_printf (struct strbuf * buf, char * str, const char * fmt, ...) __attribute__ ((format (printf, 3, 4)));
 
 // --

@@ -22,46 +22,40 @@ char * strbuf_clear(struct strbuf * buf, char * str)
     return str;
 }
 
-char * strbuf_grow(struct strbuf * buf, char * str, size_t capacity)
+char * strbuf_resize(struct strbuf * buf, char * str, size_t capacity)
 {
     if(!str) return NULL;
 
-    size_t c = buf->capacity;
-    while(c < capacity) c *= 2;
-    buf->capacity = c;
-    char * new_str = realloc(str, c);
+    size_t new_capacity = buf->capacity;
+
+    if(capacity > buf->capacity)
+    {
+        while(new_capacity < capacity) new_capacity *= 2;
+    }
+    else if(capacity < buf->capacity)
+    {
+        size_t last_c;
+        while(new_capacity > capacity)
+        {
+            last_c = new_capacity;
+            new_capacity /= 2;
+            if(new_capacity < strbuf_init_capacity)
+            {
+                last_c = strbuf_init_capacity;
+                break;
+            }
+        }
+        new_capacity = last_c;
+    }
+
+    buf->capacity = new_capacity;
+    char * new_str = realloc(str, new_capacity);
     if(!new_str)
     {
         free(str);
         return NULL;
     }
     return new_str;
-}
-
-char * strbuf_shrink(struct strbuf * buf, char * str, size_t capacity)
-{
-    if(!str) return NULL;
-
-    size_t c = buf->capacity;
-    size_t last_c;
-    while(c > capacity)
-    {
-        last_c = c;
-        c /= 2;
-        if(c < strbuf_init_capacity)
-        {
-            last_c = strbuf_init_capacity;
-            break;
-        }
-    }
-    buf->capacity = last_c;
-    char * new_buf = realloc(str, last_c);
-    if(!new_buf)
-    {
-        free(str);
-        return NULL;
-    }
-    return new_buf;
 }
 
 char * strbuf_printf(struct strbuf * buf, char * str, const char * fmt, ...)
@@ -82,7 +76,7 @@ char * strbuf_printf(struct strbuf * buf, char * str, const char * fmt, ...)
 
     if(buf->len + addlen > buf->capacity)
     {
-        str = strbuf_grow(buf, str, buf->len + addlen);
+        str = strbuf_resize(buf, str, buf->len + addlen);
         if(!str) return NULL;
     }
 
