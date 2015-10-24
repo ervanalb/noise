@@ -11,5 +11,14 @@ struct nz_note {
 };
 
 void nz_note_init(struct nz_note * note, double pitch, double velocity);
+void nz_note_dup(struct nz_note * dst, struct nz_note * src);
+
+struct nz_tnote {
+    struct nz_note tnote_note;
+    double tnote_start;
+    double tnote_duration;
+};
+
+void nz_tnote_init(struct nz_tnote * tnote, double pitch, double velocity, double start, double duration);
 
 #endif

@@ -89,6 +89,28 @@ static enum nz_pull_rc divide_pull(struct nz_port * port) {
     return NZ_PULL_RC_OBJECT;
 }
 
+static enum nz_pull_rc modulo_pull(struct nz_port * port) {
+    struct nz_node * node = port->port_node;
+
+    struct nz_obj * input0 = NZ_NODE_PULL(node, 0);
+    struct nz_obj * input1 = NZ_NODE_PULL(node, 1);
+
+    if (input0 == NULL || input1 == NULL) {
+        return NZ_PULL_RC_NULL;
+    }
+
+    double x = NZ_CAST(double, input0);
+    double y = NZ_CAST(double, input1);
+
+    // Do the magic here:
+    double result = fmod(x, y);
+    // --
+
+    NZ_CAST(double, port->port_value) = result;
+    return NZ_PULL_RC_OBJECT;
+}
+
+
 static enum nz_pull_rc note_to_freq_pull(struct nz_port * port) {
     struct nz_node * node = port->port_node;
 
@@ -114,6 +136,7 @@ int nz_math_init(struct nz_node * node, enum nz_math_op op) {
         case NZ_MATH_SUBTRACT:
         case NZ_MATH_MULTIPLY:
         case NZ_MATH_DIVIDE:
+        case NZ_MATH_MODULO:
             n_inputs = 2;
             break;
         case NZ_MATH_NOTE_TO_FREQ:
@@ -172,6 +195,10 @@ int nz_math_init(struct nz_node * node, enum nz_math_op op) {
         case NZ_MATH_DIVIDE:
             node->node_name = strdup("Divide");
             node->node_outputs[0].port_pull = &divide_pull;
+            break;
+        case NZ_MATH_MODULO:
+            node->node_name = strdup("Modulo");
+            node->node_outputs[0].port_pull = &modulo_pull;
             break;
         case NZ_MATH_NOTE_TO_FREQ:
             node->node_name = strdup("Note to Freq.");

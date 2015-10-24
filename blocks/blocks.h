@@ -11,6 +11,7 @@ enum nz_math_op {
     NZ_MATH_SUBTRACT,
     NZ_MATH_MULTIPLY,
     NZ_MATH_DIVIDE,
+    NZ_MATH_MODULO,
     NZ_MATH_NOTE_TO_FREQ
 };
 
@@ -31,6 +32,9 @@ int nz_math_init(struct nz_node * node, enum nz_math_op op);
 // Sequencer :: (double time, vector<obj> stream) -> (obj elem);
 int nz_sequencer_init(struct nz_node * node);
 
+// Note Sequencer :: (double time, vector<tnote> score) -> (vector<note> now);
+int nz_notesequencer_init(struct nz_node * node);
+
 // Tee<int n_inputs> :: (type val) -> (type val[, type copy, type copy, ...]); Pulls from input, duplicates
 int nz_tee_init(struct nz_node * node, size_t n_inputs);
 
@@ -40,6 +44,7 @@ int nz_wye_init(struct nz_node * node, size_t n_inputs);
 int nz_timefilter_init(struct nz_node * node);
 
 int nz_synth_init(struct nz_node * node);
+
 
 
 #endif

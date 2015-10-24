@@ -31,6 +31,8 @@ static inline char * strndup(const char * s, size_t maxlen) {
     for(; s[len] && len < maxlen; len++);
 
     char * r = malloc(len + 1);
+    if (r == NULL) return NULL;
+
     memcpy(r, s, len);
     r[len] = '\0';
     return r;
@@ -45,6 +47,7 @@ static inline int asprintf(char ** buf, const char * fmt, ...)
 
     int len = vsnprintf(NULL, 0, fmt, vargs) + 1;
     *buf = malloc(len);
+    if (*buf == NULL) return -1;
 
     va_end(vargs);
     va_start(vargs, fmt);
@@ -67,6 +70,7 @@ static inline char * rsprintf(const char * fmt, ...)
 
     int len = vsnprintf(NULL, 0, fmt, vargs) + 1;
     char * buf = malloc(len);
+    if (buf == NULL) return NULL;
 
     va_end(vargs);
     va_start(vargs, fmt);

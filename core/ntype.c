@@ -490,6 +490,7 @@ struct nz_type nz_chunk_type[1] = {{
 struct nz_type * nz_sample_type = NULL;
 struct nz_type * nz_object_vector_type = NULL;
 struct nz_type * nz_note_vector_type = NULL;
+struct nz_type * nz_tnote_vector_type = NULL;
 struct nz_type * nz_vector_vector_type = NULL;
 
 // Some types can't be statically created (easily), so build at runtime
@@ -507,11 +508,15 @@ static int types_init() {
     if (nz_note_vector_type == NULL)
     nz_note_vector_type = nz_type_create_vector(sizeof(struct nz_note));
 
+    // Timed Note vector type
+    if (nz_tnote_vector_type == NULL)
+    nz_tnote_vector_type = nz_type_create_vector(sizeof(struct nz_tnote));
+
     // Object vector type
     if (nz_object_vector_type == NULL)
     nz_object_vector_type = nz_type_create_vector(sizeof(struct nz_obj *));
 
-    if (nz_sample_type == NULL || nz_object_vector_type == NULL)
+    if (nz_sample_type == NULL || nz_object_vector_type == NULL || nz_tnote_vector_type == NULL)
         return -1;
 
     types_have_been_inited = 1;

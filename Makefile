@@ -29,12 +29,14 @@ OBJECTS = \
 		  blocks/instruments/snare.o \
 		  blocks/maths.o \
 		  blocks/sequencer.o \
+		  blocks/note_sequencer.o \
 		  samples/drum.o \
 
 APP_OBJECTS = \
 				app/test.o \
 				app/test_midi.o \
 				app/test_synth.o \
+				app/test_euclidian.o \
 				app/test_sample.o \
 
 APP_TARGETS = $(APP_OBJECTS:app/%.o=noise_%)

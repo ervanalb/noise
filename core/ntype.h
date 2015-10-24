@@ -95,6 +95,7 @@ extern const struct nz_type nz_string_type[1];
 extern struct nz_type nz_chunk_type[1];
 extern struct nz_type * nz_sample_type;
 extern struct nz_type * nz_note_vector_type;
+extern struct nz_type * nz_tnote_vector_type;
 extern struct nz_type * nz_object_vector_type;
 
 // nb: there is no way to 'destroy' or 'free' types once created.

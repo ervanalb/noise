@@ -7,11 +7,12 @@
 
 static enum nz_pull_rc wye_pull(struct nz_port * port) {
     struct nz_node * node = port->port_node;
-    struct nz_obj * out = nz_obj_swap(&port->port_value, NZ_NODE_PULL(node, 0));
 
-    for (size_t i = 1; i < node->node_n_inputs; i++) {
+    for (size_t i = node->node_n_inputs - 1; i >= 1; i--) {
         NZ_NODE_PULL(node, i);
     }
+
+    struct nz_obj * out = nz_obj_swap(&port->port_value, NZ_NODE_PULL(node, 0));
 
     return (out == NULL) ? NZ_PULL_RC_NULL : NZ_PULL_RC_OBJECT;
 }
