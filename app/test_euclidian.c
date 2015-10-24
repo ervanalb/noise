@@ -120,7 +120,7 @@ void flatten_delta(int k, int n, int * in, int * out) { // in has size k, out ha
 }
 
 int main(void) {
-    int k = 8, n = 16;
+    int kd = 7, ks=5, n = 16;
     double frac = 0.5;
 
     DSL_DECLS;
@@ -153,13 +153,13 @@ int main(void) {
     CONNECT(time_mod, 0, time_mod_, 0);
 
 
-    // Drum rhythm
-    int rhy_delta[k];
+    // Snare rhythm
+    int rhy_delta[n];
     int rhy[n];
 
-    generate_euclidean_delta(k, n, rhy_delta);
-    flatten_delta(k, n, rhy_delta, rhy);
-    printf("Euclidean rhythm (%d, %d): ", k, n);
+    generate_euclidean_delta(kd, n, rhy_delta);
+    flatten_delta(kd, n, rhy_delta, rhy);
+    printf("Euclidean rhythm snare (%d, %d): ", kd, n);
     for (int i = 0; i < n; i++) {
         printf("%c", rhy[i] ? 'x' : '.');
     }
@@ -167,31 +167,55 @@ int main(void) {
     
     double rhy_sum = 0;
     struct nz_obj * rhythm_tnotes = nz_obj_create(nz_tnote_vector_type);
-    nz_vector_set_size(rhythm_tnotes, k);
-    double pitch = 65;
-    int delta_pitches[8] = {0, 3, 4, 5, -7, -4, -5, 7};
-    for (int i = 0; i < k; i++) {
-        nz_tnote_init(nz_vector_at(rhythm_tnotes, i), nz_note_to_freq(pitch), 1, rhy_sum, 1.0);
+    nz_vector_set_size(rhythm_tnotes, kd);
+    for (int i = 0; i < kd; i++) {
+        nz_tnote_init(nz_vector_at(rhythm_tnotes, i), 1, 1, rhy_sum, 0.1);
         rhy_sum += frac * rhy_delta[i];
-        pitch += delta_pitches[(int) (rand() / (double) (RAND_MAX / 8))];
     }
     BLOCK(snare_notes, constant, rhythm_tnotes);
     BLOCK(snare_seq, notesequencer);
     CONNECT(_blk, 0, time_mod, 0);
     CONNECT(_blk, 1, snare_notes, 0);
 
-    BLOCK(snare, instrument_saw);
+    BLOCK(snare, instrument_snare);
+    CONNECT(_blk, 0, _pipe, 0);
+
+    // Synth rhythm
+    generate_euclidean_delta(ks, n, rhy_delta);
+    flatten_delta(ks, n, rhy_delta, rhy);
+    printf("Euclidean rhythm synth (%d, %d): ", ks, n);
+    for (int i = 0; i < n; i++) {
+        printf("%c", rhy[i] ? 'x' : '.');
+    }
+    printf("\n");
+    
+    rhy_sum = 0;
+    struct nz_obj * synth_tnotes = nz_obj_create(nz_tnote_vector_type);
+    nz_vector_set_size(synth_tnotes, ks);
+    double pitch = 65;
+    int delta_pitches[8] = {0, 3, 4, 5, -7, -4, -5, 7};
+    for (int i = 0; i < ks; i++) {
+        nz_tnote_init(nz_vector_at(synth_tnotes, i), nz_note_to_freq(pitch), 1, rhy_sum, 2.5 * frac);
+        rhy_sum += frac * rhy_delta[i];
+        pitch += delta_pitches[(int) (rand() / (double) (RAND_MAX / 8))];
+    }
+    BLOCK(synth_notes, constant, synth_tnotes);
+    BLOCK(synth_seq, notesequencer);
+    CONNECT(_blk, 0, time_mod, 0);
+    CONNECT(_blk, 1, synth_notes, 0);
+
+    BLOCK(synth, instrument_saw);
     CONNECT(_blk, 0, _pipe, 0);
 
     // Mixer
     BLOCK(mixer, mixer, 3);
 
     MAKE_DOUBLE_CONSTANT(wave_vol, 0.40);
-    MAKE_DOUBLE_CONSTANT(snare_vol, 0.40);
+    MAKE_DOUBLE_CONSTANT(snare_vol, 0.60);
     MAKE_DOUBLE_CONSTANT(kick_vol, 2.0);
 
-    //CONNECT(mixer, 0, instrument, 0);
-    //CONNECT(mixer, 1, wave_vol, 0);
+    CONNECT(mixer, 0, synth, 0);
+    CONNECT(mixer, 1, wave_vol, 0);
     CONNECT(mixer, 2, snare, 0);
     CONNECT(mixer, 3, snare_vol, 0);
     //CONNECT(mixer, 4, kick, 0);
