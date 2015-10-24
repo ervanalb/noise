@@ -29,17 +29,13 @@ GEN_SIMPLE_TYPE_FNS(chunk)
 GEN_STATIC_OBJ_FNS(chunk, (sizeof(double) * nz_chunk_size))
 GEN_SHALLOW_COPY_FN(chunk, (sizeof(double) * nz_chunk_size))
 
-static nz_rc chunk_type_str_obj (const nz_type_p type_p, const nz_obj_p obj_p, char ** string) \
-{
+static nz_rc chunk_type_str_obj(const nz_type_p type_p, const nz_obj_p obj_p, char ** string) {
     struct strbuf buf;
     char* str = strbuf_alloc(&buf);
 
     str = strbuf_printf(&buf, str, "{");
 
-    for(size_t i = 0; i < nz_chunk_size; i++)
-    {
-        str = strbuf_printf(&buf, str, "%lf ", ((double*)obj_p)[i]);
-    }
+    for(size_t i = 0; i < nz_chunk_size; i++) str = strbuf_printf(&buf, str, "%lf ", ((double*)obj_p)[i]);
 
     buf.len--; // Hack off trailing space
     str = strbuf_printf(&buf, str, "}");
@@ -55,6 +51,53 @@ static nz_rc chunk_type_str_obj (const nz_type_p type_p, const nz_obj_p obj_p, c
     return NZ_SUCCESS;
 }
 DECLARE_TYPECLASS(chunk)
+
+// String
+GEN_SIMPLE_TYPE_FNS(string)
+GEN_STATIC_OBJ_FNS(string, sizeof(char *))
+
+static nz_rc string_type_copy_obj(nz_type_p type_p, nz_obj_p dst_p, const nz_obj_p src_p) {
+    char * src = *(char **)(src_p);
+
+    if(!src)
+    {
+        *(char **)dst_p = NULL;
+        return NZ_SUCCESS;
+    }
+
+    char * dst;
+    dst = strdup(src);
+
+    if(!dst)
+    {
+        NZ_THROW();
+        return NZ_NOMEM;
+    }
+
+    *(char **)dst_p = dst;
+
+    return NZ_SUCCESS;
+}
+
+static nz_rc string_type_str_obj(const nz_type_p type_p, const nz_obj_p obj_p, char ** string) {
+    struct strbuf buf;
+    char* str = strbuf_alloc(&buf);
+
+    // TODO: escape certain characters
+    str = strbuf_printf(&buf, str, "\"%s\"", *(char **)obj_p);
+
+    if(!str)
+    {
+        NZ_THROW();
+        return NZ_NOMEM;
+    }
+
+    *string = str;
+
+    return NZ_SUCCESS;
+}
+
+DECLARE_TYPECLASS(string)
 
 // OLD SHIT
 

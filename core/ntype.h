@@ -74,8 +74,7 @@ static nz_rc NAME ## _type_copy_obj (nz_type_p type_p, nz_obj_p dst_p, const nz_
 }
 
 #define GEN_PRIMITIVE_STRING_FNS(NAME, CTYPE, FORMAT_STR) \
-static nz_rc NAME ## _type_str_obj (nz_type_p type_p, const nz_obj_p obj_p, char ** string) \
-{ \
+static nz_rc NAME ## _type_str_obj (nz_type_p type_p, const nz_obj_p obj_p, char ** string) { \
     *string = rsprintf(FORMAT_STR, *(CTYPE *)obj_p); \
     if(*string == 0) return NZ_NOMEM; \
     return NZ_SUCCESS; \

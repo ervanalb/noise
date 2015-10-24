@@ -99,6 +99,7 @@ double nz_note_to_freq(double note) {
 char * strdup(const char * s) {
     size_t len = strlen(s);
     char * r = malloc(len + 1);
+    if(!r) return NULL;
     strcpy(r, s);
     return r;
 }
