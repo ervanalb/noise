@@ -2,8 +2,9 @@
 #C_SRC  = $(wildcard *.c)
 #OBJECTS := $(patsubst %.c,%.o,$(C_SRC))
 OBJECTS = \
+        core/util.o \
 		core/error.o \
-		core/ntype.o
+		core/ntype.o \
 #		core/block.o \
 #		core/note.o \
 #		blocks/audio/compressor.o \

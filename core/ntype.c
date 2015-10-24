@@ -91,24 +91,20 @@ GEN_SHALLOW_COPY_FN(chunk, (sizeof(double) * nz_chunk_size))
 
 static nz_rc chunk_type_str_obj (const nz_type_p type_p, const nz_obj_p obj_p, char ** string) \
 {
-    char* output;
-    output = malloc(sizeof(char) * (6 * nz_chunk_size + 3));
-    if(output == 0) return NZ_NOMEM;
+    struct strbuf buf;
+    char* str = strbuf_alloc(&buf);
 
-    output[0] = '{';
+    str = strbuf_printf(&buf, str, "{");
 
-    size_t n = 1;
     for(size_t i = 0; i < nz_chunk_size; i++)
     {
-        int len;
-        snprintf(&output[n], 6, "%1.2lf %n", ((double*)obj_p)[i], &len);
-        n += len;
+        str = strbuf_printf(&buf, str, "%lf ", ((double*)obj_p)[i]);
     }
 
-    output[n - 1] = '}';
-    output[n] = '\0';
+    buf.len--; // Hack off trailing space
+    str = strbuf_printf(&buf, str, "}");
 
-    *string = output;
+    *string = str;
 
     return NZ_SUCCESS;
 }

@@ -25,7 +25,7 @@ nz_rc run()
             if((nz_chunk_typeclass.type_str_obj(my_chunk_type, my_chunk, &string)) == NZ_SUCCESS)
             {
                 printf("my_chunk value: %s\n", string);
-                free(string);
+                //free(string);
             }
             nz_chunk_typeclass.type_destroy_obj(my_chunk_type, my_chunk);
         }
