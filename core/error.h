@@ -17,7 +17,8 @@ extern const char * nz_error_string;
 extern const char * nz_error_file;
 extern int nz_error_line;
 
-#define NZ_THROW(STR) {nz_error_file = __FILE__; nz_error_line = __LINE__; nz_error_string = (STR);}
+#define NZ_THROW_MSG(STR) {nz_error_file = __FILE__; nz_error_line = __LINE__; nz_error_string = (STR);}
+#define NZ_THROW() NZ_THROW_MSG(NULL)
 
 const char * nz_error_rc_str(nz_rc rc);
 

@@ -44,6 +44,12 @@ static nz_rc chunk_type_str_obj (const nz_type_p type_p, const nz_obj_p obj_p, c
     buf.len--; // Hack off trailing space
     str = strbuf_printf(&buf, str, "}");
 
+    if(!str)
+    {
+        NZ_THROW();
+        return NZ_NOMEM;
+    }
+
     *string = str;
 
     return NZ_SUCCESS;
