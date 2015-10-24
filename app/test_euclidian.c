@@ -120,7 +120,7 @@ void flatten_delta(int k, int n, int * in, int * out) { // in has size k, out ha
 }
 
 int main(void) {
-    int k = 5, n = 16;
+    int k = 8, n = 16;
     double frac = 0.5;
 
     DSL_DECLS;
@@ -168,16 +168,19 @@ int main(void) {
     double rhy_sum = 0;
     struct nz_obj * rhythm_tnotes = nz_obj_create(nz_tnote_vector_type);
     nz_vector_set_size(rhythm_tnotes, k);
+    double pitch = 65;
+    int delta_pitches[8] = {0, 3, 4, 5, -7, -4, -5, 7};
     for (int i = 0; i < k; i++) {
-        nz_tnote_init(nz_vector_at(rhythm_tnotes, i), 1, 1, rhy_sum, frac);
+        nz_tnote_init(nz_vector_at(rhythm_tnotes, i), nz_note_to_freq(pitch), 1, rhy_sum, 1.0);
         rhy_sum += frac * rhy_delta[i];
+        pitch += delta_pitches[(int) (rand() / (double) (RAND_MAX / 8))];
     }
     BLOCK(snare_notes, constant, rhythm_tnotes);
     BLOCK(snare_seq, notesequencer);
     CONNECT(_blk, 0, time_mod, 0);
     CONNECT(_blk, 1, snare_notes, 0);
 
-    BLOCK(snare, instrument_snare);
+    BLOCK(snare, instrument_saw);
     CONNECT(_blk, 0, _pipe, 0);
 
     // Mixer

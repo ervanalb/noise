@@ -32,7 +32,6 @@ static enum nz_pull_rc notesequencer_pull(struct nz_port * port) {
             nz_vector_set_size(port->port_value, 0);
             return NZ_PULL_RC_NULL;
         }
-        printf("# notes: %lu\n", nz_vector_get_size(state->in_tnotes));
     }
 
     if (state->last_time == time) {
@@ -47,7 +46,7 @@ static enum nz_pull_rc notesequencer_pull(struct nz_port * port) {
         struct nz_tnote * tnote = (struct nz_tnote *) nz_vector_at(state->out_tnotes, i);
         double start_time = tnote->tnote_start;
         double end_time = tnote->tnote_start + tnote->tnote_duration;
-        if (start_time < time || end_time >= time) {
+        if (start_time > time || end_time <= time) {
             nz_vector_erase(port->port_value, i);
             nz_vector_erase(state->out_tnotes, i); 
             i--, n_out_tnotes--;
@@ -59,13 +58,9 @@ static enum nz_pull_rc notesequencer_pull(struct nz_port * port) {
     struct nz_tnote * in_tnotes = nz_vector_at(state->in_tnotes, 0);
     size_t i;
     for (i = 0; i < n_in_tnotes && in_tnotes[i].tnote_start <= state->last_time; i++);
-    //struct nz_tnote key = {.tnote_start = state->last_time};
-    //struct nz_tnote * new_tnote = bsearch(&key, (struct nz_tnote *) nz_vector_at(state->in_tnotes, 0), n_in_tnotes, sizeof(key), tnote_start_cmp);
 
-    //printf("i = %lu; %f %f\n", i, time, in_tnotes[i].tnote_start);
     while (i < n_in_tnotes && in_tnotes[i].tnote_start <= time) {
         struct nz_note new_note;
-        printf("Adding note!\n");
         nz_note_dup(&new_note, &in_tnotes[i].tnote_note);
         nz_vector_push_back(state->out_tnotes, &in_tnotes[i]);
         nz_vector_push_back(port->port_value, &new_note);
@@ -75,7 +70,6 @@ static enum nz_pull_rc notesequencer_pull(struct nz_port * port) {
     state->last_time = time;
 
     assert(nz_vector_get_size(port->port_value) == nz_vector_get_size(state->out_tnotes));
-    //printf("notes: %lu\n", nz_vector_get_size(port->port_value));
     return NZ_PULL_RC_OBJECT;
 }
 
