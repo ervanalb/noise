@@ -16,16 +16,17 @@ nz_rc run()
         // Use this chunk type to instantiate a chunk
         if((rc = nz_chunk_typeclass.type_create_obj(my_chunk_type, &my_chunk)) == NZ_SUCCESS)
         {
-            // Set the chunk
-            for(size_t i = 0; i < nz_chunk_size; i++)
+            if((rc = nz_chunk_typeclass.type_init_obj(my_chunk_type, my_chunk,
+                "{0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 }"
+                // "12345"
+                )) == NZ_SUCCESS)
             {
-                ((double*)my_chunk)[i] = i;
-            }
 
-            if((nz_chunk_typeclass.type_str_obj(my_chunk_type, my_chunk, &string)) == NZ_SUCCESS)
-            {
-                printf("my_chunk value: %s\n", string);
-                //free(string);
+                if((nz_chunk_typeclass.type_str_obj(my_chunk_type, my_chunk, &string)) == NZ_SUCCESS)
+                {
+                    printf("my_chunk value: %s\n", string);
+                    //free(string);
+                }
             }
             nz_chunk_typeclass.type_destroy_obj(my_chunk_type, my_chunk);
         }

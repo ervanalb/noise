@@ -30,7 +30,35 @@ GEN_STATIC_OBJ_FNS(chunk, (sizeof(double) * nz_chunk_size))
 GEN_SHALLOW_COPY_FN(chunk, (sizeof(double) * nz_chunk_size))
 
 static nz_rc chunk_type_init_obj(const nz_type_p type_p, nz_obj_p obj_p, const char * string) {
-    NZ_RETURN_ERR(NZ_NOT_IMPLEMENTED);
+    double * a;
+    int n;
+    int result;
+
+    a = malloc(sizeof(double) * nz_chunk_size);
+    if(a == NULL) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
+
+    if(string[0] != '{') NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_PARSE, strdup(string));
+    string += 1;
+
+    for(size_t i = 0; i < nz_chunk_size; i++)
+    {
+        result = sscanf(string, " %lf %n", &a[i], &n);
+        if(result != 1) {
+            free(a);
+            NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_PARSE, strdup(string));
+        }
+        string += n;
+    }
+
+    if(string[0] != '}' || string[1] != '\0') {
+        free(a);
+        NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_PARSE, strdup(string));
+    }
+
+    memcpy((double *)obj_p, a, sizeof(double) * nz_chunk_size);
+    free(a);
+
+    return NZ_SUCCESS;
 }
 
 static nz_rc chunk_type_str_obj(const nz_type_p type_p, const nz_obj_p obj_p, char ** string) {

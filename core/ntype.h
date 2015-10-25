@@ -9,12 +9,12 @@ typedef void* nz_type_p;
 struct nz_typeclass {
     // Static members
     const char* type_id;
-    nz_rc (*type_create)     (nz_type_p * type_pp, const char * string);
+    nz_rc (*type_create)      (nz_type_p * type_pp, const char * string);
 
     // Class methods
-    void  (*type_destroy)    (nz_type_p type_p);
-    int   (*type_is_equal)   (const nz_type_p type_p, const nz_type_p other_type_p);
-    nz_rc (*type_create_obj) (const nz_type_p type_p, nz_obj_p * obj_pp);
+    void  (*type_destroy)     (nz_type_p type_p);
+    int   (*type_is_equal)    (const nz_type_p type_p, const nz_type_p other_type_p);
+    nz_rc (*type_create_obj)  (const nz_type_p type_p, nz_obj_p * obj_pp);
 
     // Instance methods
     nz_rc (*type_init_obj)    (const nz_type_p type_p, nz_obj_p obj_p, const char * string);
@@ -76,7 +76,7 @@ static nz_rc NAME ## _type_init_obj (nz_type_p type_p, nz_obj_p obj_p, const cha
     CTYPE a; \
     int n; \
     int result = sscanf(string, FORMAT_STR "%n", &a, &n); \
-    if(result != 1 || n < 0 || (size_t)n != strlen(string)) NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_PARSE, strdup(string)); \
+    if(result != 1 || n < 0 || string[n] != '\0') NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_PARSE, strdup(string)); \
     *(CTYPE *)obj_p = a; \
     return NZ_SUCCESS; \
 } \
