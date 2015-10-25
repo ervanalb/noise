@@ -7,11 +7,11 @@
 //#include "core/note.h"
 #include "core/util.h"
 
-int nz_types_are_equal(const struct nz_typeclass * typeclass_1_p, const nz_type_p type_1_p,
-                       const struct nz_typeclass * typeclass_2_p, const nz_type_p type_2_p)
+int nz_types_are_equal(const struct nz_typeclass * typeclass_p,       const nz_type_p type_p,
+                       const struct nz_typeclass * other_typeclass_p, const nz_type_p other_type_p)
 {
-    if(strcmp(typeclass_1_p->type_id, typeclass_2_p->type_id)) return 0;
-    return typeclass_1_p->type_is_equal(type_1_p, type_2_p);
+    if(strcmp(typeclass_p->type_id, other_typeclass_p->type_id)) return 0;
+    return typeclass_p->type_is_equal(type_p, other_type_p);
 }
 
 // --
@@ -26,7 +26,7 @@ DECLARE_PRIMITIVE_TYPECLASS(real, double, "%lf")
 
 // Chunk
 GEN_SIMPLE_TYPE_FNS(chunk)
-GEN_STATIC_OBJ_FNS(chunk, (sizeof(double) * nz_chunk_size))
+GEN_STATIC_OBJ_FNS(chunk, (sizeof(double) * nz_chunk_size)) // TODO: malloc might result in unaligned??
 GEN_SHALLOW_COPY_FN(chunk, (sizeof(double) * nz_chunk_size))
 
 static nz_rc chunk_type_init_obj(const nz_type_p type_p, nz_obj_p obj_p, const char * string) {
@@ -84,7 +84,7 @@ DECLARE_TYPECLASS(chunk)
 GEN_SIMPLE_TYPE_FNS(string)
 GEN_STATIC_OBJ_FNS(string, sizeof(char *))
 
-static nz_rc string_type_copy_obj(nz_type_p type_p, nz_obj_p dst_p, const nz_obj_p src_p) {
+static nz_rc string_type_copy_obj(const nz_type_p type_p, nz_obj_p dst_p, const nz_obj_p src_p) {
     char * src = *(char **)(src_p);
 
     if(!src)
@@ -126,7 +126,102 @@ static nz_rc string_type_str_obj(const nz_type_p type_p, const nz_obj_p obj_p, c
 DECLARE_TYPECLASS(string)
 
 // Array
+nz_rc array_type_create_args(nz_type_p * type_pp, size_t size, const struct nz_typeclass * typeclass_p, const nz_type_p type_p)
+{
+    struct nz_array_type * array_type_p = malloc(sizeof(struct nz_array_type));
+    if(array_type_p == NULL) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
 
+    array_type_p->size = size;
+    array_type_p->typeclass_p = typeclass_p;
+    array_type_p->type_p = type_p;
+
+    *(struct nz_array_type **)type_pp = array_type_p;
+
+    return NZ_SUCCESS;
+}
+
+static nz_rc array_type_create(nz_type_p * type_pp, const char * string) {
+    if(string == NULL) NZ_RETURN_ERR(NZ_EXPECTED_TYPE_ARGS);
+//    return array_type_create(type_pp, 10,int,int);
+    NZ_RETURN_ERR(NZ_NOT_IMPLEMENTED);
+}
+
+static void array_type_destroy(nz_type_p type_p) {
+    free(type_p);
+}
+
+static int array_type_is_equal (nz_type_p type_p, nz_type_p other_type_p) {
+    struct nz_array_type * array_type_p = (struct nz_array_type *)type_p;
+    struct nz_array_type * other_array_type_p = (struct nz_array_type *)other_type_p;
+
+    return (array_type_p->size == other_array_type_p->size &&
+            nz_types_are_equal(array_type_p->typeclass_p,       array_type_p->type_p,
+                               other_array_type_p->typeclass_p, other_array_type_p->type_p));
+}
+
+static nz_rc array_type_create_obj(const nz_type_p type_p, nz_obj_p * obj_pp) {
+    struct nz_array_type * array_type_p = (struct nz_array_type *)type_p;
+
+    nz_obj_p * obj_p_array = calloc(2 * array_type_p->size, sizeof(nz_obj_p)); // twice the size because second half is shadow array
+    if(*obj_pp == NULL) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
+    // The shadow array never has NULLs. Fill it with newly created nz_objs.
+    for(size_t i = 0; i < array_type_p->size; i++) {
+        if(obj_p_array[i + array_type_p->size] != NULL) {
+            array_type_p->typeclass_p->type_create_obj(array_type_p->type_p, obj_p_array[i + array_type_p->size]);
+        }
+        // Leave the first half as NULLs
+    }
+
+    *(nz_obj_p **)obj_pp = obj_p_array;
+
+    return NZ_SUCCESS;
+}
+
+static void array_type_destroy_obj(const nz_type_p type_p, nz_obj_p obj_p) {
+    struct nz_array_type * array_type_p = (struct nz_array_type *)type_p;
+    nz_obj_p * obj_p_array = (nz_obj_p*)obj_p;
+    for(size_t i = 0; i < array_type_p->size; i++) {
+        // We only need to destroy the shadow array because each element in the regular array is either NULL
+        // or pointing to its corresponding element in the shadow array.
+        array_type_p->typeclass_p->type_destroy_obj(array_type_p->type_p, obj_p_array[i + array_type_p->size]);
+    }
+    free(obj_p_array);
+}
+
+static nz_rc array_type_copy_obj(const nz_type_p type_p, nz_obj_p dst_p, const nz_obj_p src_p) {
+    struct nz_array_type * array_type_p = (struct nz_array_type *)type_p;
+    nz_obj_p * src_obj_p_array = (nz_obj_p*)src_p;
+    nz_obj_p * dst_obj_p_array = (nz_obj_p*)dst_p;
+    for(size_t i = 0; i < array_type_p->size; i++) {
+        if(src_obj_p_array[i] != NULL) { // If the source exists...
+            // Copy it to its shadow destination
+            array_type_p->typeclass_p->type_copy_obj(array_type_p->type_p, dst_obj_p_array[i + array_type_p->size], src_obj_p_array[i]);
+            // And point to it
+            dst_obj_p_array[i] = dst_obj_p_array[i + array_type_p->size];
+        } else { // If the source doesn't exist...
+            // Make the destination NULL
+            dst_obj_p_array[i] = NULL;
+        }
+    }
+    return NZ_SUCCESS;
+}
+
+static nz_rc array_type_init_obj(const nz_type_p type_p, nz_obj_p obj_p, const char * string) {
+    NZ_RETURN_ERR(NZ_NOT_IMPLEMENTED);
+    // CTYPE a;
+    // int n;
+    // int result = sscanf(string, FORMAT_STR "%n", &a, &n);
+    // if(result != 1 || n < 0 || string[n] != '\0') NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_PARSE, strdup(string));
+    // *(CTYPE *)obj_p = a;
+    // return NZ_SUCCESS;
+}
+
+static nz_rc array_type_str_obj(const nz_type_p type_p, const nz_obj_p obj_p, char ** string) {
+    NZ_RETURN_ERR(NZ_NOT_IMPLEMENTED);
+    // *string = rsprintf(FORMAT_STR, *(CTYPE *)obj_p);
+    // if(*string == 0) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
+    // return NZ_SUCCESS;
+}
 
 // OLD SHIT
 

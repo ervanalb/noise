@@ -23,8 +23,8 @@ struct nz_typeclass {
     nz_rc (*type_str_obj)     (const nz_type_p type_p, const nz_obj_p obj_p, char ** string);
 };
 
-int nz_types_are_equal(const struct nz_typeclass * type_1_p, const nz_type_p type_1_data_p,
-                       const struct nz_typeclass * type_2_p, const nz_type_p type_2_data_p);
+int nz_types_are_equal(const struct nz_typeclass * typeclass_p,       const nz_type_p type_p,
+                       const struct nz_typeclass * other_typeclass_p, const nz_type_p other_type_p);
 
 // --
 
@@ -46,33 +46,33 @@ nz_rc nz_vector_type_init(nz_type_p type_p, const struct nz_typeclass * inner_ty
 
 #define GEN_SIMPLE_TYPE_FNS(NAME) \
 static nz_rc NAME ## _type_create (nz_type_p * type_pp, const char * string) {\
-    if(string != NULL) NZ_RETURN_ERR(NZ_UNEXPECTED_TYPE_ARGS); \
-    *type_pp = 0; \
+    if(string != NULL) NZ_RETURN_ERR_MSG(NZ_UNEXPECTED_TYPE_ARGS, strdup(string)); \
+    *type_pp = NULL; \
     return NZ_SUCCESS; \
 }\
 static void NAME ## _type_destroy (nz_type_p type_p) {}\
-static int NAME ## _type_is_equal (nz_type_p type_p, nz_type_p other_type_p) { \
+static int NAME ## _type_is_equal (const nz_type_p type_p, const nz_type_p other_type_p) { \
     return 1; \
 }
 
 #define GEN_STATIC_OBJ_FNS(NAME, SIZE) \
 static nz_rc NAME ## _type_create_obj (const nz_type_p type_p, nz_obj_p * obj_pp) { \
     *obj_pp = calloc(1, SIZE); \
-    if(*obj_pp == 0) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY); \
+    if(*obj_pp == NULL) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY); \
     return NZ_SUCCESS; \
 } \
-static void NAME ## _type_destroy_obj (nz_type_p type_p, nz_obj_p obj_p) { \
+static void NAME ## _type_destroy_obj (const nz_type_p type_p, nz_obj_p obj_p) { \
     free(obj_p); \
 } \
 
 #define GEN_SHALLOW_COPY_FN(NAME, SIZE) \
-static nz_rc NAME ## _type_copy_obj (nz_type_p type_p, nz_obj_p dst_p, const nz_obj_p src_p) { \
+static nz_rc NAME ## _type_copy_obj (const nz_type_p type_p, nz_obj_p dst_p, const nz_obj_p src_p) { \
     memcpy(dst_p, src_p, SIZE); \
     return NZ_SUCCESS; \
 }
 
 #define GEN_PRIMITIVE_STRING_FNS(NAME, CTYPE, FORMAT_STR) \
-static nz_rc NAME ## _type_init_obj (nz_type_p type_p, nz_obj_p obj_p, const char * string) { \
+static nz_rc NAME ## _type_init_obj (const nz_type_p type_p, nz_obj_p obj_p, const char * string) { \
     CTYPE a; \
     int n; \
     int result = sscanf(string, FORMAT_STR "%n", &a, &n); \
@@ -80,7 +80,7 @@ static nz_rc NAME ## _type_init_obj (nz_type_p type_p, nz_obj_p obj_p, const cha
     *(CTYPE *)obj_p = a; \
     return NZ_SUCCESS; \
 } \
-static nz_rc NAME ## _type_str_obj (nz_type_p type_p, const nz_obj_p obj_p, char ** string) { \
+static nz_rc NAME ## _type_str_obj (const nz_type_p type_p, const nz_obj_p obj_p, char ** string) { \
     *string = rsprintf(FORMAT_STR, *(CTYPE *)obj_p); \
     if(*string == 0) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY); \
     return NZ_SUCCESS; \
@@ -106,5 +106,16 @@ GEN_STATIC_OBJ_FNS(NAME, sizeof(CTYPE)) \
 GEN_SHALLOW_COPY_FN(NAME, sizeof(CTYPE)) \
 GEN_PRIMITIVE_STRING_FNS(NAME, CTYPE, FORMAT_STR) \
 DECLARE_TYPECLASS(NAME) \
+
+// --
+
+// Type-specific helper functions
+struct nz_array_type {
+    size_t size;
+    const struct nz_typeclass * typeclass_p;
+    nz_type_p type_p;
+};
+
+nz_rc array_type_create_args(nz_type_p * type_pp, size_t size, const struct nz_typeclass * typeclass_p, const nz_type_p type_p);
 
 #endif
