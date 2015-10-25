@@ -2,11 +2,11 @@
 
 #include "core/error.h"
 
-const char * nz_error_string;
+char * nz_error_string;
 const char * nz_error_file;
 int nz_error_line;
 
-#define DECLARE_ERROR(X) case X: return #X;
+#define DECLARE_ERROR(X) case X : return #X ;
 const char * nz_error_rc_str(nz_rc rc)
 {
     switch(rc) {

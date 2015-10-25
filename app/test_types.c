@@ -11,7 +11,7 @@ nz_rc run()
     char* string;
 
     // Create a chunk type
-    if((rc = nz_chunk_typeclass.type_create(&my_chunk_type)) == NZ_SUCCESS)
+    if((rc = nz_chunk_typeclass.type_create(&my_chunk_type, NULL)) == NZ_SUCCESS)
     {
         // Use this chunk type to instantiate a chunk
         if((rc = nz_chunk_typeclass.type_create_obj(my_chunk_type, &my_chunk)) == NZ_SUCCESS)
@@ -41,7 +41,10 @@ int main()
     {
         fprintf(stderr, "Noise error %d: %s\n", rc, nz_error_rc_str(rc));
         fprintf(stderr, "File: %s line %d\n", nz_error_file, nz_error_line);
-        if(nz_error_string) fprintf(stderr, "%s\n", nz_error_string);
+        if(nz_error_string) {
+            fprintf(stderr, "%s\n", nz_error_string);
+            free(nz_error_string);
+        }
         return 1;
     }
     return 0;

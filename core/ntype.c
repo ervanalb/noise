@@ -29,6 +29,10 @@ GEN_SIMPLE_TYPE_FNS(chunk)
 GEN_STATIC_OBJ_FNS(chunk, (sizeof(double) * nz_chunk_size))
 GEN_SHALLOW_COPY_FN(chunk, (sizeof(double) * nz_chunk_size))
 
+static nz_rc chunk_type_init_obj(const nz_type_p type_p, nz_obj_p obj_p, const char * string) {
+    NZ_RETURN_ERR(NZ_NOT_IMPLEMENTED);
+}
+
 static nz_rc chunk_type_str_obj(const nz_type_p type_p, const nz_obj_p obj_p, char ** string) {
     struct strbuf buf;
     char* str = strbuf_alloc(&buf);
@@ -40,11 +44,7 @@ static nz_rc chunk_type_str_obj(const nz_type_p type_p, const nz_obj_p obj_p, ch
     buf.len--; // Hack off trailing space
     str = strbuf_printf(&buf, str, "}");
 
-    if(!str)
-    {
-        NZ_THROW();
-        return NZ_NOMEM;
-    }
+    if(!str) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
 
     *string = str;
 
@@ -68,36 +68,37 @@ static nz_rc string_type_copy_obj(nz_type_p type_p, nz_obj_p dst_p, const nz_obj
     char * dst;
     dst = strdup(src);
 
-    if(!dst)
-    {
-        NZ_THROW();
-        return NZ_NOMEM;
-    }
+    if(!dst) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
 
     *(char **)dst_p = dst;
 
     return NZ_SUCCESS;
 }
 
+static nz_rc string_type_init_obj(const nz_type_p type_p, nz_obj_p obj_p, const char * string) {
+    free(*(char **)obj_p);
+    *(char **)obj_p = NULL;
+
+    char* str = strdup(string);
+    if(!str) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
+    *(char **)obj_p = str;
+
+    return NZ_SUCCESS;
+}
+
 static nz_rc string_type_str_obj(const nz_type_p type_p, const nz_obj_p obj_p, char ** string) {
-    struct strbuf buf;
-    char* str = strbuf_alloc(&buf);
+    char* str = strdup(*(char **)obj_p);
 
-    // TODO: escape certain characters
-    str = strbuf_printf(&buf, str, "\"%s\"", *(char **)obj_p);
-
-    if(!str)
-    {
-        NZ_THROW();
-        return NZ_NOMEM;
-    }
-
+    if(!str) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
     *string = str;
 
     return NZ_SUCCESS;
 }
 
 DECLARE_TYPECLASS(string)
+
+// Array
+
 
 // OLD SHIT
 
@@ -185,7 +186,7 @@ size_t nz_vector_set_size(nz_obj_p obj, size_t new_size) {
         if (!new_capacity) return (errno = EOVERFLOW, vdata->vector_size);
 
         void * new_ptr = realloc(vdata->vector_contents, new_capacity * el_size);
-        if (new_ptr == NULL) return (errno = ENOMEM, vdata->vector_size);
+        if (new_ptr == NULL) return (errno = ENOT_ENOUGH_MEMORY, vdata->vector_size);
 
         vdata->vector_contents = new_ptr;
         vdata->vector_capacity = new_capacity;
