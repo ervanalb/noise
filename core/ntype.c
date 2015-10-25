@@ -37,7 +37,7 @@ static nz_rc chunk_type_init_obj(const nz_type_p type_p, nz_obj_p obj_p, const c
     a = malloc(sizeof(double) * nz_chunk_size);
     if(a == NULL) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
 
-    if(string[0] != '{') NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_PARSE, strdup(string));
+    if(string[0] != '{') NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_PARSE, "%s", string);
     string += 1;
 
     for(size_t i = 0; i < nz_chunk_size; i++)
@@ -45,14 +45,14 @@ static nz_rc chunk_type_init_obj(const nz_type_p type_p, nz_obj_p obj_p, const c
         result = sscanf(string, " %lf %n", &a[i], &n);
         if(result != 1) {
             free(a);
-            NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_PARSE, strdup(string));
+            NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_PARSE, "%s", string);
         }
         string += n;
     }
 
     if(string[0] != '}' || string[1] != '\0') {
         free(a);
-        NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_PARSE, strdup(string));
+        NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_PARSE, "%s", string);
     }
 
     memcpy((double *)obj_p, a, sizeof(double) * nz_chunk_size);
@@ -211,7 +211,7 @@ static nz_rc array_type_init_obj(const nz_type_p type_p, nz_obj_p obj_p, const c
     // CTYPE a;
     // int n;
     // int result = sscanf(string, FORMAT_STR "%n", &a, &n);
-    // if(result != 1 || n < 0 || string[n] != '\0') NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_PARSE, strdup(string));
+    // if(result != 1 || n < 0 || string[n] != '\0') NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_PARSE, "%s", string);
     // *(CTYPE *)obj_p = a;
     // return NZ_SUCCESS;
 }

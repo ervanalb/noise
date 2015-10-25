@@ -21,10 +21,10 @@ extern char * nz_error_string;
 extern const char * nz_error_file;
 extern int nz_error_line;
 
-#define NZ_ERR_MSG(STR) {nz_error_file = __FILE__; nz_error_line = __LINE__; nz_error_string = (STR);}
+#define NZ_ERR_MSG(STR, ...) {nz_error_file = __FILE__; nz_error_line = __LINE__; nz_error_string = rsprintf(STR, ## __VA_ARGS__);}
 #define NZ_ERR() NZ_ERR_MSG(NULL)
 #define NZ_RETURN_ERR(ERR) {NZ_ERR(); return (ERR);}
-#define NZ_RETURN_ERR_MSG(ERR, STR) {NZ_ERR_MSG(STR); return (ERR);}
+#define NZ_RETURN_ERR_MSG(ERR, STR, ...) {NZ_ERR_MSG(STR, ## __VA_ARGS__); return (ERR);}
 
 const char * nz_error_rc_str(nz_rc rc);
 
