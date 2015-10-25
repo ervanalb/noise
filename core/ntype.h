@@ -14,7 +14,7 @@ typedef void* nz_obj_p;
 // that is necessary for describing a type that is not already handled by the typeclass. For instance,
 // in a noise "array" type, the nz_type_p points to a struct nz_array_type which has the array size and
 // type information for the array elements. For more basic types such as a noise "double", the typeclass
-// fully sepcifies the behavior, and this pointer is not used.
+// fully specifies the behavior, and this pointer is not used.
 
 typedef void* nz_type_p;
 
@@ -60,7 +60,7 @@ struct nz_typeclass {
 
 // type_destroy frees any memory allocated for a type following a successful call to type_create.
 // The type_p should not be used after calling type_destroy. Do not call type_destroy with a
-// NULL pointer. If type_create did not complete successfull, do not call type_destroy on
+// NULL pointer. If type_create did not complete successful, do not call type_destroy on
 // the type_p, as it contains an undefined value.
 
 // type_is_equal checks if two type_p's describe the same type. It must only be used on
@@ -82,7 +82,7 @@ struct nz_typeclass {
 // arguments, are mutable, and end up in a default state. To fill them with useful data,
 // you can use type_init_obj or type_copy_obj.
 // A successful call to type_create_obj allocates memory which must be freed using
-// type_obj_destroy. An unsuccessful cll to type_create_obj does not allocate memory, and
+// type_destroy_obj. An unsuccessful call to type_create_obj does not allocate memory, and
 // puts an undefined value into obj_p.
 
 // The next four methods operate on objects. They take the type_p associated with the
