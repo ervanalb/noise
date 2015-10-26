@@ -5,6 +5,7 @@
 #define DECLARE_ERRORS \
     DECLARE_ERROR(NZ_NOT_IMPLEMENTED) \
     DECLARE_ERROR(NZ_NOT_ENOUGH_MEMORY) \
+    DECLARE_ERROR(NZ_TYPE_NOT_FOUND) \
     DECLARE_ERROR(NZ_UNEXPECTED_TYPE_ARGS) \
     DECLARE_ERROR(NZ_EXPECTED_TYPE_ARGS) \
     DECLARE_ERROR(NZ_OBJ_ARG_PARSE) \
@@ -25,6 +26,7 @@ extern int nz_error_line;
 #define NZ_ERR() NZ_ERR_MSG(NULL)
 #define NZ_RETURN_ERR(ERR) {NZ_ERR(); return (ERR);}
 #define NZ_RETURN_ERR_MSG(ERR, STR, ...) {NZ_ERR_MSG(STR, ## __VA_ARGS__); return (ERR);}
+#define NZ_RETURN_IF_ERR(ERR) {if(ERR) return (ERR);}
 
 const char * nz_error_rc_str(nz_rc rc);
 

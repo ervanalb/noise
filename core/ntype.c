@@ -7,11 +7,78 @@
 //#include "core/note.h"
 #include "core/util.h"
 
+static struct nz_typeclass const ** registered_typeclasses;
+
+static size_t n_registered_typeclasses;
+static size_t registered_typeclass_capacity;
+
+nz_rc nz_init_type_system() {
+    n_registered_typeclasses = 0;
+    registered_typeclass_capacity = 16;
+    registered_typeclasses = calloc(registered_typeclass_capacity, sizeof(struct nz_typeclass *));
+    if(registered_typeclasses == NULL) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
+    return NZ_SUCCESS;
+}
+
+nz_rc nz_register_typeclass(struct nz_typeclass const * typeclass_p) {
+    if(n_registered_typeclasses < registered_typeclass_capacity) {
+        registered_typeclass_capacity *= 2;
+        struct nz_typeclass * newptr =  realloc(registered_typeclasses, registered_typeclass_capacity * sizeof(struct nz_typeclass *));
+        if(newptr == NULL) {
+            free(registered_typeclasses);
+            NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
+        }
+    }
+
+    registered_typeclasses[n_registered_typeclasses] = typeclass_p;
+    n_registered_typeclasses++;
+
+    return NZ_SUCCESS;
+}
+
+void nz_deinit_type_system() {
+    free(registered_typeclasses);
+}
+
 int nz_types_are_equal(const struct nz_typeclass * typeclass_p,       const nz_type_p type_p,
                        const struct nz_typeclass * other_typeclass_p, const nz_type_p other_type_p)
 {
     if(strcmp(typeclass_p->type_id, other_typeclass_p->type_id)) return 0;
     return typeclass_p->type_is_equal(type_p, other_type_p);
+}
+
+nz_rc nz_type_from_string(const struct nz_typeclass ** typeclass_pp, nz_type_p * type_pp, const char * string) {
+    for(size_t i = 0; i < n_registered_typeclasses; i++)
+    {
+        size_t c = 0;
+        const char * type_id = registered_typeclasses[i]->type_id;
+        size_t len = strlen(string);
+        for(;;) {
+            if(type_id[c] == '\0') {
+                if(string[c] == '\0') {
+                    // Match, no args
+                    *typeclass_pp = registered_typeclasses[i];
+                    return (*typeclass_pp)->type_create(type_pp, NULL);
+                } else if(string[c] == '<' && string[len - 1] == '>') {
+                    // Match, args
+                    char * args = strndup(&(string[c + 1]), len - 1 - c);
+                    if(args == NULL) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
+                    *typeclass_pp = registered_typeclasses[i];
+                    nz_rc rc = (*typeclass_pp)->type_create(type_pp, args);
+                    free(args);
+                    return rc;
+                } else {
+                    break; // No match, type ended early
+                }
+            } else if(string[c] == '\0') {
+                break; // No match, string ended early
+            } else if(string[c] == type_id[c]) {
+                c++;
+            }
+        }
+    }
+
+    NZ_RETURN_ERR(NZ_TYPE_NOT_FOUND);
 }
 
 // --
@@ -222,6 +289,17 @@ static nz_rc array_type_str_obj(const nz_type_p type_p, const nz_obj_p obj_p, ch
     // if(*string == 0) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
     // return NZ_SUCCESS;
 }
+
+nz_rc nz_init_types() {
+    NZ_RETURN_IF_ERR(nz_register_typeclass(&nz_int_typeclass));
+    NZ_RETURN_IF_ERR(nz_register_typeclass(&nz_long_typeclass));
+    NZ_RETURN_IF_ERR(nz_register_typeclass(&nz_real_typeclass));
+    NZ_RETURN_IF_ERR(nz_register_typeclass(&nz_chunk_typeclass));
+    NZ_RETURN_IF_ERR(nz_register_typeclass(&nz_string_typeclass));
+    NZ_RETURN_IF_ERR(nz_register_typeclass(&nz_array_typeclass));
+    return NZ_SUCCESS;
+}
+DECLARE_TYPECLASS(array)
 
 // OLD SHIT
 
