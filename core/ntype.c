@@ -47,7 +47,7 @@ int nz_types_are_equal(const struct nz_typeclass * typeclass_p,       const nz_t
     return typeclass_p->type_is_equal(type_p, other_type_p);
 }
 
-nz_rc nz_type_from_string(const struct nz_typeclass ** typeclass_pp, nz_type_p * type_pp, const char * string) {
+nz_rc nz_type_create(const struct nz_typeclass ** typeclass_pp, nz_type_p * type_pp, const char * string) {
     for(size_t i = 0; i < n_registered_typeclasses; i++)
     {
         size_t c = 0;
@@ -61,7 +61,7 @@ nz_rc nz_type_from_string(const struct nz_typeclass ** typeclass_pp, nz_type_p *
                     return (*typeclass_pp)->type_create(type_pp, NULL);
                 } else if(string[c] == '<' && string[len - 1] == '>') {
                     // Match, args
-                    char * args = strndup(&(string[c + 1]), len - 1 - c);
+                    char * args = strndup(&(string[c + 1]), len - 2 - c);
                     if(args == NULL) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
                     *typeclass_pp = registered_typeclasses[i];
                     nz_rc rc = (*typeclass_pp)->type_create(type_pp, args);
@@ -74,6 +74,8 @@ nz_rc nz_type_from_string(const struct nz_typeclass ** typeclass_pp, nz_type_p *
                 break; // No match, string ended early
             } else if(string[c] == type_id[c]) {
                 c++;
+            } else {
+                break;
             }
         }
     }

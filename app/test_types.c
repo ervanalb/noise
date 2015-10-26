@@ -6,6 +6,7 @@ const size_t nz_chunk_size = 128;
 nz_rc run()
 {
     nz_rc rc = NZ_SUCCESS;
+    const struct nz_typeclass * my_int_typeclass;
     nz_type_p my_int_type;
     nz_obj_p my_int;
     char* string;
@@ -15,7 +16,7 @@ nz_rc run()
         if((rc = nz_init_types()) == NZ_SUCCESS)
         {
             // Create a int type
-            if((rc = nz_int_typeclass.type_create(&my_int_type, NULL)) == NZ_SUCCESS)
+            if((rc = nz_type_create(&my_int_typeclass, &my_int_type, "int<a>")) == NZ_SUCCESS)
             {
                 // Use this int type to instantiate a int
                 if((rc = nz_int_typeclass.type_create_obj(my_int_type, &my_int)) == NZ_SUCCESS)

@@ -126,7 +126,7 @@ nz_rc nz_init_type_system();
 nz_rc nz_register_typeclass(struct nz_typeclass const * typeclass_p);
 void nz_deinit_type_system();
 
-nz_rc nz_type_from_string(const struct nz_typeclass ** typeclass_pp, nz_type_p * type_pp, const char * string);
+nz_rc nz_type_create(const struct nz_typeclass ** typeclass_pp, nz_type_p * type_pp, const char * string);
 
 int nz_types_are_equal(const struct nz_typeclass * typeclass_p,       const nz_type_p type_p,
                        const struct nz_typeclass * other_typeclass_p, const nz_type_p other_type_p);
