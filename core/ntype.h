@@ -148,6 +148,8 @@ extern const struct nz_typeclass nz_vector_typeclass;
 nz_rc nz_array_type_init(nz_type_p type_p, int n, const struct nz_typeclass * inner_typeclass_p, nz_type_p inner_type_p);
 nz_rc nz_vector_type_init(nz_type_p type_p, const struct nz_typeclass * inner_typeclass_p, nz_type_p inner_type_p);
 
+#define NZ_NULL_STR "NULL"
+
 // -
 // Method definition helper macros
 

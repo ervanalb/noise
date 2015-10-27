@@ -336,8 +336,10 @@ static nz_rc array_type_create(nz_type_p * type_pp, const char * string) {
     const char * start;
     size_t length;
     int end;
+    nz_rc rc;
 
-    NZ_RETURN_IF_ERR(nz_next_type_arg(string, &pos, &start, &length));
+    rc = nz_next_type_arg(string, &pos, &start, &length);
+    if(rc != NZ_SUCCESS) return rc;
     char * n_elements_str = strndup(start, length);
     size_t n_elements;
     if(sscanf(n_elements_str, "%lu%n", &n_elements, &end) != 1 || end <= 0 || (size_t)end != length) {
@@ -348,13 +350,14 @@ static nz_rc array_type_create(nz_type_p * type_pp, const char * string) {
 
     if(pos == NULL) NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_PARSE, strdup(string));
 
-    NZ_RETURN_IF_ERR(nz_next_type_arg(string, &pos, &start, &length));
+    rc = nz_next_type_arg(string, &pos, &start, &length);
+    if(rc != NZ_SUCCESS) return rc;
     char * type_str = strndup(start, length);
     const struct nz_typeclass * element_typeclass_p;
     nz_type_p element_type_p;
-    nz_rc rc = nz_type_create(&element_typeclass_p, &element_type_p, type_str);
+    rc = nz_type_create(&element_typeclass_p, &element_type_p, type_str);
     free(type_str);
-    NZ_RETURN_IF_ERR(rc);
+    if(rc != NZ_SUCCESS) return rc;
 
     if(pos != NULL) NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_PARSE, strdup(string));
 
@@ -378,14 +381,12 @@ static nz_rc array_type_create_obj(const nz_type_p type_p, nz_obj_p * obj_pp) {
     struct nz_array_type * array_type_p = (struct nz_array_type *)type_p;
 
     nz_obj_p * obj_p_array = calloc(2 * array_type_p->size, sizeof(nz_obj_p)); // twice the size because second half is shadow array
-    if(*obj_pp == NULL) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
+    if(obj_p_array == NULL) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
     // The shadow array never has NULLs. Fill it with newly created nz_objs.
     for(size_t i = 0; i < array_type_p->size; i++) {
-        if(obj_p_array[i + array_type_p->size] != NULL) {
-            array_type_p->typeclass_p->type_create_obj(array_type_p->type_p, obj_p_array[i + array_type_p->size]);
-        }
-        // Leave the first half as NULLs
+        array_type_p->typeclass_p->type_create_obj(array_type_p->type_p, &(obj_p_array[i + array_type_p->size]));
     }
+    // Leave the first half as NULLs
 
     *(nz_obj_p **)obj_pp = obj_p_array;
 
@@ -422,29 +423,95 @@ static nz_rc array_type_copy_obj(const nz_type_p type_p, nz_obj_p dst_p, const n
 }
 
 static nz_rc array_type_init_obj(const nz_type_p type_p, nz_obj_p obj_p, const char * string) {
-    NZ_RETURN_ERR(NZ_NOT_IMPLEMENTED);
-    // CTYPE a;
-    // int n;
-    // int result = sscanf(string, FORMAT_STR "%n", &a, &n);
-    // if(result != 1 || n < 0 || string[n] != '\0') NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_PARSE, strdup(string));
-    // *(CTYPE *)obj_p = a;
-    // return NZ_SUCCESS;
+    struct nz_array_type * array_type_p = (struct nz_array_type *)type_p;
+    nz_obj_p * obj_p_array = (nz_obj_p*)obj_p;
+
+    size_t len = strlen(string);
+    if(string[0] != '{' || string[len-1] != '}') NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_PARSE, strdup(string));
+
+    char * elem_list = strndup(&string[1], len - 2);
+    if(elem_list == NULL) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
+
+    const char * pos = elem_list;
+    const char * start;
+    size_t length;
+    int end;
+
+    for(size_t i = 0; i < array_type_p->size; i++) {
+        if(pos == NULL) {
+            NZ_ERR_MSG(strdup(elem_list));
+            free(elem_list);
+            return NZ_OBJ_ARG_PARSE;
+        }
+        nz_rc rc = nz_next_list_arg(elem_list, &pos, &start, &length);
+        if(rc != NZ_SUCCESS) {
+            free(elem_list);
+            return rc;
+        }
+        char * element_str = strndup(start, length);
+        if(strcmp(element_str, NZ_NULL_STR) == 0) {
+            obj_p_array[i] = NULL;
+            free(element_str);
+        } else {
+            nz_rc rc = array_type_p->typeclass_p->type_init_obj(array_type_p->type_p, obj_p_array[i + array_type_p->size], element_str);
+            free(element_str);
+            if(rc != NZ_SUCCESS) {
+                free(elem_list);
+                return rc;
+            }
+            obj_p_array[i] = obj_p_array[i + array_type_p->size];
+        }
+    }
+    if(pos != NULL) {
+        NZ_ERR_MSG(strdup(elem_list));
+        free(elem_list);
+        return NZ_OBJ_ARG_PARSE;
+    }
+    return NZ_SUCCESS;
 }
 
 static nz_rc array_type_str_obj(const nz_type_p type_p, const nz_obj_p obj_p, char ** string) {
-    NZ_RETURN_ERR(NZ_NOT_IMPLEMENTED);
-    // *string = rsprintf(FORMAT_STR, *(CTYPE *)obj_p);
-    // if(*string == 0) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
-    // return NZ_SUCCESS;
+    struct nz_array_type * array_type_p = (struct nz_array_type *)type_p;
+    nz_obj_p * obj_p_array = (nz_obj_p*)obj_p;
+    struct strbuf buf;
+    char * str = strbuf_alloc(&buf);
+
+    str = strbuf_printf(&buf, str, "{");
+
+    for(size_t i = 0; i < array_type_p->size; i++) {
+        char * elem_string;
+        nz_obj_p elem = obj_p_array[i];
+        if(elem == NULL) {
+            str = strbuf_printf(&buf, str, NZ_NULL_STR ", ");
+        } else {
+            nz_rc rc = array_type_p->typeclass_p->type_str_obj(array_type_p->type_p, elem, &elem_string);
+            if(rc != NZ_SUCCESS) {
+                free(str);
+                return rc;
+            }
+            str = strbuf_printf(&buf, str, "%s, ", elem_string);
+            free(elem_string);
+        }
+    }
+
+    buf.len -= 2; // Hack off trailing comma and space
+    str = strbuf_printf(&buf, str, "}");
+
+    if(!str) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
+
+    *string = str;
+
+    return NZ_SUCCESS;
 }
 
 nz_rc nz_init_types() {
-    NZ_RETURN_IF_ERR(nz_register_typeclass(&nz_int_typeclass));
-    NZ_RETURN_IF_ERR(nz_register_typeclass(&nz_long_typeclass));
-    NZ_RETURN_IF_ERR(nz_register_typeclass(&nz_real_typeclass));
-    NZ_RETURN_IF_ERR(nz_register_typeclass(&nz_chunk_typeclass));
-    NZ_RETURN_IF_ERR(nz_register_typeclass(&nz_string_typeclass));
-    NZ_RETURN_IF_ERR(nz_register_typeclass(&nz_array_typeclass));
+    nz_rc rc;
+    rc = nz_register_typeclass(&nz_int_typeclass); if(rc != NZ_SUCCESS) return rc;
+    rc = nz_register_typeclass(&nz_long_typeclass); if(rc != NZ_SUCCESS) return rc;
+    rc = nz_register_typeclass(&nz_real_typeclass); if(rc != NZ_SUCCESS) return rc;
+    rc = nz_register_typeclass(&nz_chunk_typeclass); if(rc != NZ_SUCCESS) return rc;
+    rc = nz_register_typeclass(&nz_string_typeclass); if(rc != NZ_SUCCESS) return rc;
+    rc = nz_register_typeclass(&nz_array_typeclass); if(rc != NZ_SUCCESS) return rc;
     return NZ_SUCCESS;
 }
 DECLARE_TYPECLASS(array)

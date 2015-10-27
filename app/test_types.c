@@ -21,9 +21,14 @@ nz_rc run()
                 // Instantiate it
                 if((rc = my_typeclass->type_create_obj(my_type, &my_obj)) == NZ_SUCCESS)
                 {
+                    if((my_typeclass->type_str_obj(my_type, my_obj, &string)) == NZ_SUCCESS)
+                    {
+                        printf("my_obj default value: %s\n", string);
+                        free(string);
+                    }
                     if((rc = my_typeclass->type_init_obj(my_type, my_obj,
                         // "{0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 }"
-                        "12345"
+                        "{1, 2, 3, 4, 5, 6, 7, 8, NULL, 10}"
                         )) == NZ_SUCCESS)
                     {
 
