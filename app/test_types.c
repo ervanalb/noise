@@ -6,36 +6,36 @@ const size_t nz_chunk_size = 128;
 nz_rc run()
 {
     nz_rc rc = NZ_SUCCESS;
-    const struct nz_typeclass * my_int_typeclass;
-    nz_type_p my_int_type;
-    nz_obj_p my_int;
+    const struct nz_typeclass * my_typeclass;
+    nz_type_p my_type;
+    nz_obj_p my_obj;
     char* string;
 
     if((rc = nz_init_type_system()) == NZ_SUCCESS)
     {
         if((rc = nz_init_types()) == NZ_SUCCESS)
         {
-            // Create a int type
-            if((rc = nz_type_create(&my_int_typeclass, &my_int_type, "int<a>")) == NZ_SUCCESS)
+            // Create a type
+            if((rc = nz_type_create(&my_typeclass, &my_type, "array<10,int>")) == NZ_SUCCESS)
             {
-                // Use this int type to instantiate a int
-                if((rc = nz_int_typeclass.type_create_obj(my_int_type, &my_int)) == NZ_SUCCESS)
+                // Instantiate it
+                if((rc = my_typeclass->type_create_obj(my_type, &my_obj)) == NZ_SUCCESS)
                 {
-                    if((rc = nz_int_typeclass.type_init_obj(my_int_type, my_int,
+                    if((rc = my_typeclass->type_init_obj(my_type, my_obj,
                         // "{0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 }"
                         "12345"
                         )) == NZ_SUCCESS)
                     {
 
-                        if((nz_int_typeclass.type_str_obj(my_int_type, my_int, &string)) == NZ_SUCCESS)
+                        if((my_typeclass->type_str_obj(my_type, my_obj, &string)) == NZ_SUCCESS)
                         {
-                            printf("my_int value: %s\n", string);
-                            //free(string);
+                            printf("my_obj value: %s\n", string);
+                            free(string);
                         }
                     }
-                    nz_int_typeclass.type_destroy_obj(my_int_type, my_int);
+                    my_typeclass->type_destroy_obj(my_type, my_obj);
                 }
-                nz_int_typeclass.type_destroy(my_int_type);
+                my_typeclass->type_destroy(my_type);
             }
         }
         nz_deinit_type_system();
