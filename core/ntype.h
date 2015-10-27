@@ -153,7 +153,7 @@ nz_rc nz_vector_type_init(nz_type_p type_p, const struct nz_typeclass * inner_ty
 
 #define GEN_SIMPLE_TYPE_FNS(NAME) \
 static nz_rc NAME ## _type_create (nz_type_p * type_pp, const char * string) {\
-    if(string != NULL) NZ_RETURN_ERR_MSG(NZ_UNEXPECTED_TYPE_ARGS, "%s", string); \
+    if(string != NULL) NZ_RETURN_ERR_MSG(NZ_UNEXPECTED_TYPE_ARGS, strdup(string)); \
     *type_pp = NULL; \
     return NZ_SUCCESS; \
 }\
@@ -183,7 +183,7 @@ static nz_rc NAME ## _type_init_obj (const nz_type_p type_p, nz_obj_p obj_p, con
     CTYPE a; \
     int n; \
     int result = sscanf(string, FORMAT_STR "%n", &a, &n); \
-    if(result != 1 || n < 0 || string[n] != '\0') NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_PARSE, "%s", string); \
+    if(result != 1 || n < 0 || string[n] != '\0') NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_PARSE, strdup(string)); \
     *(CTYPE *)obj_p = a; \
     return NZ_SUCCESS; \
 } \

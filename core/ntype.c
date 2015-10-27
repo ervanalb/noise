@@ -83,7 +83,9 @@ nz_rc nz_type_create(const struct nz_typeclass ** typeclass_pp, nz_type_p * type
     NZ_RETURN_ERR(NZ_TYPE_NOT_FOUND);
 }
 
-nz_rc nz_next_type_arg(const char * string, const char ** pos, const char ** start, size_t * length)
+enum arg_rc {SUCCESS = 0, UNMATCHED_CLOSE, UNMATCHED_OPEN, UNMATCHED_QUOTE};
+
+static enum arg_rc next_arg(const char * string, const char ** pos, const char ** start, size_t * length, char open, char close)
 {
     int angle_brackets = 0;
     size_t trailing_whitespace = 0;
@@ -109,22 +111,24 @@ nz_rc nz_next_type_arg(const char * string, const char ** pos, const char ** sta
                         *start = *pos;
                         *length = 0;
                         (*pos)++;
-                        return NZ_SUCCESS;
+                        return SUCCESS;
                     case '\0':
                         *start = *pos;
                         *length = 0;
                         *pos = NULL;
-                        return NZ_SUCCESS;
-                    case '<':
+                        return SUCCESS;
+                    default:
+                        if(**pos == open) {
+                            *start = *pos;
+                            angle_brackets = 1;
+                            state = ARGUMENT;
+                            break;
+                        } else if(**pos == close) {
+                            return UNMATCHED_CLOSE;
+                        }
                         *start = *pos;
-                        angle_brackets = 1;
                         state = ARGUMENT;
                         break;
-                    case '>':
-                        NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_PARSE, strdup(string));
-                    default:
-                        *start = *pos;
-                        state = ARGUMENT;
                 }
                 break;
             case ARGUMENT:
@@ -136,21 +140,23 @@ nz_rc nz_next_type_arg(const char * string, const char ** pos, const char ** sta
                         if(angle_brackets == 0) {
                             *length = *pos - *start - trailing_whitespace;
                             (*pos)++;
-                            return NZ_SUCCESS;
-                        } else NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_PARSE, strdup(string));
+                            return SUCCESS;
+                        } else return UNMATCHED_OPEN;
                     case '\0':
                         if(angle_brackets == 0) {
                             *length = *pos - *start - trailing_whitespace;
                             *pos = NULL;
-                            return NZ_SUCCESS;
-                        } else NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_PARSE, strdup(string));
-                    case '<':
-                        angle_brackets++;
-                        break;
-                    case '>':
-                        if(angle_brackets == 0) NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_PARSE, strdup(string));
-                        angle_brackets--;
-                        break;
+                            return SUCCESS;
+                        } else return UNMATCHED_OPEN;
+                    default:
+                        if(**pos == open) {
+                            angle_brackets++;
+                            break;
+                        } else if(**pos == close) {
+                            if(angle_brackets == 0) return UNMATCHED_CLOSE;
+                            angle_brackets--;
+                            break;
+                        }
                 }
                 break;
             case IN_STRING:
@@ -162,13 +168,13 @@ nz_rc nz_next_type_arg(const char * string, const char ** pos, const char ** sta
                         state = IN_STRING_ESCAPE;
                         break;
                     case '\0':
-                        NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_PARSE, strdup(string));
+                        return UNMATCHED_QUOTE;
                 }
                 break;
             case IN_STRING_ESCAPE:
                 switch(**pos) {
                     case '\0':
-                        NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_PARSE, strdup(string));
+                        return UNMATCHED_QUOTE;
                     default:
                         state = IN_STRING;
                         break;
@@ -183,6 +189,16 @@ nz_rc nz_next_type_arg(const char * string, const char ** pos, const char ** sta
         }
         (*pos)++;
     }
+}
+
+nz_rc nz_next_type_arg(const char * string, const char ** pos, const char ** start, size_t * length) {
+    if(next_arg(string, pos, start, length, '<', '>') != SUCCESS) NZ_RETURN_ERR_MSG(NZ_TYPE_ARG_PARSE, strdup(string));
+    return NZ_SUCCESS;
+}
+
+nz_rc nz_next_list_arg(const char * string, const char ** pos, const char ** start, size_t * length) {
+    if(next_arg(string, pos, start, length, '{', '}') != SUCCESS) NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_PARSE, strdup(string));
+    return NZ_SUCCESS;
 }
 
 // --
@@ -208,7 +224,7 @@ static nz_rc chunk_type_init_obj(const nz_type_p type_p, nz_obj_p obj_p, const c
     a = malloc(sizeof(double) * nz_chunk_size);
     if(a == NULL) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
 
-    if(string[0] != '{') NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_PARSE, "%s", string);
+    if(string[0] != '{') NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_PARSE, strdup(string));
     string += 1;
 
     for(size_t i = 0; i < nz_chunk_size; i++)
@@ -216,14 +232,14 @@ static nz_rc chunk_type_init_obj(const nz_type_p type_p, nz_obj_p obj_p, const c
         result = sscanf(string, " %lf %n", &a[i], &n);
         if(result != 1) {
             free(a);
-            NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_PARSE, "%s", string);
+            NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_PARSE, strdup(string));
         }
         string += n;
     }
 
     if(string[0] != '}' || string[1] != '\0') {
         free(a);
-        NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_PARSE, "%s", string);
+        NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_PARSE, strdup(string));
     }
 
     memcpy((double *)obj_p, a, sizeof(double) * nz_chunk_size);
@@ -299,6 +315,8 @@ DECLARE_TYPECLASS(string)
 // Array
 nz_rc array_type_create_args(nz_type_p * type_pp, size_t size, const struct nz_typeclass * typeclass_p, const nz_type_p type_p)
 {
+    if(size == 0) NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_VALUE, strdup("0"));
+
     struct nz_array_type * array_type_p = malloc(sizeof(struct nz_array_type));
     if(array_type_p == NULL) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
 
@@ -408,7 +426,7 @@ static nz_rc array_type_init_obj(const nz_type_p type_p, nz_obj_p obj_p, const c
     // CTYPE a;
     // int n;
     // int result = sscanf(string, FORMAT_STR "%n", &a, &n);
-    // if(result != 1 || n < 0 || string[n] != '\0') NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_PARSE, "%s", string);
+    // if(result != 1 || n < 0 || string[n] != '\0') NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_PARSE, strdup(string));
     // *(CTYPE *)obj_p = a;
     // return NZ_SUCCESS;
 }
