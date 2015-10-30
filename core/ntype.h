@@ -5,6 +5,8 @@
 
 #include "core/error.h"
 
+struct nz_context;
+
 // nz_obj * is a void pointer. It points to the actual data of a noise object. Its contents vary based on
 // what kind of noise object it is pointing to. It contains no meta-data about the object, such as its
 // type or methods to operate on it. This makes it very lightweight. For example, for a noise "double",
@@ -27,7 +29,7 @@ typedef void nz_type;
 struct nz_typeclass {
     // Static members
     const char* type_id;
-    nz_rc (*type_create)      (nz_type * * type_pp, const char * string);
+    nz_rc (*type_create)      (const struct nz_context * context_p, nz_type ** type_pp, const char * string);
 
     // Class methods
     void  (*type_destroy)     (nz_type * type_p);
@@ -123,40 +125,44 @@ struct nz_typeclass {
 // common patterns (see below.)
 
 // --
+// Needed by context system
 
-nz_rc nz_init_type_system();
-nz_rc nz_register_typeclass(struct nz_typeclass const * typeclass_p);
-void nz_deinit_type_system();
+nz_rc nz_init_type_system(struct nz_context * context);
+nz_rc nz_register_typeclass(struct nz_context * context, struct nz_typeclass const * typeclass_p);
+void nz_deinit_type_system(struct nz_context * context);
+nz_rc nz_init_types(struct nz_context * context);
 
-nz_rc nz_type_create(const struct nz_typeclass ** typeclass_pp, nz_type ** type_pp, const char * string);
+// --
+// Needed by block system
+
+nz_rc nz_type_create(const struct nz_context * context_p, const struct nz_typeclass ** typeclass_pp, nz_type ** type_pp, const char * string);
 
 int nz_types_are_equal(const struct nz_typeclass * typeclass_p,       const nz_type * type_p,
                        const struct nz_typeclass * other_typeclass_p, const nz_type * other_type_p);
 
-nz_rc nz_init_types();
-
 // --
-
-extern const struct nz_typeclass nz_int_typeclass;
-extern const struct nz_typeclass nz_long_typeclass;
-extern const struct nz_typeclass nz_real_typeclass;
-extern const struct nz_typeclass nz_string_typeclass;
-extern const struct nz_typeclass nz_chunk_typeclass;
-extern const struct nz_typeclass nz_sample_typeclass;
-extern const struct nz_typeclass nz_array_typeclass;
-extern const struct nz_typeclass nz_vector_typeclass;
-//extern const struct nz_typeclass nz_note_vector_type;
-
-nz_rc nz_array_type_init(nz_type * type_p, int n, const struct nz_typeclass * inner_typeclass_p, nz_type * inner_type_p);
-nz_rc nz_vector_type_init(nz_type * type_p, const struct nz_typeclass * inner_typeclass_p, nz_type * inner_type_p);
+// Needed by type system
 
 #define NZ_NULL_STR "NULL"
 
+//extern const struct nz_typeclass nz_int_typeclass;
+//extern const struct nz_typeclass nz_long_typeclass;
+//extern const struct nz_typeclass nz_real_typeclass;
+//extern const struct nz_typeclass nz_string_typeclass;
+//extern const struct nz_typeclass nz_chunk_typeclass;
+//extern const struct nz_typeclass nz_sample_typeclass;
+//extern const struct nz_typeclass nz_array_typeclass;
+//extern const struct nz_typeclass nz_vector_typeclass;
+//extern const struct nz_typeclass nz_note_vector_type;
+
+//nz_rc nz_array_type_init(nz_type * type_p, int n, const struct nz_typeclass * inner_typeclass_p, nz_type * inner_type_p);
+//nz_rc nz_vector_type_init(nz_type * type_p, const struct nz_typeclass * inner_typeclass_p, nz_type * inner_type_p);
+
 // -
-// Method definition helper macros
+// Method definition helper macros needed by type system
 
 #define GEN_SIMPLE_TYPE_FNS(NAME) \
-static nz_rc NAME ## _type_create (nz_type ** type_pp, const char * string) {\
+static nz_rc NAME ## _type_create (const struct nz_context * context_p, nz_type ** type_pp, const char * string) {\
     if(string != NULL) NZ_RETURN_ERR_MSG(NZ_UNEXPECTED_TYPE_ARGS, strdup(string)); \
     *type_pp = NULL; \
     return NZ_SUCCESS; \
@@ -227,6 +233,6 @@ struct nz_array_type {
     const nz_type * type_p;
 };
 
-nz_rc array_type_create_args(nz_type * * type_pp, size_t size, const struct nz_typeclass * typeclass_p, const nz_type * type_p);
+nz_rc array_type_create_args(nz_type ** type_pp, size_t size, const struct nz_typeclass * typeclass_p, const nz_type * type_p);
 
 #endif

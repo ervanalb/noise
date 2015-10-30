@@ -1,5 +1,4 @@
-#if 0
-//#ifndef __CORE_BLOCK_H__
+#ifndef __CORE_BLOCK_H__
 #define __CORE_BLOCK_H__
 
 #include <stddef.h>
@@ -8,87 +7,47 @@
 #include "core/ntype.h"
 #include "core/util.h"
 
-typedef void* nz_block_state;
-
 struct nz_block;
 
+typedef void nz_block_state;
+typedef nz_obj * pull_fn(struct nz_block self);
+
 struct nz_block {
-    nz_block_state     block_state_p;
-    pull_fn_pt       * block_upstream_pull_fn_p_array;
+    nz_block_state *   block_state_p;
+    const pull_fn **   block_upstream_pull_fn_p_array;
     struct nz_block ** block_upstream_p_array;
-}
+};
+
+struct nz_block_info {
+    int                    n_inputs;
+    int                    n_outputs;
+    const char **          block_input_name_array;
+    const char **          block_output_name_array;
+    struct nz_typeclass ** block_input_typeclass_p_array;
+    nz_type **             block_input_type_p_array;
+    struct nz_typeclass ** block_output_typeclass_p_array;
+    nz_type **             block_output_type_p_array;
+};
 
 struct nz_blockclass {
-     // Static members
-    const char* block_id;
-    nz_rc (*block_create)         (nz_block_state_p * block_state_pp, const char * string);
+    // Static members
+    const char * block_id;
+    nz_rc (*block_create)         (nz_block_state ** state_pp, struct nz_block_info * info_p, const char * string);
 
     // Instance methods
-    void   (*block_destroy)       (nz_type_p type_p);
-    nz_rc  (*block_str)           (const nz_type_p type_p, char ** string);
-    nz_rc  (*block_connect_input) (const nz_type_p type_p, nz_obj_p * obj_pp);
-    nz_rc  (*block_disconnect)    (const nz_type_p type_p, nz_obj_p * obj_pp);
-}
-
-struct nz_port {
-    struct nz_node * port_node;
-    enum nz_pull_rc (*port_pull)(struct nz_port * port);
-    nz_obj_p port_value; 
-
-    const struct nz_type * port_type;
-    char * port_name;
+    void   (*block_destroy)       (nz_block_state * state_p);
+    nz_rc  (*block_to_str)        (nz_block_state * state_p, char ** string);
+    nz_rc  (*block_from_str)      (nz_block_state * state_p, const char * string);
 };
 
-struct nz_inport {
-    const struct nz_type * inport_type;
-    char * inport_name;
-    struct nz_port * inport_connection;
-};
+void free_block_info(struct nz_block_info * info_p);
 
-struct nz_node {
-    char * node_name;
-    void (*node_term)(struct nz_node * node);
+nz_rc nz_init_block_system();
+nz_rc nz_register_blockclass(struct nz_blockclass const * blockclass_p);
+void nz_deinit_block_system();
 
-    void * node_state;
+nz_rc nz_block_create(const struct nz_blockclass ** blockclass_pp, nz_block_state ** state_pp, const char * string);
 
-    size_t node_n_inputs;
-    struct nz_inport * node_inputs;
+nz_rc nz_init_blocks();
 
-    size_t node_n_outputs;
-    struct nz_port * node_outputs;
-
-    struct {
-        int flag_can_copy:1;
-        int flag_pure:1;
-        //int flag_visited:1;
-    } node_flags;
-};
-
-// Helper function to allocate arrays of input & output ports
-int nz_node_alloc_ports(struct nz_node * node, size_t n_inputs, size_t n_outputs);
-//struct nz_node * nz_node_dup(const struct nz_node * src);
-
-void nz_node_term_generic(struct nz_node * node);
-void nz_node_term_generic_objstate(struct nz_node * node);
-void nz_node_free_ports(struct nz_node * node);
-
-void nz_node_term(struct nz_node * node);
-
-// Get the name of a node, caller owns the resulting pointer
-char * nz_node_str(struct nz_node * node);
-
-// Connect blocks & pull
-int nz_port_connect(struct nz_inport * input, struct nz_port * nz_output);
-int nz_node_connect(struct nz_node* input, size_t in_idx, struct nz_node * output, size_t out_idx);
-
-// These two don't seem that important
-#define NZ_NODE_INPUT(node, idx) ((node)->node_inputs[(idx)].inport_connection->port_value)
-#define NZ_NODE_OUTPUT(node, idx) ((node)->node_outputs[(idx)].port_value)
-
-// Useful sugar
-#define NZ_NODE_PULL(node, idx) nz_port_pull((node)->node_inputs[(idx)].inport_connection)
-
-nz_obj_p nz_port_pull(struct nz_port * port);
-// Use the macro if you can
-nz_obj_p nz_node_pull(struct nz_node * node, size_t idx);
 #endif

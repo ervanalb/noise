@@ -4,6 +4,7 @@
 OBJECTS = \
         core/util.o \
 		core/error.o \
+        core/context.o \
 		core/ntype.o \
 #		core/block.o \
 #		core/note.o \
