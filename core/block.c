@@ -1,145 +1,97 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "noise.h"
 #include "core/block.h"
-#include "core/ntype.h"
 #include "core/util.h"
 
-#pragma weak nz_chunk_size
-#pragma weak nz_frame_rate
-const size_t nz_chunk_size = 128;
-const double nz_frame_rate = 44100;
-
-int nz_node_alloc_ports(struct nz_node * node, size_t n_inputs, size_t n_outputs) {
-    assert(node);
-
-    // Set up inputs array
-    node->node_n_inputs = n_inputs;
-    node->node_inputs = calloc(n_inputs, sizeof(*node->node_inputs));
-    if (node->node_inputs == NULL) goto fail;
-
-    // Set up outputs array
-    node->node_n_outputs = n_outputs;
-    node->node_outputs = calloc(n_outputs, sizeof(*node->node_outputs));
-    if (node->node_outputs == NULL) goto fail;
-
-    return 0;
-fail:
-    free(node->node_inputs);
-    free(node->node_outputs);
-    return (errno = ENOMEM, -1);
-}
-
-void nz_node_free_ports(struct nz_node * node) {
-    for (size_t i = 0; i < node->node_n_inputs; i++) {
-        free(node->node_inputs[i].inport_name);
+void free_block_info(struct nz_block_info * info_p) {
+    // Destroy types
+    for(size_t i = 0; i < info_p->block_n_inputs; i++) {
+        info_p->block_input_typeclass_p_array[i]->type_destroy(info_p->block_input_type_p_array[i]);
     }
 
-    for (size_t i = 0; i < node->node_n_outputs; i++) {
-        free(node->node_outputs[i].port_name); 
+    for(size_t i = 0; i < info_p->block_n_outputs; i++) {
+        info_p->block_output_typeclass_p_array[i]->type_destroy(info_p->block_output_type_p_array[i]);
     }
 
-    free(node->node_inputs);
-    free(node->node_name);
+    // Free strings and arrays
+    free(info_p->block_input_name_array);
+    free(info_p->block_output_name_array);
+    free(info_p->block_input_typeclass_p_array);
+    free(info_p->block_input_type_p_array);
+    free(info_p->block_output_typeclass_p_array);
+    free(info_p->block_output_type_p_array);
+    free(info_p->block_pull_fn_p_array);
 }
 
-/*
-void nz_node_term_generic(struct nz_node * node) {
-    nz_node_free_ports(node);
-    free(node->node_state);
+// --
+
+nz_rc nz_init_block_system(struct nz_context * context_p) {
+    context_p->n_registered_blockclasses = 0;
+    context_p->registered_blockclass_capacity = 16;
+    context_p->registered_blockclasses = calloc(context_p->registered_blockclass_capacity, sizeof(struct nz_blockclass *));
+    if(context_p->registered_blockclasses == NULL) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
+    return NZ_SUCCESS;
 }
 
-void nz_node_term_generic_objstate(struct nz_node * node) {
-    nz_node_free_ports(node);
-    nz_obj_destroy((nz_obj_p*) &node->node_state);
-}
-*/
-
-/*
-// Return a copy of the node, *and* any input connections
-// If flags.can_copy is set, node->node_state must be NULL or an object_t
-struct nz_node * node_dup(const node_t * src) {
-    if (src == NULL || !src->node_flags.flag_can_copy) return (errno = EINVAL, NULL);
-
-    node_t * dst = calloc(1, sizeof(*dst));
-    if (dst == NULL) return (errno = ENOMEM, NULL);
-
-    int rc = node_alloc_connections(dst, src->node_n_inputs, src->node_n_outputs);
-    if (rc != 0) goto fail;
-
-    dst->node_name = src->node_name;
-    dst->node_term = src->node_term;
-
-    // Copy inputs & outputs
-    memcpy(dst->node_inputs, src->node_inputs, sizeof(*src->node_inputs) * src->node_n_inputs);
-    memcpy(dst->node_outputs, src->node_outputs, sizeof(*src->node_outputs) * src->node_n_outputs);
-
-    // Copy state
-    if (src->node_state != NULL) {
-        dst->node_state = object_dup(src->node_state);
-        if (dst->node_state == NULL) goto fail;
+nz_rc nz_register_blockclass(struct nz_context * context_p, struct nz_blockclass const * blockclass_p) {
+    if(context_p->n_registered_blockclasses < context_p->registered_blockclass_capacity) {
+        context_p->registered_blockclass_capacity *= 2;
+        struct nz_blockclass const ** newptr =  realloc(context_p->registered_blockclasses, context_p->registered_blockclass_capacity * sizeof(struct nz_blockclass *));
+        if(newptr == NULL) {
+            free(context_p->registered_blockclasses);
+            NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
+        }
+        context_p->registered_blockclasses = newptr;
     }
 
-    return dst;
+    context_p->registered_blockclasses[context_p->n_registered_blockclasses] = blockclass_p;
+    context_p->n_registered_blockclasses++;
 
-fail:
-    free(dst->node_inputs);
-    free(dst->node_outputs);
-    object_free(dst->node_state);
-    free(dst);
-    return NULL;
-}
-*/
-
-void nz_node_term(struct nz_node * node) {
-    if (node == NULL) return;
-    if (node->node_term) node->node_term(node);
+    return NZ_SUCCESS;
 }
 
-// 
-
-char * nz_node_str(struct nz_node * node) {
-    if(node == NULL) return NULL;
-    if(node->node_name == NULL) return NULL;
-    return strdup(node->node_name);
+void nz_deinit_block_system(struct nz_context * context_p) {
+    free(context_p->registered_blockclasses);
 }
 
-int nz_port_connect(struct nz_inport * input, struct nz_port * output) {
-    if (!nz_type_compatible(output->port_type, input->inport_type))
-        return (errno = EINVAL, -errno);
-
-    input->inport_connection = output;
-    return 0;
+nz_rc nz_init_blocks(struct nz_context * context_p) {
+    return NZ_SUCCESS;
 }
 
-int nz_node_connect(struct nz_node * input, size_t in_idx, struct nz_node * output, size_t out_idx){
-    return nz_port_connect(&input->node_inputs[in_idx], &output->node_outputs[out_idx]);
-}
+// --
 
-
-//
-
-nz_obj_p nz_port_pull(struct nz_port * port) {
-    if (port == NULL)
-        return (errno = EINVAL, NULL);
-
-    assert(port->port_pull);
-    enum nz_pull_rc rc = port->port_pull(port);
-
-    switch(rc) {
-        case NZ_PULL_RC_ERROR:
-            // TODO: log errors or something?
-            return NULL;
-        case NZ_PULL_RC_NULL:
-            return NULL;
-        case NZ_PULL_RC_OBJECT:
-            return port->port_value;
-        default:
-            assert(0);
+nz_rc nz_block_create(struct nz_context * context_p, const struct nz_blockclass ** blockclass_pp, nz_block_state ** state_pp, struct nz_block_info * block_info_p, const char * string) {
+    for(size_t i = 0; i < context_p->n_registered_blockclasses; i++) {
+        size_t c = 0;
+        const char * block_id = context_p->registered_blockclasses[i]->block_id;
+        size_t len = strlen(string);
+        for(;;) {
+            if(block_id[c] == '\0') {
+                if(string[c] == '\0') {
+                    // Match, no args
+                    *blockclass_pp = context_p->registered_blockclasses[i];
+                    return (*blockclass_pp)->block_create(context_p, state_pp, block_info_p, NULL);
+                } else if(string[c] == '(' && string[len - 1] == ')') {
+                    // Match, args
+                    char * args = strndup(&(string[c + 1]), len - 2 - c);
+                    if(args == NULL) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
+                    *blockclass_pp = context_p->registered_blockclasses[i];
+                    nz_rc rc = (*blockclass_pp)->block_create(context_p, state_pp, block_info_p, args);
+                    free(args);
+                    return rc;
+                } else {
+                    break; // No match, block ended early
+                }
+            } else if(string[c] == '\0') {
+                break; // No match, string ended early
+            } else if(string[c] == block_id[c]) {
+                c++;
+            } else {
+                break;
+            }
+        }
     }
-}
 
-nz_obj_p nz_node_pull(struct nz_node * node, size_t idx) {
-    return nz_port_pull(node->node_inputs[idx].inport_connection);
+    NZ_RETURN_ERR(NZ_BLOCK_NOT_FOUND);
 }

@@ -52,8 +52,7 @@ int nz_types_are_equal(const struct nz_typeclass * typeclass_p,       const nz_t
 }
 
 nz_rc nz_type_create(const struct nz_context * context_p, const struct nz_typeclass ** typeclass_pp, nz_type ** type_pp, const char * string) {
-    for(size_t i = 0; i < context_p->n_registered_typeclasses; i++)
-    {
+    for(size_t i = 0; i < context_p->n_registered_typeclasses; i++) {
         size_t c = 0;
         const char * type_id = context_p->registered_typeclasses[i]->type_id;
         size_t len = strlen(string);

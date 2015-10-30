@@ -6,7 +6,7 @@ OBJECTS = \
 		core/error.o \
         core/context.o \
 		core/ntype.o \
-#		core/block.o \
+		core/block.o \
 #		core/note.o \
 #		blocks/audio/compressor.o \
 #		blocks/audio/function_gen.o \

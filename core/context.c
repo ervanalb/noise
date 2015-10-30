@@ -19,10 +19,24 @@ nz_rc nz_create_context(struct nz_context ** context_pp) {
         free(*context_pp);
         return rc;
     }
-    return NZ_SUCCESS;
+    rc = nz_init_block_system(*context_pp);
+    if(rc != NZ_SUCCESS) {
+        nz_deinit_type_system(*context_pp);
+        free(*context_pp);
+        return rc;
+    }
+    rc = nz_init_blocks(*context_pp);
+    if(rc != NZ_SUCCESS) {
+        nz_deinit_type_system(*context_pp);
+        nz_deinit_block_system(*context_pp);
+        free(*context_pp);
+        return rc;
+    }
+     return NZ_SUCCESS;
 }
 
 void nz_destroy_context(struct nz_context * context_p) {
     nz_deinit_type_system(context_p);
+    nz_deinit_block_system(context_p);
     free(context_p);
 }

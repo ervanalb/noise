@@ -11,6 +11,7 @@
     DECLARE_ERROR(NZ_TYPE_ARG_PARSE) \
     DECLARE_ERROR(NZ_OBJ_ARG_PARSE) \
     DECLARE_ERROR(NZ_OBJ_ARG_VALUE) \
+    DECLARE_ERROR(NZ_BLOCK_NOT_FOUND) \
 
 // Errors are passed through this return code object:
 #define DECLARE_ERROR(X) X ,

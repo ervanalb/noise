@@ -3,9 +3,10 @@
 
 #include <stddef.h>
 
-#include "noise.h"
-#include "core/ntype.h"
+#include "core/error.h"
 #include "core/util.h"
+#include "core/ntype.h"
+#include "core/context.h"
 
 struct nz_block;
 
@@ -19,8 +20,8 @@ struct nz_block {
 };
 
 struct nz_block_info {
-    int                    block_n_inputs;
-    int                    block_n_outputs;
+    size_t                 block_n_inputs;
+    size_t                 block_n_outputs;
     const char **          block_input_name_array;
     const char **          block_output_name_array;
     struct nz_typeclass ** block_input_typeclass_p_array;
@@ -33,12 +34,10 @@ struct nz_block_info {
 struct nz_blockclass {
     // Static members
     const char * block_id;
-    nz_rc (*block_create)         (nz_block_state ** state_pp, struct nz_block_info * info_p, const char * string);
+    nz_rc (*block_create)         (struct nz_context * context, nz_block_state ** state_pp, struct nz_block_info * info_p, const char * string);
 
     // Instance methods
     void   (*block_destroy)       (nz_block_state * state_p);
-    nz_rc  (*block_to_str)        (nz_block_state * state_p, char ** string);
-    nz_rc  (*block_from_str)      (nz_block_state * state_p, const char * string);
 };
 
 void free_block_info(struct nz_block_info * info_p);
@@ -53,6 +52,6 @@ nz_rc nz_init_blocks(struct nz_context * context_p);
 
 // --
 
-nz_rc nz_block_create(struct nz_context * context_p, const struct nz_blockclass ** blockclass_pp, nz_block_state ** state_pp, const char * string);
+nz_rc nz_block_create(struct nz_context * context_p, const struct nz_blockclass ** blockclass_pp, nz_block_state ** state_pp, struct nz_block_info * info_p, const char * string);
 
 #endif
