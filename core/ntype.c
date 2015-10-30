@@ -7,6 +7,14 @@
 #include "core/ntype.h"
 #include "core/util.h"
 
+struct nz_array_type {
+    size_t size;
+    const struct nz_typeclass * typeclass_p;
+    const nz_type * type_p;
+};
+
+nz_rc array_type_create_args(nz_type ** type_pp, size_t size, const struct nz_typeclass * typeclass_p, const nz_type * type_p);
+
 nz_rc nz_init_type_system(struct nz_context * context_p) {
     context_p->n_registered_typeclasses = 0;
     context_p->registered_typeclass_capacity = 16;

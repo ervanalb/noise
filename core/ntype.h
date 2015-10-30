@@ -145,22 +145,6 @@ int nz_types_are_equal(const struct nz_typeclass * typeclass_p,       const nz_t
 
 #define NZ_NULL_STR "NULL"
 
-//extern const struct nz_typeclass nz_int_typeclass;
-//extern const struct nz_typeclass nz_long_typeclass;
-//extern const struct nz_typeclass nz_real_typeclass;
-//extern const struct nz_typeclass nz_string_typeclass;
-//extern const struct nz_typeclass nz_chunk_typeclass;
-//extern const struct nz_typeclass nz_sample_typeclass;
-//extern const struct nz_typeclass nz_array_typeclass;
-//extern const struct nz_typeclass nz_vector_typeclass;
-//extern const struct nz_typeclass nz_note_vector_type;
-
-//nz_rc nz_array_type_init(nz_type * type_p, int n, const struct nz_typeclass * inner_typeclass_p, nz_type * inner_type_p);
-//nz_rc nz_vector_type_init(nz_type * type_p, const struct nz_typeclass * inner_typeclass_p, nz_type * inner_type_p);
-
-// -
-// Method definition helper macros needed by type system
-
 #define GEN_SIMPLE_TYPE_FNS(NAME) \
 static nz_rc NAME ## _type_create (const struct nz_context * context_p, nz_type ** type_pp, const char * string) {\
     if(string != NULL) NZ_RETURN_ERR_MSG(NZ_UNEXPECTED_TYPE_ARGS, strdup(string)); \
@@ -227,12 +211,4 @@ DECLARE_TYPECLASS(NAME) \
 // --
 
 // Type-specific helpers
-struct nz_array_type {
-    size_t size;
-    const struct nz_typeclass * typeclass_p;
-    const nz_type * type_p;
-};
-
-nz_rc array_type_create_args(nz_type ** type_pp, size_t size, const struct nz_typeclass * typeclass_p, const nz_type * type_p);
-
 #endif

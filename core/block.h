@@ -42,12 +42,16 @@ struct nz_blockclass {
 
 void free_block_info(struct nz_block_info * info_p);
 
-nz_rc nz_init_block_system();
-nz_rc nz_register_blockclass(struct nz_blockclass const * blockclass_p);
-void nz_deinit_block_system();
+// --
+// Needed by context
 
-nz_rc nz_block_create(const struct nz_blockclass ** blockclass_pp, nz_block_state ** state_pp, const char * string);
+nz_rc nz_init_block_system(struct nz_context * context_p);
+nz_rc nz_register_blockclass(struct nz_context * context_p, struct nz_blockclass const * blockclass_p);
+void nz_deinit_block_system(struct nz_context * context_p);
+nz_rc nz_init_blocks(struct nz_context * context_p);
 
-nz_rc nz_init_blocks();
+// --
+
+nz_rc nz_block_create(struct nz_context * context_p, const struct nz_blockclass ** blockclass_pp, nz_block_state ** state_pp, const char * string);
 
 #endif
