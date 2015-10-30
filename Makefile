@@ -8,6 +8,7 @@ OBJECTS = \
 		core/ntype.o \
 		core/ntypes.o \
 		core/block.o \
+        core/graph.o \
 #		core/note.o \
 #		blocks/audio/compressor.o \
 #		blocks/audio/function_gen.o \
