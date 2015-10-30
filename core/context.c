@@ -1,6 +1,7 @@
 #include "core/context.h"
 #include "core/error.h"
 #include "core/ntype.h"
+#include "core/ntypes.h"
 #include "core/block.h"
 #include "core/util.h"
 

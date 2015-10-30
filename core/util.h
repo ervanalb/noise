@@ -13,6 +13,8 @@
     #define M_PI 3.14159265358979323846
 #endif
 
+#include "core/error.h" // is this one ok?
+
 struct strbuf {
     size_t len;
     size_t capacity;
@@ -37,5 +39,12 @@ char * rsprintf(const char * fmt, ...) __attribute__ ((format (printf, 1, 2)));
 // --
 
 double nz_note_to_freq(double note);
+
+// --
+// Comma-separated list parsing
+
+nz_rc nz_next_type_arg(const char * string, const char ** pos, const char ** start, size_t * length);
+nz_rc nz_next_list_arg(const char * string, const char ** pos, const char ** start, size_t * length);
+nz_rc nz_next_block_arg(const char * string, const char ** pos, const char ** start, size_t * length);
 
 #endif

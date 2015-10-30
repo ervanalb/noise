@@ -130,7 +130,6 @@ struct nz_typeclass {
 nz_rc nz_init_type_system(struct nz_context * context);
 nz_rc nz_register_typeclass(struct nz_context * context, struct nz_typeclass const * typeclass_p);
 void nz_deinit_type_system(struct nz_context * context);
-nz_rc nz_init_types(struct nz_context * context);
 
 // --
 // Needed by block system
@@ -208,7 +207,4 @@ GEN_SHALLOW_COPY_FN(NAME, sizeof(CTYPE)) \
 GEN_PRIMITIVE_STRING_FNS(NAME, CTYPE, FORMAT_STR) \
 DECLARE_TYPECLASS(NAME) \
 
-// --
-
-// Type-specific helpers
 #endif
