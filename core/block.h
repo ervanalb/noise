@@ -19,14 +19,15 @@ struct nz_block {
 };
 
 struct nz_block_info {
-    int                    n_inputs;
-    int                    n_outputs;
+    int                    block_n_inputs;
+    int                    block_n_outputs;
     const char **          block_input_name_array;
     const char **          block_output_name_array;
     struct nz_typeclass ** block_input_typeclass_p_array;
     nz_type **             block_input_type_p_array;
     struct nz_typeclass ** block_output_typeclass_p_array;
     nz_type **             block_output_type_p_array;
+    const pull_fn **       block_pull_fn_p_array;
 };
 
 struct nz_blockclass {
