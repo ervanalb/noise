@@ -1,4 +1,5 @@
-#ifndef __CORE_BLOCK_H__
+#if 0
+//#ifndef __CORE_BLOCK_H__
 #define __CORE_BLOCK_H__
 
 #include <stddef.h>
@@ -7,16 +8,27 @@
 #include "core/ntype.h"
 #include "core/util.h"
 
-struct nz_node;
-struct nz_port;
+typedef void* nz_block_state;
 
-enum nz_pull_rc {
-    NZ_PULL_RC_ERROR  = -1,
-    NZ_PULL_RC_NULL   = 0,
-    NZ_PULL_RC_OBJECT = 1,
-};
+struct nz_block;
 
-// Block instances are nodes
+struct nz_block {
+    nz_block_state     block_state_p;
+    pull_fn_pt       * block_upstream_pull_fn_p_array;
+    struct nz_block ** block_upstream_p_array;
+}
+
+struct nz_blockclass {
+     // Static members
+    const char* block_id;
+    nz_rc (*block_create)         (nz_block_state_p * block_state_pp, const char * string);
+
+    // Instance methods
+    void   (*block_destroy)       (nz_type_p type_p);
+    nz_rc  (*block_str)           (const nz_type_p type_p, char ** string);
+    nz_rc  (*block_connect_input) (const nz_type_p type_p, nz_obj_p * obj_pp);
+    nz_rc  (*block_disconnect)    (const nz_type_p type_p, nz_obj_p * obj_pp);
+}
 
 struct nz_port {
     struct nz_node * port_node;

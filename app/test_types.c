@@ -1,5 +1,6 @@
 #include "noise.h"
 #include <stdio.h>
+#include <stdlib.h>
 
 const size_t nz_chunk_size = 128;
 
@@ -7,9 +8,9 @@ nz_rc run()
 {
     nz_rc rc = NZ_SUCCESS;
     const struct nz_typeclass * my_typeclass;
-    nz_type_p my_type;
-    nz_obj_p my_obj;
-    char* string;
+    nz_type * my_type;
+    nz_obj * my_obj;
+    char * string;
 
     if((rc = nz_init_type_system()) == NZ_SUCCESS)
     {

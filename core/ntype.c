@@ -40,14 +40,14 @@ void nz_deinit_type_system() {
     free(registered_typeclasses);
 }
 
-int nz_types_are_equal(const struct nz_typeclass * typeclass_p,       const nz_type_p type_p,
-                       const struct nz_typeclass * other_typeclass_p, const nz_type_p other_type_p)
+int nz_types_are_equal(const struct nz_typeclass * typeclass_p,       const nz_type * type_p,
+                       const struct nz_typeclass * other_typeclass_p, const nz_type * other_type_p)
 {
     if(strcmp(typeclass_p->type_id, other_typeclass_p->type_id)) return 0;
     return typeclass_p->type_is_equal(type_p, other_type_p);
 }
 
-nz_rc nz_type_create(const struct nz_typeclass ** typeclass_pp, nz_type_p * type_pp, const char * string) {
+nz_rc nz_type_create(const struct nz_typeclass ** typeclass_pp, nz_type ** type_pp, const char * string) {
     for(size_t i = 0; i < n_registered_typeclasses; i++)
     {
         size_t c = 0;
@@ -216,7 +216,7 @@ GEN_SIMPLE_TYPE_FNS(chunk)
 GEN_STATIC_OBJ_FNS(chunk, (sizeof(double) * nz_chunk_size)) // TODO: malloc might result in unaligned??
 GEN_SHALLOW_COPY_FN(chunk, (sizeof(double) * nz_chunk_size))
 
-static nz_rc chunk_type_init_obj(const nz_type_p type_p, nz_obj_p obj_p, const char * string) {
+static nz_rc chunk_type_init_obj(const nz_type * type_p, nz_obj * obj_p, const char * string) {
     double * a;
     int n;
     int result;
@@ -248,7 +248,7 @@ static nz_rc chunk_type_init_obj(const nz_type_p type_p, nz_obj_p obj_p, const c
     return NZ_SUCCESS;
 }
 
-static nz_rc chunk_type_str_obj(const nz_type_p type_p, const nz_obj_p obj_p, char ** string) {
+static nz_rc chunk_type_str_obj(const nz_type * type_p, const nz_obj * obj_p, char ** string) {
     struct strbuf buf;
     char* str = strbuf_alloc(&buf);
 
@@ -271,7 +271,7 @@ DECLARE_TYPECLASS(chunk)
 GEN_SIMPLE_TYPE_FNS(string)
 GEN_STATIC_OBJ_FNS(string, sizeof(char *))
 
-static nz_rc string_type_copy_obj(const nz_type_p type_p, nz_obj_p dst_p, const nz_obj_p src_p) {
+static nz_rc string_type_copy_obj(const nz_type * type_p, nz_obj * dst_p, const nz_obj * src_p) {
     char * src = *(char **)(src_p);
 
     if(!src)
@@ -290,7 +290,7 @@ static nz_rc string_type_copy_obj(const nz_type_p type_p, nz_obj_p dst_p, const 
     return NZ_SUCCESS;
 }
 
-static nz_rc string_type_init_obj(const nz_type_p type_p, nz_obj_p obj_p, const char * string) {
+static nz_rc string_type_init_obj(const nz_type * type_p, nz_obj * obj_p, const char * string) {
     free(*(char **)obj_p);
     *(char **)obj_p = NULL;
 
@@ -301,7 +301,7 @@ static nz_rc string_type_init_obj(const nz_type_p type_p, nz_obj_p obj_p, const 
     return NZ_SUCCESS;
 }
 
-static nz_rc string_type_str_obj(const nz_type_p type_p, const nz_obj_p obj_p, char ** string) {
+static nz_rc string_type_str_obj(const nz_type * type_p, const nz_obj * obj_p, char ** string) {
     char* str = strdup(*(char **)obj_p);
 
     if(!str) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
@@ -313,7 +313,7 @@ static nz_rc string_type_str_obj(const nz_type_p type_p, const nz_obj_p obj_p, c
 DECLARE_TYPECLASS(string)
 
 // Array
-nz_rc array_type_create_args(nz_type_p * type_pp, size_t size, const struct nz_typeclass * typeclass_p, const nz_type_p type_p)
+nz_rc array_type_create_args(nz_type ** type_pp, size_t size, const struct nz_typeclass * typeclass_p, const nz_type * type_p)
 {
     if(size == 0) NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_VALUE, strdup("0"));
 
@@ -329,7 +329,7 @@ nz_rc array_type_create_args(nz_type_p * type_pp, size_t size, const struct nz_t
     return NZ_SUCCESS;
 }
 
-static nz_rc array_type_create(nz_type_p * type_pp, const char * string) {
+static nz_rc array_type_create(nz_type ** type_pp, const char * string) {
     if(string == NULL) NZ_RETURN_ERR(NZ_EXPECTED_TYPE_ARGS);
 
     const char * pos = string;
@@ -354,7 +354,7 @@ static nz_rc array_type_create(nz_type_p * type_pp, const char * string) {
     if(rc != NZ_SUCCESS) return rc;
     char * type_str = strndup(start, length);
     const struct nz_typeclass * element_typeclass_p;
-    nz_type_p element_type_p;
+    nz_type * element_type_p;
     rc = nz_type_create(&element_typeclass_p, &element_type_p, type_str);
     free(type_str);
     if(rc != NZ_SUCCESS) return rc;
@@ -364,11 +364,11 @@ static nz_rc array_type_create(nz_type_p * type_pp, const char * string) {
     return array_type_create_args(type_pp, n_elements, element_typeclass_p, element_type_p);
 }
 
-static void array_type_destroy(nz_type_p type_p) {
+static void array_type_destroy(nz_type * type_p) {
     free(type_p);
 }
 
-static int array_type_is_equal (nz_type_p type_p, nz_type_p other_type_p) {
+static int array_type_is_equal (const nz_type * type_p, const nz_type * other_type_p) {
     struct nz_array_type * array_type_p = (struct nz_array_type *)type_p;
     struct nz_array_type * other_array_type_p = (struct nz_array_type *)other_type_p;
 
@@ -377,10 +377,10 @@ static int array_type_is_equal (nz_type_p type_p, nz_type_p other_type_p) {
                                other_array_type_p->typeclass_p, other_array_type_p->type_p));
 }
 
-static nz_rc array_type_create_obj(const nz_type_p type_p, nz_obj_p * obj_pp) {
+static nz_rc array_type_create_obj(const nz_type * type_p, nz_obj ** obj_pp) {
     struct nz_array_type * array_type_p = (struct nz_array_type *)type_p;
 
-    nz_obj_p * obj_p_array = calloc(2 * array_type_p->size, sizeof(nz_obj_p)); // twice the size because second half is shadow array
+    nz_obj ** obj_p_array = calloc(2 * array_type_p->size, sizeof(nz_obj *)); // twice the size because second half is shadow array
     if(obj_p_array == NULL) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
     // The shadow array never has NULLs. Fill it with newly created nz_objs.
     for(size_t i = 0; i < array_type_p->size; i++) {
@@ -388,14 +388,14 @@ static nz_rc array_type_create_obj(const nz_type_p type_p, nz_obj_p * obj_pp) {
     }
     // Leave the first half as NULLs
 
-    *(nz_obj_p **)obj_pp = obj_p_array;
+    *(nz_obj ***)obj_pp = obj_p_array;
 
     return NZ_SUCCESS;
 }
 
-static void array_type_destroy_obj(const nz_type_p type_p, nz_obj_p obj_p) {
+static void array_type_destroy_obj(const nz_type * type_p, nz_obj * obj_p) {
     struct nz_array_type * array_type_p = (struct nz_array_type *)type_p;
-    nz_obj_p * obj_p_array = (nz_obj_p*)obj_p;
+    nz_obj ** obj_p_array = (nz_obj **)obj_p;
     for(size_t i = 0; i < array_type_p->size; i++) {
         // We only need to destroy the shadow array because each element in the regular array is either NULL
         // or pointing to its corresponding element in the shadow array.
@@ -404,10 +404,10 @@ static void array_type_destroy_obj(const nz_type_p type_p, nz_obj_p obj_p) {
     free(obj_p_array);
 }
 
-static nz_rc array_type_copy_obj(const nz_type_p type_p, nz_obj_p dst_p, const nz_obj_p src_p) {
+static nz_rc array_type_copy_obj(const nz_type * type_p, nz_obj * dst_p, const nz_obj * src_p) {
     struct nz_array_type * array_type_p = (struct nz_array_type *)type_p;
-    nz_obj_p * src_obj_p_array = (nz_obj_p*)src_p;
-    nz_obj_p * dst_obj_p_array = (nz_obj_p*)dst_p;
+    nz_obj ** src_obj_p_array = (nz_obj **)src_p;
+    nz_obj ** dst_obj_p_array = (nz_obj **)dst_p;
     for(size_t i = 0; i < array_type_p->size; i++) {
         if(src_obj_p_array[i] != NULL) { // If the source exists...
             // Copy it to its shadow destination
@@ -422,9 +422,9 @@ static nz_rc array_type_copy_obj(const nz_type_p type_p, nz_obj_p dst_p, const n
     return NZ_SUCCESS;
 }
 
-static nz_rc array_type_init_obj(const nz_type_p type_p, nz_obj_p obj_p, const char * string) {
+static nz_rc array_type_init_obj(const nz_type * type_p, nz_obj * obj_p, const char * string) {
     struct nz_array_type * array_type_p = (struct nz_array_type *)type_p;
-    nz_obj_p * obj_p_array = (nz_obj_p*)obj_p;
+    nz_obj ** obj_p_array = (nz_obj **)obj_p;
 
     size_t len = strlen(string);
     if(string[0] != '{' || string[len-1] != '}') NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_PARSE, strdup(string));
@@ -470,9 +470,9 @@ static nz_rc array_type_init_obj(const nz_type_p type_p, nz_obj_p obj_p, const c
     return NZ_SUCCESS;
 }
 
-static nz_rc array_type_str_obj(const nz_type_p type_p, const nz_obj_p obj_p, char ** string) {
+static nz_rc array_type_str_obj(const nz_type * type_p, const nz_obj * obj_p, char ** string) {
     struct nz_array_type * array_type_p = (struct nz_array_type *)type_p;
-    nz_obj_p * obj_p_array = (nz_obj_p*)obj_p;
+    nz_obj ** obj_p_array = (nz_obj **)obj_p;
     struct strbuf buf;
     char * str = strbuf_alloc(&buf);
 
@@ -480,7 +480,7 @@ static nz_rc array_type_str_obj(const nz_type_p type_p, const nz_obj_p obj_p, ch
 
     for(size_t i = 0; i < array_type_p->size; i++) {
         char * elem_string;
-        nz_obj_p elem = obj_p_array[i];
+        nz_obj * elem = obj_p_array[i];
         if(elem == NULL) {
             str = strbuf_printf(&buf, str, NZ_NULL_STR ", ");
         } else {
@@ -533,10 +533,10 @@ struct vector_type {
     size_t param_element_size;
 };
 
-nz_obj_p vector_create(const struct nz_typeclass * type) {
+nz_obj * vector_create(const struct nz_typeclass * type) {
     struct vector_parameters * params = (struct vector_parameters *) &type->type_parameters;
 
-    nz_obj_p obj = calloc(1, type->type_size);
+    nz_obj * obj = calloc(1, type->type_size);
     if (obj == NULL) return NULL;
 
     struct vector * vdata = &NZ_CAST(struct vector, obj);
@@ -549,12 +549,12 @@ nz_obj_p vector_create(const struct nz_typeclass * type) {
     return obj;
 }
 
-void vector_destroy(nz_obj_p obj) {
+void vector_destroy(nz_obj * obj) {
     free(NZ_CAST(void *, obj));
     free(obj);
 }
 
-nz_obj_p vector_copy(nz_obj_p dst, const nz_obj_p src) {
+nz_obj * vector_copy(nz_obj * dst, const nz_obj * src) {
     if (!nz_obj_type_compatible(dst, src)) return (errno = EINVAL, NULL);
 
     size_t src_size = nz_vector_get_size(src);
@@ -589,7 +589,7 @@ struct nz_typeclass * nz_type_create_vector(size_t element_size) {
 //
 
 // Returns new size, setting errno if != new_size
-size_t nz_vector_set_size(nz_obj_p obj, size_t new_size) {
+size_t nz_vector_set_size(nz_obj * obj, size_t new_size) {
     struct vector * vdata = &NZ_CAST(struct vector, obj);
 
     if (new_size > vdata->vector_capacity) {
@@ -611,11 +611,11 @@ size_t nz_vector_set_size(nz_obj_p obj, size_t new_size) {
     return vdata->vector_size = new_size;
 }
 
-size_t nz_vector_get_size(const nz_obj_p obj) {
+size_t nz_vector_get_size(const nz_obj * obj) {
     return NZ_CAST(struct vector, obj).vector_size;
 }
 
-int nz_vector_push_back(nz_obj_p vec, void * data) {
+int nz_vector_push_back(nz_obj * vec, void * data) {
     struct vector * vdata = &NZ_CAST(struct vector, vec);
     size_t size = vdata->vector_size + 1;
     if (nz_vector_set_size(vec, size) != size) return -1;
@@ -629,7 +629,7 @@ int nz_vector_push_back(nz_obj_p vec, void * data) {
     return 0;
 }
 
-void * nz_vector_at(nz_obj_p vec, size_t idx) {
+void * nz_vector_at(nz_obj * vec, size_t idx) {
     if (idx >= nz_vector_get_size(vec)) 
         return (errno = EINVAL, NULL);
 
@@ -640,7 +640,7 @@ void * nz_vector_at(nz_obj_p vec, size_t idx) {
     return (void *) el;
 }
 
-void nz_vector_erase(nz_obj_p vec, size_t idx) {
+void nz_vector_erase(nz_obj * vec, size_t idx) {
     size_t size = nz_vector_get_size(vec);
     if (idx >= size) return;
     size--;
@@ -655,7 +655,7 @@ void nz_vector_erase(nz_obj_p vec, size_t idx) {
     assert(nz_vector_set_size(vec, size) == size);
 }
 
-size_t nz_vector_sizeofel(nz_obj_p vec) {
+size_t nz_vector_sizeofel(nz_obj * vec) {
     struct vector_parameters * params = (struct vector_parameters *) &vec->obj_type->type_parameters;
     return params->param_element_size;
 }
