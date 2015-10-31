@@ -13,7 +13,7 @@ static nz_rc nz_typesystem_init(struct nz_context * context_p) {
     return NZ_SUCCESS;
 }
 
-nz_rc nz_typesystem_register_typeclass(struct nz_context * context_p, struct nz_typeclass const * typeclass_p) {
+nz_rc nz_context_register_typeclass(struct nz_context * context_p, struct nz_typeclass const * typeclass_p) {
     if(context_p->context_n_typeclasses < context_p->context_typeclass_capacity) {
         context_p->context_typeclass_capacity *= 2;
         struct nz_typeclass const ** newptr =  realloc(context_p->context_typeclasses, context_p->context_typeclass_capacity * sizeof(struct nz_typeclass *));
@@ -43,7 +43,7 @@ static nz_rc nz_blocksystem_init(struct nz_context * context_p) {
     return NZ_SUCCESS;
 }
 
-nz_rc nz_blocksystem_register_blockclass(struct nz_context * context_p, struct nz_blockclass const * blockclass_p) {
+nz_rc nz_context_register_blockclass(struct nz_context * context_p, struct nz_blockclass const * blockclass_p) {
     if(context_p->context_n_blockclasses < context_p->context_blockclass_capacity) {
         context_p->context_blockclass_capacity *= 2;
         struct nz_blockclass const ** newptr =  realloc(context_p->context_blockclasses, context_p->context_blockclass_capacity * sizeof(struct nz_blockclass *));
