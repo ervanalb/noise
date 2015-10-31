@@ -182,8 +182,8 @@ static nz_rc array_type_create(const struct nz_context * context_p, nz_type ** t
     return array_type_create_args(type_pp, n_elements, element_typeclass_p, element_type_p);
 }
 
-static void array_type_destroy(nz_type * type_p) {
-    free(type_p);
+static void array_type_destroy(nz_type ** type_pp) {
+    free(*type_pp);
 }
 
 static int array_type_is_equal (const nz_type * type_p, const nz_type * other_type_p) {
@@ -326,13 +326,13 @@ DECLARE_TYPECLASS(array)
 
 // --
 
-nz_rc nz_init_types(struct nz_context * context_p) {
+nz_rc nz_types_init(struct nz_context * context_p) {
     nz_rc rc;
-    rc = nz_register_typeclass(context_p, &nz_int_typeclass); if(rc != NZ_SUCCESS) return rc;
-    rc = nz_register_typeclass(context_p, &nz_long_typeclass); if(rc != NZ_SUCCESS) return rc;
-    rc = nz_register_typeclass(context_p, &nz_real_typeclass); if(rc != NZ_SUCCESS) return rc;
-    rc = nz_register_typeclass(context_p, &nz_chunk_typeclass); if(rc != NZ_SUCCESS) return rc;
-    rc = nz_register_typeclass(context_p, &nz_string_typeclass); if(rc != NZ_SUCCESS) return rc;
-    rc = nz_register_typeclass(context_p, &nz_array_typeclass); if(rc != NZ_SUCCESS) return rc;
+    rc = nz_typesystem_register_typeclass(context_p, &nz_int_typeclass); if(rc != NZ_SUCCESS) return rc;
+    rc = nz_typesystem_register_typeclass(context_p, &nz_long_typeclass); if(rc != NZ_SUCCESS) return rc;
+    rc = nz_typesystem_register_typeclass(context_p, &nz_real_typeclass); if(rc != NZ_SUCCESS) return rc;
+    rc = nz_typesystem_register_typeclass(context_p, &nz_chunk_typeclass); if(rc != NZ_SUCCESS) return rc;
+    rc = nz_typesystem_register_typeclass(context_p, &nz_string_typeclass); if(rc != NZ_SUCCESS) return rc;
+    rc = nz_typesystem_register_typeclass(context_p, &nz_array_typeclass); if(rc != NZ_SUCCESS) return rc;
     return NZ_SUCCESS;
 }

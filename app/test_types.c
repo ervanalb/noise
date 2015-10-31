@@ -13,7 +13,7 @@ nz_rc run()
     nz_obj * my_obj;
     char * string;
 
-    if((rc = nz_create_context(&context)) == NZ_SUCCESS)
+    if((rc = nz_context_create(&context)) == NZ_SUCCESS)
     {
         // Create a type
         if((rc = nz_type_create(context, &my_typeclass, &my_type, "array<10,int>")) == NZ_SUCCESS)
@@ -43,7 +43,7 @@ nz_rc run()
             my_typeclass->type_destroy(my_type);
         }
     }
-    nz_destroy_context(context);
+    nz_context_destroy(&context);
     return rc;
 }
 

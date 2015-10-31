@@ -5,6 +5,6 @@
 
 struct nz_context;
 
-nz_rc nz_init_types(struct nz_context * context);
+nz_rc nz_types_init(struct nz_context * context);
 
 #endif
