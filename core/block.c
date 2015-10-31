@@ -79,7 +79,7 @@ nz_rc nz_block_create(struct nz_context * context, const char * string, const st
     NZ_RETURN_ERR(NZ_BLOCK_NOT_FOUND);
 }
 
-void nz_block_destroy(const struct nz_blockclass ** blockclass, nz_block_state ** state, struct nz_block_info * info) {
-    (*blockclass)->block_destroy(state);
+void nz_block_destroy(const struct nz_blockclass * blockclass, nz_block_state * state, struct nz_block_info * info) {
+    blockclass->block_destroy(state);
     free_block_info(info);    
 }

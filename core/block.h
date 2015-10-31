@@ -38,7 +38,7 @@ struct nz_blockclass {
     nz_rc (*block_create)         (struct nz_context * context, const char * string, nz_block_state ** state, struct nz_block_info * info);
 
     // Instance methods
-    void   (*block_destroy)       (nz_block_state ** state);
+    void   (*block_destroy)       (nz_block_state * state);
 };
 
 //void free_block_info(struct nz_block_info * info_p);
@@ -51,6 +51,6 @@ nz_rc nz_blocks_init(struct nz_context * context);
 // --
 
 nz_rc nz_block_create(struct nz_context * context, const char * string, const struct nz_blockclass ** blockclass_pp, nz_block_state ** state, struct nz_block_info * info);
-void nz_block_destroy(const struct nz_blockclass ** blockclass, nz_block_state ** state, struct nz_block_info * info);
+void nz_block_destroy(const struct nz_blockclass * blockclass, nz_block_state * state, struct nz_block_info * info);
 
 #endif
