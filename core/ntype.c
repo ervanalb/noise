@@ -49,6 +49,6 @@ nz_rc nz_type_create(const struct nz_context * context_p, const struct nz_typecl
     NZ_RETURN_ERR(NZ_TYPE_NOT_FOUND);
 }
 
-void nz_type_destroy(const struct nz_typeclass * typeclass_p, nz_type ** type_pp) {
-    typeclass_p->type_destroy(type_pp);
+void nz_type_destroy(const struct nz_typeclass * typeclass_p, nz_type * type_p) {
+    typeclass_p->type_destroy(type_p);
 }

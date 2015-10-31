@@ -32,7 +32,7 @@ struct nz_typeclass {
     nz_rc (*type_create)      (const struct nz_context * context_p, nz_type ** type_pp, const char * string);
 
     // Class methods
-    void  (*type_destroy)     (nz_type ** type_p);
+    void  (*type_destroy)     (nz_type * type_p);
     int   (*type_is_equal)    (const nz_type * type_p, const nz_type * other_type_p);
     nz_rc (*type_str)         (const nz_type * type_p, char ** string);
     nz_rc (*type_create_obj)  (const nz_type * type_p, nz_obj ** obj_pp);
@@ -132,7 +132,7 @@ nz_rc nz_type_create(const struct nz_context * context_p, const struct nz_typecl
 int nz_types_are_equal(const struct nz_typeclass * typeclass_p,       const nz_type * type_p,
                        const struct nz_typeclass * other_typeclass_p, const nz_type * other_type_p);
 
-void nz_type_destroy(const struct nz_typeclass * typeclass_p, nz_type ** type_pp);
+void nz_type_destroy(const struct nz_typeclass * typeclass_p, nz_type * type_p);
 
 // --
 // Needed by type system
@@ -145,7 +145,7 @@ static nz_rc NAME ## _type_create (const struct nz_context * context_p, nz_type 
     *type_pp = NULL; \
     return NZ_SUCCESS; \
 }\
-static void NAME ## _type_destroy (nz_type ** type_pp) {}\
+static void NAME ## _type_destroy (nz_type * type_p) {}\
 static int NAME ## _type_is_equal (const nz_type * type_p, const nz_type * other_type_p) { \
     return 1; \
 }
