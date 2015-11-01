@@ -20,17 +20,19 @@ struct nz_block {
     size_t *          block_upstream_output_index_array;
 };
 
-struct nz_block_info {
-    size_t                        block_n_inputs;
-    char **                       block_input_names;
-    const struct nz_typeclass **  block_input_typeclasses;
-    nz_type **                    block_input_types;
+struct nz_port_info {
+    char *                      block_port_name;
+    const struct nz_typeclass * block_port_typeclass_p;
+    nz_type *                   block_port_type_p;
+};
 
-    size_t                        block_n_outputs;
-    char **                       block_output_names;
-    const struct nz_typeclass **  block_output_typeclasses;
-    nz_type **                    block_output_types;
-    nz_pull_fn **                 block_pull_fns;
+struct nz_block_info {
+    size_t                block_n_inputs;
+    struct nz_port_info * block_input_port_array;
+
+    size_t                block_n_outputs;
+    struct nz_port_info * block_output_port_array;
+    nz_pull_fn **         block_pull_fns;
 };
 
 struct nz_blockclass {

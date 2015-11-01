@@ -196,13 +196,13 @@ nz_rc nz_graph_connect(
 
     size_t output_index;
     for(output_index = 0; output_index < upstream_p->block_info.block_n_outputs; output_index++) {
-        if(strcmp(upstream_p->block_info.block_output_names[output_index], output_port) == 0) break;
+        if(strcmp(upstream_p->block_info.block_output_port_array[output_index].block_port_name, output_port) == 0) break;
     }
     if(output_index == upstream_p->block_info.block_n_outputs) NZ_RETURN_ERR_MSG(NZ_PORT_NOT_FOUND, strdup(output_port));
 
     size_t input_index;
     for(input_index = 0; input_index < downstream_p->block_info.block_n_inputs; input_index++) {
-        if(strcmp(downstream_p->block_info.block_input_names[input_index], input_port) == 0) break;
+        if(strcmp(downstream_p->block_info.block_input_port_array[input_index].block_port_name, input_port) == 0) break;
     }
     if(input_index == downstream_p->block_info.block_n_inputs) NZ_RETURN_ERR_MSG(NZ_PORT_NOT_FOUND, strdup(input_port));
 
@@ -211,10 +211,10 @@ nz_rc nz_graph_connect(
 
 int nz_types_are_equal(const struct nz_typeclass * typeclass_p,       const nz_type * type_p,
                        const struct nz_typeclass * other_typeclass_p, const nz_type * other_type_p);
-    if(!nz_types_are_equal(upstream_p->block_info.block_output_typeclasses[output_index],
-                           upstream_p->block_info.block_output_types[output_index],
-                           downstream_p->block_info.block_input_typeclasses[input_index],
-                           downstream_p->block_info.block_input_types[input_index])) {
+    if(!nz_types_are_equal(upstream_p->block_info.block_output_port_array[output_index].block_port_typeclass_p,
+                           upstream_p->block_info.block_output_port_array[output_index].block_port_type_p,
+                           downstream_p->block_info.block_input_port_array[input_index].block_port_typeclass_p,
+                           downstream_p->block_info.block_input_port_array[input_index].block_port_type_p)) {
         NZ_RETURN_ERR(NZ_TYPE_MISMATCH); // TODO print out types
     }
 
@@ -247,13 +247,13 @@ nz_rc nz_graph_disconnect(
 
     size_t output_index;
     for(output_index = 0; output_index < upstream_p->block_info.block_n_outputs; output_index++) {
-        if(strcmp(upstream_p->block_info.block_output_names[output_index], output_port) == 0) break;
+        if(strcmp(upstream_p->block_info.block_output_port_array[output_index].block_port_name, output_port) == 0) break;
     }
     if(output_index == upstream_p->block_info.block_n_outputs) NZ_RETURN_ERR_MSG(NZ_PORT_NOT_FOUND, strdup(output_port));
 
     size_t input_index;
     for(input_index = 0; input_index < downstream_p->block_info.block_n_inputs; input_index++) {
-        if(strcmp(downstream_p->block_info.block_input_names[input_index], input_port) == 0) break;
+        if(strcmp(downstream_p->block_info.block_input_port_array[input_index].block_port_name, input_port) == 0) break;
     }
     if(input_index == downstream_p->block_info.block_n_inputs) NZ_RETURN_ERR_MSG(NZ_PORT_NOT_FOUND, strdup(input_port));
 

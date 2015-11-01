@@ -52,30 +52,30 @@ static nz_rc debug_block_create_args(const struct nz_typeclass * typeclass_p, nz
     if(info_p != NULL) {
         info_p->block_n_inputs = 1;
         info_p->block_n_outputs = 0;
-        info_p->block_input_names = calloc(1, sizeof(char *));
-        info_p->block_input_typeclasses = calloc(1, sizeof(const struct nz_typeclass *));
-        info_p->block_input_types = calloc(1, sizeof(nz_type *));
+        info_p->block_input_port_array = calloc(1, sizeof(struct nz_port_info));
         info_p->block_n_outputs = 0;
-        info_p->block_output_names = NULL;
-        info_p->block_output_typeclasses = NULL;
-        info_p->block_output_types = NULL;
+        info_p->block_output_port_array = NULL;
         info_p->block_pull_fns = NULL;
 
-        if(info_p->block_input_typeclasses == 0 ||
-           info_p->block_input_types == 0 ||
-           info_p->block_input_names == 0) {
-            free(info_p->block_input_typeclasses);
-            free(info_p->block_input_types);
-            free(info_p->block_input_names);
+        if(info_p->block_input_port_array == NULL) {
+            free(info_p->block_input_port_array);
             typeclass_p->type_destroy_obj(type_p, obj_p);
             typeclass_p->type_destroy(type_p);
             free(state_p);
             NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
         }
 
-        info_p->block_input_names[0] = (char *)"in";
-        info_p->block_input_typeclasses[0] = typeclass_p;
-        info_p->block_input_types[0] = type_p;
+        info_p->block_input_port_array[0].block_port_name = strdup("in");
+        info_p->block_input_port_array[0].block_port_typeclass_p = typeclass_p;
+        info_p->block_input_port_array[0].block_port_type_p = type_p;
+
+        if(info_p->block_input_port_array[0].block_port_name == NULL) {
+            free(info_p->block_input_port_array);
+            typeclass_p->type_destroy_obj(type_p, obj_p);
+            typeclass_p->type_destroy(type_p);
+            free(state_p);
+            NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
+        }
     }
 
     *(struct debug_block_state **)(state_pp) = state_p;
@@ -113,9 +113,8 @@ void debug_block_destroy(nz_block_state * state_p, struct nz_block_info * info_p
     struct debug_block_state * debug_block_state_p = (struct debug_block_state *)state_p;
 
     if(info_p != NULL) {
-        free(info_p->block_input_typeclasses);
-        free(info_p->block_input_types);
-        free(info_p->block_input_names);
+        free(info_p->block_input_port_array[0].block_port_name);
+        free(info_p->block_input_port_array);
     }
 
     debug_block_state_p->typeclass_p->type_destroy_obj(debug_block_state_p->type_p, debug_block_state_p->obj_p);
