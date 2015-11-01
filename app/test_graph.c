@@ -20,11 +20,12 @@ nz_rc run()
         if((rc = nz_graph_create(context, &graph)) == NZ_SUCCESS)
         {
             rc = nz_graph_add_block(graph, "1", "constant(real, 20)", NULL); if(rc != NZ_SUCCESS) goto err;
-            rc = nz_graph_add_block(graph, "2", "debug(real)", &block_handle); if(rc != NZ_SUCCESS) goto err;
-            rc = debug_pull(block_handle); if(rc != NZ_SUCCESS) goto err;
+            rc = nz_graph_add_block(graph, "2", "accumulator", NULL); if(rc != NZ_SUCCESS) goto err;
+            rc = nz_graph_add_block(graph, "3", "debug(real)", &block_handle); if(rc != NZ_SUCCESS) goto err;
             rc = nz_graph_connect(graph, "1", "out", "2", "in"); if(rc != NZ_SUCCESS) goto err;
+            rc = nz_graph_connect(graph, "2", "out", "3", "in"); if(rc != NZ_SUCCESS) goto err;
             rc = debug_pull(block_handle); if(rc != NZ_SUCCESS) goto err;
-            rc = nz_graph_disconnect(graph, "1", "out", "2", "in"); if(rc != NZ_SUCCESS) goto err;
+            rc = debug_pull(block_handle); if(rc != NZ_SUCCESS) goto err;
             rc = debug_pull(block_handle); if(rc != NZ_SUCCESS) goto err;
             err:
             nz_graph_destroy(graph);
