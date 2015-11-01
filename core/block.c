@@ -4,16 +4,16 @@
 #include "core/block.h"
 #include "core/util.h"
 
-void free_block_info(struct nz_block_info * info) {
+void nz_free_block_info(struct nz_block_info * info) {
     // Destroy types
     for(size_t i = 0; i < info->block_n_inputs; i++) {
         free(info->block_input_names[i]);
-        info->block_input_typeclasses[i].type_destroy(info->block_input_types[i]);
+        info->block_input_typeclasses[i]->type_destroy(info->block_input_types[i]);
     }
 
     for(size_t i = 0; i < info->block_n_outputs; i++) {
         free(info->block_output_names[i]);
-        info->block_output_typeclasses[i].type_destroy(info->block_output_types[i]);
+        info->block_output_typeclasses[i]->type_destroy(info->block_output_types[i]);
     }
 
     // Free strings and arrays
@@ -38,7 +38,7 @@ nz_rc nz_blocks_init(struct nz_context * context) {
 
 // --
 
-nz_rc nz_block_create(struct nz_context * context, const char * string, const struct nz_blockclass ** blockclass, nz_block_state ** state, struct nz_block_info * block_info) {
+nz_rc nz_block_create(const struct nz_context * context, const char * string, const struct nz_blockclass ** blockclass, nz_block_state ** state, struct nz_block_info * block_info) {
     // Create a block from a spec `string`
     // `struct nz_context * context`: input nz_context, which contains all registered blockclasses
     // `char * string`: input like "tee(2)" or "accumulator"
@@ -77,4 +77,8 @@ nz_rc nz_block_create(struct nz_context * context, const char * string, const st
     }
 
     NZ_RETURN_ERR(NZ_BLOCK_NOT_FOUND);
+}
+
+nz_obj * nz_null_pull_fn(struct nz_block self, nz_obj * obj_p) {
+    return NULL;
 }

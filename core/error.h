@@ -15,6 +15,7 @@
     DECLARE_ERROR(NZ_UNEXPECTED_BLOCK_ARGS) \
     DECLARE_ERROR(NZ_EXPECTED_BLOCK_ARGS) \
     DECLARE_ERROR(NZ_BLOCK_ARG_PARSE) \
+    DECLARE_ERROR(NZ_NODE_NOT_FOUND) \
 
 // Errors are passed through this return code object:
 #define DECLARE_ERROR(X) X ,
