@@ -66,22 +66,12 @@ nz_obj * nz_null_pull_fn(struct nz_block self, size_t index, nz_obj * obj_p) {
 
 void block_info_term(struct nz_block_info * info_p) {
     if(info_p->block_input_port_array != NULL) {
-        for(size_t i = 0; i < info_p->block_n_inputs; i++) {
-            free(info_p->block_input_port_array[i].block_port_name);
-            if(info_p->block_input_port_array[i].block_port_typeclass_p != NULL) {
-                info_p->block_input_port_array[i].block_port_typeclass_p->type_destroy(info_p->block_input_port_array[i].block_port_type_p);
-            }
-        }
+        for(size_t i = 0; i < info_p->block_n_inputs; i++) free(info_p->block_input_port_array[i].block_port_name);
         free(info_p->block_input_port_array);
         info_p->block_input_port_array = NULL;
     }
     if(info_p->block_output_port_array != NULL) {
-        for(size_t i = 0; i < info_p->block_n_outputs; i++) {
-            free(info_p->block_output_port_array[i].block_port_name);
-            if(info_p->block_output_port_array[i].block_port_typeclass_p != NULL) {
-                info_p->block_output_port_array[i].block_port_typeclass_p->type_destroy(info_p->block_output_port_array[i].block_port_type_p);
-            }
-        }
+        for(size_t i = 0; i < info_p->block_n_outputs; i++) free(info_p->block_output_port_array[i].block_port_name);
         free(info_p->block_output_port_array);
         info_p->block_output_port_array = NULL;
     }
