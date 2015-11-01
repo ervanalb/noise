@@ -37,7 +37,6 @@ static nz_rc constant_block_create_args(const struct nz_typeclass * typeclass_p,
         info_p->block_n_inputs = 0;
         info_p->block_n_outputs = 1;
         info_p->block_input_port_array = NULL;
-        info_p->block_n_outputs = 1;
         info_p->block_output_port_array = calloc(1, sizeof(struct nz_port_info));
         info_p->block_pull_fns = calloc(1, sizeof(nz_pull_fn *));
 
