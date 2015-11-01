@@ -4,32 +4,6 @@
 #include "core/block.h"
 #include "core/util.h"
 
-void nz_free_block_info(struct nz_block_info * info) {
-    // Destroy types
-    for(size_t i = 0; i < info->block_n_inputs; i++) {
-        free(info->block_input_names[i]);
-        info->block_input_typeclasses[i]->type_destroy(info->block_input_types[i]);
-    }
-
-    for(size_t i = 0; i < info->block_n_outputs; i++) {
-        free(info->block_output_names[i]);
-        info->block_output_typeclasses[i]->type_destroy(info->block_output_types[i]);
-    }
-
-    // Free strings and arrays
-    free(info->block_input_names);
-    free(info->block_input_typeclasses);
-    free(info->block_input_types);
-
-    free(info->block_output_names);
-    free(info->block_output_typeclasses);
-    free(info->block_output_types);
-
-    free(info->block_pull_fns);
-}
-
-// --
-
 nz_rc nz_blocks_init(struct nz_context * context) {
     // XXX Is this actually a nop? -zbanks
     // What is the intention of this?
@@ -79,6 +53,6 @@ nz_rc nz_block_create(const struct nz_context * context, const char * string, co
     NZ_RETURN_ERR(NZ_BLOCK_NOT_FOUND);
 }
 
-nz_obj * nz_null_pull_fn(struct nz_block self, nz_obj * obj_p) {
+nz_obj * nz_null_pull_fn(struct nz_block self, size_t index, nz_obj * obj_p) {
     return NULL;
 }

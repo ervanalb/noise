@@ -49,8 +49,7 @@ void nz_graph_destroy(struct nz_graph * graph_p) {
 
         free(node_p->node_id);
 
-        nz_free_block_info(&node_p->block_info);
-        node_p->blockclass_p->block_destroy(node_p->block.block_state_p);
+        node_p->blockclass_p->block_destroy(node_p->block.block_state_p, &node_p->block_info);
 
         free(node_p->block.block_upstream_pull_fn_p_array);
         free(node_p->block.block_upstream_block_array);
@@ -107,8 +106,7 @@ nz_rc nz_graph_add_block(
     node_p->block.block_upstream_block_array = calloc(node_p->block_info.block_n_inputs, sizeof(struct nz_block));
     if(node_p->block.block_upstream_block_array == NULL) {
         free(node_p->block.block_upstream_pull_fn_p_array);
-        nz_free_block_info(&node_p->block_info);
-        node_p->blockclass_p->block_destroy(node_p->block.block_state_p);
+        node_p->blockclass_p->block_destroy(node_p->block.block_state_p, &node_p->block_info);
         free(node_p->node_id);
         free(node_p);
         NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
@@ -118,8 +116,7 @@ nz_rc nz_graph_add_block(
     if(node_p->upstream_node_p_array == NULL) {
         free(node_p->block.block_upstream_block_array);
         free(node_p->block.block_upstream_pull_fn_p_array);
-        nz_free_block_info(&node_p->block_info);
-        node_p->blockclass_p->block_destroy(node_p->block.block_state_p);
+        node_p->blockclass_p->block_destroy(node_p->block.block_state_p, &node_p->block_info);
         free(node_p->node_id);
         free(node_p);
         NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
@@ -130,8 +127,7 @@ nz_rc nz_graph_add_block(
         free(node_p->upstream_node_p_array);
         free(node_p->block.block_upstream_block_array);
         free(node_p->block.block_upstream_pull_fn_p_array);
-        nz_free_block_info(&node_p->block_info);
-        node_p->blockclass_p->block_destroy(node_p->block.block_state_p);
+        node_p->blockclass_p->block_destroy(node_p->block.block_state_p, &node_p->block_info);
         free(node_p->node_id);
         free(node_p);
         NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
@@ -156,8 +152,7 @@ nz_rc nz_graph_del_block(struct nz_graph * graph_p, const char * id) {
 
     // Free
     free(node_p->node_id);
-    nz_free_block_info(&node_p->block_info);
-    node_p->blockclass_p->block_destroy(node_p->block.block_state_p);
+    node_p->blockclass_p->block_destroy(node_p->block.block_state_p, &node_p->block_info);
     free(node_p->block.block_upstream_pull_fn_p_array);
     free(node_p->block.block_upstream_block_array);
     free(node_p->upstream_node_p_array);

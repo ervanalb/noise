@@ -39,7 +39,7 @@ struct nz_typeclass {
 
     // Instance methods
     nz_rc (*type_init_obj)    (const nz_type * type_p, nz_obj * obj_p, const char * string);
-    nz_rc (*type_copy_obj)    (const nz_type * type_p, nz_obj * dst_p, const nz_obj * nz_src_p);
+    nz_rc (*type_copy_obj)    (const nz_type * type_p, nz_obj * dst_p, const nz_obj * src_p);
     void  (*type_destroy_obj) (const nz_type * type_p, nz_obj * obj_p);
     nz_rc (*type_str_obj)     (const nz_type * type_p, const nz_obj * obj_p, char ** string);
 };

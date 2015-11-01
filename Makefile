@@ -9,6 +9,7 @@ OBJECTS = \
 		core/ntypes.o \
 		core/block.o \
         core/graph.o \
+		blocks/constant.o \
 #		core/note.o \
 #		blocks/audio/compressor.o \
 #		blocks/audio/function_gen.o \
@@ -24,7 +25,6 @@ OBJECTS = \
 #		blocks/io/midi_writer.o \
 #		blocks/io/portaudio.o \
 #		blocks/accumulator.o \
-#		blocks/constant.o \
 #		blocks/debug.o \
 #		blocks/fittings.o \
 #		blocks/instruments/instrument.o \

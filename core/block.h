@@ -11,7 +11,7 @@
 struct nz_block;
 
 typedef void nz_block_state;
-typedef nz_obj * nz_pull_fn(struct nz_block self, nz_obj * obj_p);
+typedef nz_obj * nz_pull_fn(struct nz_block self, size_t index, nz_obj * obj_p);
 
 struct nz_block {
     nz_block_state *  block_state_p;
@@ -33,15 +33,10 @@ struct nz_block_info {
 };
 
 struct nz_blockclass {
-    // Static members
     const char * block_id;
-    nz_rc (*block_create)         (const struct nz_context * context, const char * string, nz_block_state ** state, struct nz_block_info * info);
-
-    // Instance methods
-    void   (*block_destroy)       (nz_block_state * state);
+    nz_rc (*block_create) (const struct nz_context * context, const char * string, nz_block_state ** state, struct nz_block_info * info);
+    void (*block_destroy) (nz_block_state * state, struct nz_block_info * info);
 };
-
-void free_block_info(struct nz_block_info * info_p);
 
 // --
 // Needed by context
@@ -52,8 +47,6 @@ nz_rc nz_blocks_init(struct nz_context * context);
 
 nz_rc nz_block_create(const struct nz_context * context, const char * string, const struct nz_blockclass ** blockclass_pp, nz_block_state ** state_pp, struct nz_block_info * info_p);
 
-void nz_free_block_info(struct nz_block_info * info);
-
-nz_obj * nz_null_pull_fn(struct nz_block self, nz_obj * obj_p);
+nz_obj * nz_null_pull_fn(struct nz_block self, size_t index, nz_obj * obj_p);
 
 #endif
