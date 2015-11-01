@@ -47,7 +47,6 @@ nz_rc nz_graph_add_block(
         struct nz_graph * graph_p,
         const char * id,
         const char * block,
-        struct nz_block_info ** block_info_pp,
         struct nz_block ** block_pp) {
     return NZ_NOT_IMPLEMENTED;
 }
