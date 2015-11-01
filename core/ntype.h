@@ -139,6 +139,15 @@ void nz_type_destroy(const struct nz_typeclass * typeclass_p, nz_type * type_p);
 
 #define NZ_NULL_STR "NULL"
 
+typedef long nz_int;
+typedef long long nz_long;
+
+#ifdef NZ_REAL_FLOAT
+typedef float nz_real;
+#else
+typedef double nz_real;
+#endif
+
 #define GEN_SIMPLE_TYPE_FNS(NAME) \
 static nz_rc NAME ## _type_create (const struct nz_context * context_p, nz_type ** type_pp, const char * string) {\
     if(string != NULL) NZ_RETURN_ERR_MSG(NZ_UNEXPECTED_TYPE_ARGS, strdup(string)); \

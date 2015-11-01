@@ -22,9 +22,14 @@ nz_rc array_type_create_args(nz_type ** type_pp, size_t size, const struct nz_ty
 // --
 // C Primitives
 
-DECLARE_PRIMITIVE_TYPECLASS(int, int, "%d")
-DECLARE_PRIMITIVE_TYPECLASS(long, long, "%ld")
-DECLARE_PRIMITIVE_TYPECLASS(real, double, "%lf")
+DECLARE_PRIMITIVE_TYPECLASS(int, nz_int, "%ld")
+DECLARE_PRIMITIVE_TYPECLASS(long, nz_long, "%lld")
+
+#ifdef NZ_REAL_FLOAT
+DECLARE_PRIMITIVE_TYPECLASS(real, nz_real, "%f")
+#else
+DECLARE_PRIMITIVE_TYPECLASS(real, nz_real, "%lf")
+#endif
 
 // --
 // Simple noise types
