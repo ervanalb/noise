@@ -150,6 +150,8 @@ nz_rc array_type_create_args(nz_type ** type_pp, size_t size, const struct nz_ty
 static nz_rc array_type_create(const struct nz_context * context_p, nz_type ** type_pp, const char * string) {
     if(string == NULL) NZ_RETURN_ERR(NZ_EXPECTED_TYPE_ARGS);
 
+    // TODO this leaks memory on failure
+
     const char * pos = string;
     const char * start;
     size_t length;
