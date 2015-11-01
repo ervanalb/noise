@@ -4,7 +4,7 @@
 #include "core/block.h"
 #include "core/util.h"
 
-static void free_block_info(struct nz_block_info * info) {
+void free_block_info(struct nz_block_info * info) {
     // Destroy types
     for(size_t i = 0; i < info->block_n_inputs; i++) {
         free(info->block_input_names[i]);

@@ -11,7 +11,7 @@
 struct nz_block;
 
 typedef void nz_block_state;
-typedef nz_obj * pull_fn(struct nz_block self);
+typedef nz_obj * pull_fn(struct nz_block self, nz_obj * obj_p);
 
 struct nz_block {
     nz_block_state *    block_state;
@@ -41,7 +41,7 @@ struct nz_blockclass {
     void   (*block_destroy)       (nz_block_state * state);
 };
 
-//void free_block_info(struct nz_block_info * info_p);
+void free_block_info(struct nz_block_info * info_p);
 
 // --
 // Needed by context
