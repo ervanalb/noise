@@ -25,8 +25,6 @@ nz_obj * constant_pull_fn(struct nz_block self, size_t index, nz_obj * obj_p) {
 }
 
 static nz_rc constant_block_create_args(const struct nz_typeclass * typeclass_p, nz_type * type_p, nz_obj * obj_p, nz_block_state ** state_pp, struct nz_block_info * info_p) {
-    nz_rc rc;
-
     struct constant_block_state * state_p = calloc(1, sizeof(struct constant_block_state));
     if(state_p == NULL) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
 
