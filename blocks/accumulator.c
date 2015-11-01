@@ -6,9 +6,7 @@ nz_obj * accumulator_pull_fn(struct nz_block self, size_t index, nz_obj * obj_p)
     nz_real * accumulator_value_p = (nz_real *)(self.block_state_p);
     nz_real in;
 
-    nz_obj * result_p = NZ_PULL(self, 0, &in);
-
-    if(result_p == NULL) {
+    if(NZ_PULL(self, 0, &in) == NULL) {
         *accumulator_value_p = 0;
     } else {
         *accumulator_value_p += in;
