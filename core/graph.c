@@ -209,6 +209,15 @@ nz_rc nz_graph_connect(
     if(upstream_p->downstream_node_p_array[output_index] != NULL) NZ_RETURN_ERR(NZ_PORT_ALREADY_CONNECTED);
     if(downstream_p->upstream_node_p_array[input_index] != NULL) NZ_RETURN_ERR(NZ_PORT_ALREADY_CONNECTED);
 
+int nz_types_are_equal(const struct nz_typeclass * typeclass_p,       const nz_type * type_p,
+                       const struct nz_typeclass * other_typeclass_p, const nz_type * other_type_p);
+    if(!nz_types_are_equal(upstream_p->block_info.block_output_typeclasses[output_index],
+                           upstream_p->block_info.block_output_types[output_index],
+                           downstream_p->block_info.block_input_typeclasses[input_index],
+                           downstream_p->block_info.block_input_types[input_index])) {
+        NZ_RETURN_ERR(NZ_TYPE_MISMATCH); // TODO print out types
+    }
+
     upstream_p->downstream_node_p_array[output_index] = downstream_p;
     downstream_p->upstream_node_p_array[input_index] = upstream_p;
     downstream_p->block.block_upstream_pull_fn_p_array[input_index] = upstream_p->block_info.block_pull_fns[output_index];

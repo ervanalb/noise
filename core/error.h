@@ -18,6 +18,7 @@
     DECLARE_ERROR(NZ_NODE_NOT_FOUND) \
     DECLARE_ERROR(NZ_PORT_NOT_FOUND) \
     DECLARE_ERROR(NZ_PORT_ALREADY_CONNECTED) \
+    DECLARE_ERROR(NZ_TYPE_MISMATCH) \
 
 // Errors are passed through this return code object:
 #define DECLARE_ERROR(X) X ,
