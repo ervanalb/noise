@@ -28,7 +28,7 @@ typedef void nz_type;
 
 struct nz_typeclass {
     // Static members
-    const char* type_id;
+    const char * type_id;
     nz_rc (*type_create)      (const struct nz_context * context_p, nz_type ** type_pp, const char * string);
 
     // Class methods

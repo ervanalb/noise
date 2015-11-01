@@ -82,3 +82,4 @@ void constant_block_destroy(nz_block_state * state_p, struct nz_block_info * inf
     free(constant_block_state_p);
 }
 
+DECLARE_BLOCKCLASS(constant)

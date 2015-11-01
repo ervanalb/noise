@@ -49,4 +49,12 @@ nz_rc nz_block_create(const struct nz_context * context, const char * string, co
 
 nz_obj * nz_null_pull_fn(struct nz_block self, size_t index, nz_obj * obj_p);
 
+#define DECLARE_BLOCKCLASS(NAME) \
+static const char NAME ## _block_id[] = #NAME; \
+const struct nz_blockclass nz_ ## NAME ## _blockclass = { \
+    .block_id = NAME ## _block_id, \
+    .block_create = & NAME ## _block_create, \
+    .block_destroy = & NAME ## _block_destroy, \
+};
+
 #endif
