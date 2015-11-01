@@ -29,7 +29,7 @@ struct nz_block_info {
     char **                       block_output_names;
     const struct nz_typeclass **  block_output_typeclasses;
     nz_type **                    block_output_types;
-    const nz_pull_fn **           block_pull_fns;
+    nz_pull_fn **                 block_pull_fns;
 };
 
 struct nz_blockclass {

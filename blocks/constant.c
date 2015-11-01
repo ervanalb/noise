@@ -42,10 +42,10 @@ static nz_rc constant_block_create_args(const struct nz_typeclass * typeclass_p,
         info_p->block_input_typeclasses = NULL;
         info_p->block_input_types = NULL;
         info_p->block_n_outputs = 1;
-        info_p->block_output_names = (char * []){"constant"};
+        info_p->block_output_names = (char *[]){(char *)"constant"};
         info_p->block_output_typeclasses = calloc(1, sizeof(const struct nz_typeclass *));
         info_p->block_output_types = calloc(1, sizeof(nz_type *));
-        info_p->block_pull_fns = (nz_pull_fn * []){constant_pull_fn};
+        info_p->block_pull_fns = (nz_pull_fn *[]){constant_pull_fn};
 
         if(info_p->block_output_typeclasses == 0 ||
            info_p->block_output_types == 0) {
