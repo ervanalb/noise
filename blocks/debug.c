@@ -1,115 +1,122 @@
 #include <stdlib.h>
 
 #include "noise.h"
-#include "blocks/blocks.h"
 #include "core/util.h"
-#include "debug.h" //TODO
+#include "core/ntype.h"
+#include "core/block.h"
+#include "core/error.h"
 
-struct state {
-    char on;
-	char name[32];
+struct debug_block_state {
+    const struct nz_typeclass * typeclass_p;
+    nz_type * type_p;
+    nz_obj * obj_p;
 };
 
-static enum nz_pull_rc debug_pull(struct nz_port * port){
-    struct nz_node * node = port->port_node;
-    struct state * state = (struct state *) node->node_state;
+nz_rc debug_pull(struct nz_block * block_p) {
+    struct nz_block self = *block_p;
+    struct debug_block_state * state_p = (struct debug_block_state *)(self.block_state_p);
 
-    nz_obj_p out = nz_obj_swap(&port->port_value, NZ_NODE_PULL(node, 0));
-
-    if (state->on) {
-        char * ostr = nz_obj_str(port->port_value);
-        printf("%s: %s\n", state->name, ostr);
-        free(ostr);
+    nz_obj * result = NZ_PULL(self, 0, state_p->obj_p);
+    if(result == NULL) {
+        printf("DEBUG: NULL\n");
+    } else {
+        char * str;
+        nz_rc rc = state_p->typeclass_p->type_str_obj(state_p->type_p, result, &str);
+        if(rc != NZ_SUCCESS) return rc;
+        printf("DEBUG: %s\n", str);
+        free(str);
     }
 
-    return (out == NULL) ? NZ_PULL_RC_NULL : NZ_PULL_RC_OBJECT;
+    return NZ_SUCCESS;
 }
 
-int nz_debug_init(struct nz_node * node, const char * name, char on) {
-    int rc = nz_node_alloc_ports(node, 1, 1);
-    if (rc != 0) return rc;
+static nz_rc debug_block_create_args(const struct nz_typeclass * typeclass_p, nz_type * type_p, nz_block_state ** state_pp, struct nz_block_info * info_p) {
+    nz_rc rc;
 
-    node->node_term = &nz_node_term_generic;
-    node->node_name = rsprintf("Debug printer '%.32s'", name);
+    struct debug_block_state * state_p = calloc(1, sizeof(struct debug_block_state));
+    if(state_p == NULL) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
 
-    // Define inputs
-    node->node_inputs[0] = (struct nz_inport) {
-        .inport_type = NULL,
-        .inport_name = strdup("in"),
-    };
+    nz_obj * obj_p;
 
-    // Define outputs
-    node->node_outputs[0] = (struct nz_port) {
-        .port_node = node,
-        .port_name = strdup("out"),
-        .port_pull = debug_pull,
-        .port_type = NULL,
-        .port_value = NULL,
-    };
+    rc = typeclass_p->type_create_obj(type_p, &obj_p);
+    if(rc != NZ_SUCCESS) {
+        free(state_p);
+        return rc;
+    }
 
-    // Init state
-    node->node_state = calloc(1, sizeof(struct state));
-    if (node->node_state == NULL) return (nz_node_term(node), -1);
+    // This function assumes ownership of typeclass_p and type_p
+    state_p->typeclass_p = typeclass_p;
+    state_p->type_p = type_p;
+    state_p->obj_p = obj_p;
 
-    struct state * state = (struct state *) node->node_state;
-    state->on = on;
-    strncpy(state->name, name, sizeof(state->name));
+    if(info_p != NULL) {
+        info_p->block_n_inputs = 1;
+        info_p->block_n_outputs = 0;
+        info_p->block_input_names = (char *[]){(char *)"value"};
+        info_p->block_input_typeclasses = calloc(1, sizeof(const struct nz_typeclass *));
+        info_p->block_input_types = calloc(1, sizeof(nz_type *));
+        info_p->block_n_outputs = 0;
+        info_p->block_output_names = NULL;
+        info_p->block_output_typeclasses = NULL;
+        info_p->block_output_types = NULL;
+        info_p->block_pull_fns = NULL;
 
-    return 0;
-}
-
-void nz_debug_print_graph(struct nz_node * node) {
-    printf("%p %s:\n", node, node->node_name);
-
-    for (size_t i = 0; i < node->node_n_inputs; i++) {
-        if (node->node_inputs[i].inport_connection != NULL) {
-            printf("    [i] '%s' %s.'%s' (%p)\n",
-                    node->node_inputs[i].inport_name,
-                    node->node_inputs[i].inport_connection->port_node->node_name,
-                    node->node_inputs[i].inport_connection->port_name,
-                    node->node_inputs[i].inport_connection);
-        } else {
-            printf("    [i] '%s' --\n", node->node_inputs[i].inport_name);
+        if(info_p->block_input_typeclasses == 0 ||
+           info_p->block_input_types == 0) {
+            free(info_p->block_input_typeclasses);
+            free(info_p->block_input_types);
+            typeclass_p->type_destroy_obj(type_p, obj_p);
+            typeclass_p->type_destroy(type_p);
+            free(state_p);
+            NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
         }
+
+        info_p->block_input_typeclasses[0] = typeclass_p;
+        info_p->block_input_types[0] = type_p;
     }
 
-    for (size_t i = 0; i < node->node_n_outputs; i++) {
-        printf("    [o] %s\n", node->node_outputs[i].port_name);
-    }
-    
-    for (size_t i = 0; i < node->node_n_inputs; i++) {
-        struct nz_port * port = node->node_inputs[i].inport_connection;
-        if (port) 
-            nz_debug_print_graph(port->port_node);
-    }
-
-    for (size_t i = 0; i < node->node_n_outputs; i++) {
-        //debug_print_graph(node->outputs[i].node);
-    }
+    *(struct debug_block_state **)(state_pp) = state_p;
+    return NZ_SUCCESS;
 }
 
-static void print_dot_recurse(struct nz_node * node, FILE * f);
+nz_rc debug_block_create(const struct nz_context * context_p, const char * string, nz_block_state ** state_pp, struct nz_block_info * info_p) {
+    if(string == NULL) NZ_RETURN_ERR(NZ_EXPECTED_BLOCK_ARGS);
 
-void nz_debug_print_dot(struct nz_node * node, const char * filename) {
-    FILE * f = fopen(filename, "w");
+    const char * pos = string;
+    const char * start;
+    size_t length;
+    int end;
+    nz_rc rc;
 
-    fprintf(f, "strict digraph {\n");
-    print_dot_recurse(node, f);
-    fprintf(f, "}\n");
+    const struct nz_typeclass * typeclass_p;
+    nz_type * type_p;
 
-    fclose(f);
-}
+    rc = nz_next_block_arg(string, &pos, &start, &length);
+    if(rc != NZ_SUCCESS) return rc;
+    char * type_str = strndup(start, length);
+    rc = nz_type_create(context_p, &typeclass_p, &type_p, type_str);
+    free(type_str);
+    if(rc != NZ_SUCCESS) return rc;
 
-
-static void print_dot_recurse(struct nz_node * node, FILE * f) {
-    fprintf(f, "    n%p [label=\"%s\"];\n", node, node->node_name);
-    for (size_t i = 0; i < node->node_n_inputs; i++) {
-        struct nz_port * port = node->node_inputs[i].inport_connection;
-        if (port) {
-            print_dot_recurse(port->port_node, f);
-            fprintf(f, "        n%p -> n%p [label=\"%s/%s\"];\n", 
-                    port->port_node, node,
-                    port->port_name, node->node_inputs[i].inport_name);
-        }
+    if(pos != NULL) {
+        typeclass_p->type_destroy(type_p);
+        NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_PARSE, strdup(string));
     }
+
+    return debug_block_create_args(typeclass_p, type_p, state_pp, info_p);
 }
+
+void debug_block_destroy(nz_block_state * state_p, struct nz_block_info * info_p) {
+    struct debug_block_state * debug_block_state_p = (struct debug_block_state *)state_p;
+
+    if(info_p != NULL) {
+        free(info_p->block_input_typeclasses);
+        free(info_p->block_input_types);
+    }
+
+    debug_block_state_p->typeclass_p->type_destroy_obj(debug_block_state_p->type_p, debug_block_state_p->obj_p);
+    debug_block_state_p->typeclass_p->type_destroy(debug_block_state_p->type_p);
+    free(debug_block_state_p);
+}
+
+DECLARE_BLOCKCLASS(debug)

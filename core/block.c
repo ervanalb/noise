@@ -4,11 +4,14 @@
 #include "core/block.h"
 #include "core/util.h"
 
+// TODO move these somewhere sane
 const struct nz_blockclass nz_constant_blockclass;
+const struct nz_blockclass nz_debug_blockclass;
 
 nz_rc nz_blocks_init(struct nz_context * context_p) {
     nz_rc rc;
     rc = nz_context_register_blockclass(context_p, &nz_constant_blockclass); if(rc != NZ_SUCCESS) return rc;
+    rc = nz_context_register_blockclass(context_p, &nz_debug_blockclass); if(rc != NZ_SUCCESS) return rc;
     return NZ_SUCCESS;
 }
 
@@ -52,7 +55,7 @@ nz_rc nz_block_create(const struct nz_context * context, const struct nz_blockcl
         }
     }
 
-    NZ_RETURN_ERR(NZ_BLOCK_NOT_FOUND);
+    NZ_RETURN_ERR_MSG(NZ_BLOCK_NOT_FOUND, strdup(string));
 }
 
 nz_obj * nz_null_pull_fn(struct nz_block self, size_t index, nz_obj * obj_p) {

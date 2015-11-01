@@ -86,7 +86,7 @@ nz_rc nz_graph_add_block(
         NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
     }
 
-    rc = nz_block_create(graph_p->graph_context_p, block, &node_p->blockclass_p, &node_p->block.block_state_p, &node_p->block_info);
+    rc = nz_block_create(graph_p->graph_context_p, &node_p->blockclass_p, &node_p->block.block_state_p, &node_p->block_info, block);
     if(rc != NZ_SUCCESS) {
         free(node_p->node_id);
         free(node_p);
@@ -112,8 +112,19 @@ nz_rc nz_graph_add_block(
         NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
     }
 
+    node_p->block.block_upstream_output_index_array = calloc(node_p->block_info.block_n_inputs, sizeof(size_t));
+    if(node_p->block.block_upstream_block_array == NULL) {
+        free(node_p->block.block_upstream_block_array);
+        free(node_p->block.block_upstream_pull_fn_p_array);
+        node_p->blockclass_p->block_destroy(node_p->block.block_state_p, &node_p->block_info);
+        free(node_p->node_id);
+        free(node_p);
+        NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
+    }
+
     node_p->upstream_node_p_array = calloc(node_p->block_info.block_n_inputs, sizeof(struct nz_node *));
     if(node_p->upstream_node_p_array == NULL) {
+        free(node_p->block.block_upstream_output_index_array);
         free(node_p->block.block_upstream_block_array);
         free(node_p->block.block_upstream_pull_fn_p_array);
         node_p->blockclass_p->block_destroy(node_p->block.block_state_p, &node_p->block_info);
@@ -125,6 +136,7 @@ nz_rc nz_graph_add_block(
     node_p->downstream_node_p_array = calloc(node_p->block_info.block_n_outputs, sizeof(struct nz_node *));
     if(node_p->downstream_node_p_array == NULL) {
         free(node_p->upstream_node_p_array);
+        free(node_p->block.block_upstream_output_index_array);
         free(node_p->block.block_upstream_block_array);
         free(node_p->block.block_upstream_pull_fn_p_array);
         node_p->blockclass_p->block_destroy(node_p->block.block_state_p, &node_p->block_info);
@@ -136,6 +148,8 @@ nz_rc nz_graph_add_block(
     // Append node to linked list
 
     ll_p->next = node_p;
+
+    if(block_pp != NULL) *block_pp = &node_p->block;
 
     return NZ_SUCCESS;
 }

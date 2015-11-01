@@ -17,6 +17,7 @@ struct nz_block {
     nz_block_state *  block_state_p;
     nz_pull_fn **     block_upstream_pull_fn_p_array;
     struct nz_block * block_upstream_block_array;
+    size_t *          block_upstream_output_index_array;
 };
 
 struct nz_block_info {
@@ -37,6 +38,8 @@ struct nz_blockclass {
     nz_rc (*block_create) (const struct nz_context * context, const char * string, nz_block_state ** state, struct nz_block_info * info);
     void (*block_destroy) (nz_block_state * state, struct nz_block_info * info);
 };
+
+#define NZ_PULL(SELF,INPUT,OBJ_P) ((SELF).block_upstream_pull_fn_p_array[(INPUT)]((SELF).block_upstream_block_array[(INPUT)], (SELF).block_upstream_output_index_array[(INPUT)], (OBJ_P)))
 
 // --
 // Needed by context

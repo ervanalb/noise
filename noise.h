@@ -8,6 +8,7 @@
 #include "core/context.h"
 #include "core/ntype.h"
 #include "core/block.h"
+#include "core/graph.h"
 //#include "core/note.h"
 
 extern const size_t nz_chunk_size;

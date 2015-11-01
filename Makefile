@@ -10,6 +10,7 @@ OBJECTS = \
 		core/block.o \
         core/graph.o \
 		blocks/constant.o \
+		blocks/debug.o \
 #		core/note.o \
 #		blocks/audio/compressor.o \
 #		blocks/audio/function_gen.o \
@@ -37,7 +38,8 @@ OBJECTS = \
 
 APP_OBJECTS = \
 		app/test_types.o \
-		app/test_block.o
+		app/test_block.o \
+		app/test_graph.o
 #				app/test.o \
 #				app/test_midi.o \
 #				app/test_synth.o \
