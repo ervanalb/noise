@@ -4,15 +4,17 @@
 #include "core/block.h"
 #include "core/util.h"
 
-nz_rc nz_blocks_init(struct nz_context * context) {
-    // XXX Is this actually a nop? -zbanks
-    // What is the intention of this?
+const struct nz_blockclass nz_constant_blockclass;
+
+nz_rc nz_blocks_init(struct nz_context * context_p) {
+    nz_rc rc;
+    rc = nz_context_register_blockclass(context_p, &nz_constant_blockclass); if(rc != NZ_SUCCESS) return rc;
     return NZ_SUCCESS;
 }
 
 // --
 
-nz_rc nz_block_create(const struct nz_context * context, const char * string, const struct nz_blockclass ** blockclass, nz_block_state ** state, struct nz_block_info * block_info) {
+nz_rc nz_block_create(const struct nz_context * context, const struct nz_blockclass ** blockclass, nz_block_state ** state, struct nz_block_info * block_info, const char * string) {
     // Create a block from a spec `string`
     // `struct nz_context * context`: input nz_context, which contains all registered blockclasses
     // `char * string`: input like "tee(2)" or "accumulator"

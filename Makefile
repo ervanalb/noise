@@ -36,7 +36,8 @@ OBJECTS = \
 #		samples/drum.o \
 
 APP_OBJECTS = \
-		app/test_types.o
+		app/test_types.o \
+		app/test_block.o
 #				app/test.o \
 #				app/test_midi.o \
 #				app/test_synth.o \

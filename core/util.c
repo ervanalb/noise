@@ -160,6 +160,7 @@ char * rsprintf(const char * fmt, ...)
 // Comma-separated list parsing
 enum arg_rc {SUCCESS = 0, UNMATCHED_CLOSE, UNMATCHED_OPEN, UNMATCHED_QUOTE};
 
+// TODO This needs to handle all open and close characters
 static enum arg_rc next_arg(const char * string, const char ** pos, const char ** start, size_t * length, char open, char close)
 {
     int angle_brackets = 0;

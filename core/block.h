@@ -41,11 +41,11 @@ struct nz_blockclass {
 // --
 // Needed by context
 
-nz_rc nz_blocks_init(struct nz_context * context);
+nz_rc nz_blocks_init(struct nz_context * context_p);
 
 // --
 
-nz_rc nz_block_create(const struct nz_context * context, const char * string, const struct nz_blockclass ** blockclass_pp, nz_block_state ** state_pp, struct nz_block_info * info_p);
+nz_rc nz_block_create(const struct nz_context * context, const struct nz_blockclass ** blockclass_pp, nz_block_state ** state_pp, struct nz_block_info * info_p, const char * string);
 
 nz_obj * nz_null_pull_fn(struct nz_block self, size_t index, nz_obj * obj_p);
 
