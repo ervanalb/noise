@@ -95,9 +95,8 @@ nz_rc nz_context_create(struct nz_context ** context_pp) {
      return NZ_SUCCESS;
 }
 
-void nz_context_destroy(struct nz_context ** context_pp) {
-    nz_typesystem_term(*context_pp);
-    nz_blocksystem_term(*context_pp);
-    free(*context_pp);
-    *context_pp = NULL;
+void nz_context_destroy(struct nz_context * context_pp) {
+    nz_typesystem_term(context_pp);
+    nz_blocksystem_term(context_pp);
+    free(context_pp);
 }

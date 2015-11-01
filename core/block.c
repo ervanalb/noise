@@ -8,12 +8,12 @@ static void free_block_info(struct nz_block_info * info) {
     // Destroy types
     for(size_t i = 0; i < info->block_n_inputs; i++) {
         free(info->block_input_names[i]);
-        nz_type_destroy(&info->block_input_typeclasses[i], &info->block_input_types[i]);
+        info->block_input_typeclasses[i].type_destroy(info->block_input_types[i]);
     }
 
     for(size_t i = 0; i < info->block_n_outputs; i++) {
         free(info->block_output_names[i]);
-        nz_type_destroy(&info->block_output_typeclasses[i], &info->block_output_types[i]);
+        info->block_output_typeclasses[i].type_destroy(info->block_output_types[i]);
     }
 
     // Free strings and arrays
@@ -77,9 +77,4 @@ nz_rc nz_block_create(struct nz_context * context, const char * string, const st
     }
 
     NZ_RETURN_ERR(NZ_BLOCK_NOT_FOUND);
-}
-
-void nz_block_destroy(const struct nz_blockclass * blockclass, nz_block_state * state, struct nz_block_info * info) {
-    blockclass->block_destroy(state);
-    free_block_info(info);    
 }

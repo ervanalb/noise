@@ -13,7 +13,7 @@ struct nz_typeclass;
 // Public interface
 
 nz_rc nz_context_create(struct nz_context ** context_pp);
-void nz_context_destroy(struct nz_context ** context_pp);
+void nz_context_destroy(struct nz_context * context_p);
 
 nz_rc nz_context_register_blockclass(struct nz_context * context_p, struct nz_blockclass const * blockclass_p);
 nz_rc nz_context_register_typeclass(struct nz_context * context_p, struct nz_typeclass const * typeclass_p);

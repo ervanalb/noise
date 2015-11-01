@@ -39,7 +39,7 @@ nz_rc nz_graph_create(const struct nz_context * context, struct nz_graph ** grap
     return NZ_SUCCESS;
 }
 
-void nz_graph_destroy(struct nz_graph ** graph_pp) {
+void nz_graph_destroy(struct nz_graph * graph_pp) {
     // NZ_NOT_IMPLEMENTED
 }
 

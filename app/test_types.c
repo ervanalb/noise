@@ -43,7 +43,7 @@ nz_rc run()
             my_typeclass->type_destroy(my_type);
         }
     }
-    nz_context_destroy(&context);
+    nz_context_destroy(context);
     return rc;
 }
 

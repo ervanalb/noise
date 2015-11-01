@@ -51,6 +51,5 @@ nz_rc nz_blocks_init(struct nz_context * context);
 // --
 
 nz_rc nz_block_create(struct nz_context * context, const char * string, const struct nz_blockclass ** blockclass_pp, nz_block_state ** state, struct nz_block_info * info);
-void nz_block_destroy(const struct nz_blockclass * blockclass, nz_block_state * state, struct nz_block_info * info);
 
 #endif
