@@ -33,36 +33,13 @@ static nz_rc constant_block_create_args(const struct nz_typeclass * typeclass_p,
     state_p->type_p = type_p;
     state_p->obj_p = obj_p;
 
-    if(info_p != NULL) {
-        info_p->block_n_inputs = 0;
-        info_p->block_n_outputs = 1;
-        info_p->block_input_port_array = NULL;
-        info_p->block_output_port_array = calloc(1, sizeof(struct nz_port_info));
-        info_p->block_pull_fns = calloc(1, sizeof(nz_pull_fn *));
-
-        if(info_p->block_output_port_array == NULL ||
-           info_p->block_pull_fns == NULL) {
-            free(info_p->block_output_port_array);
-            free(info_p->block_pull_fns);
-            typeclass_p->type_destroy_obj(type_p, obj_p);
-            typeclass_p->type_destroy(type_p);
-            free(state_p);
-            NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
-        }
-
-        info_p->block_output_port_array[0].block_port_name = strdup("out");
-        info_p->block_output_port_array[0].block_port_typeclass_p = typeclass_p;
-        info_p->block_output_port_array[0].block_port_type_p = type_p;
-        info_p->block_pull_fns[0] = constant_pull_fn;
-
-        if(info_p->block_output_port_array[0].block_port_name == NULL) {
-            free(info_p->block_output_port_array);
-            free(info_p->block_pull_fns);
-            typeclass_p->type_destroy_obj(type_p, obj_p);
-            typeclass_p->type_destroy(type_p);
-            free(state_p);
-            NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
-        }
+    nz_rc rc;
+    if((rc = block_info_set_n_io(info_p, 0, 1)) != NZ_SUCCESS ||
+       (rc = block_info_set_output(info_p, 0, strdup("out"), typeclass_p, type_p, constant_pull_fn)) != NZ_SUCCESS) {
+        typeclass_p->type_destroy_obj(type_p, obj_p);
+        block_info_term(info_p);
+        free(state_p);
+        return rc;
     }
 
     *(struct constant_block_state **)(state_pp) = state_p;
@@ -127,14 +104,8 @@ nz_rc constant_block_create(const struct nz_context * context_p, const char * st
 void constant_block_destroy(nz_block_state * state_p, struct nz_block_info * info_p) {
     struct constant_block_state * constant_block_state_p = (struct constant_block_state *)state_p;
 
-    if(info_p != NULL) {
-        free(info_p->block_output_port_array[0].block_port_name);
-        free(info_p->block_output_port_array);
-        free(info_p->block_pull_fns);
-    }
-
     constant_block_state_p->typeclass_p->type_destroy_obj(constant_block_state_p->type_p, constant_block_state_p->obj_p);
-    constant_block_state_p->typeclass_p->type_destroy(constant_block_state_p->type_p);
+    block_info_term(info_p);
     free(constant_block_state_p);
 }
 

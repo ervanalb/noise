@@ -62,4 +62,12 @@ const struct nz_blockclass nz_ ## NAME ## _blockclass = { \
     .block_destroy = & NAME ## _block_destroy, \
 };
 
+// --
+// block_info helper functions
+
+void block_info_term(struct nz_block_info * info_p);
+nz_rc block_info_set_n_io(struct nz_block_info * info_p, size_t n_inputs, size_t n_outputs);
+nz_rc block_info_set_input(struct nz_block_info * info_p, size_t input_index, char * name, const struct nz_typeclass * typeclass_p, nz_type * type_p);
+nz_rc block_info_set_output(struct nz_block_info * info_p, size_t input_index, char * name, const struct nz_typeclass * typeclass_p, nz_type * type_p, nz_pull_fn * pull_fn_p);
+
 #endif
