@@ -42,23 +42,29 @@ static nz_rc constant_block_create_args(const struct nz_typeclass * typeclass_p,
         info_p->block_input_typeclasses = NULL;
         info_p->block_input_types = NULL;
         info_p->block_n_outputs = 1;
-        info_p->block_output_names = (char *[]){(char *)"constant"};
+        info_p->block_output_names = calloc(1, sizeof(char *));
         info_p->block_output_typeclasses = calloc(1, sizeof(const struct nz_typeclass *));
         info_p->block_output_types = calloc(1, sizeof(nz_type *));
-        info_p->block_pull_fns = (nz_pull_fn *[]){constant_pull_fn};
+        info_p->block_pull_fns = calloc(1, sizeof(nz_pull_fn *));
 
         if(info_p->block_output_typeclasses == 0 ||
-           info_p->block_output_types == 0) {
+           info_p->block_output_types == 0 ||
+           info_p->block_output_names == 0 ||
+           info_p->block_pull_fns == 0) {
             free(info_p->block_output_typeclasses);
             free(info_p->block_output_types);
+            free(info_p->block_output_names);
+            free(info_p->block_pull_fns);
             typeclass_p->type_destroy_obj(type_p, obj_p);
             typeclass_p->type_destroy(type_p);
             free(state_p);
             NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
         }
 
+        info_p->block_output_names[0] = (char *)"out";
         info_p->block_output_typeclasses[0] = typeclass_p;
         info_p->block_output_types[0] = type_p;
+        info_p->block_pull_fns[0] = constant_pull_fn;
     }
 
     *(struct constant_block_state **)(state_pp) = state_p;
@@ -126,6 +132,8 @@ void constant_block_destroy(nz_block_state * state_p, struct nz_block_info * inf
     if(info_p != NULL) {
         free(info_p->block_output_typeclasses);
         free(info_p->block_output_types);
+        free(info_p->block_output_names);
+        free(info_p->block_pull_fns);
     }
 
     constant_block_state_p->typeclass_p->type_destroy_obj(constant_block_state_p->type_p, constant_block_state_p->obj_p);

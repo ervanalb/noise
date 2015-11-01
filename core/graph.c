@@ -179,10 +179,43 @@ nz_rc nz_graph_del_block(struct nz_graph * graph_p, const char * id) {
 nz_rc nz_graph_connect(
         struct nz_graph * graph_p,
         const char * id_upstream,
-        const char * port_upstream,
+        const char * output_port,
         const char * id_downstream,
-        const char * port_downstream) {
-    return NZ_NOT_IMPLEMENTED;
+        const char * input_port) {
+
+    struct nz_node * upstream_p = NULL;
+    struct nz_node * downstream_p = NULL;
+
+    for(struct nz_node * node_p = graph_p->graph_node_head_p->next; node_p != NULL; node_p = node_p->next) {
+        if(strcmp(node_p->node_id, id_upstream) == 0) upstream_p = node_p;
+        else if(strcmp(node_p->node_id, id_downstream) == 0) downstream_p = node_p;
+        if(upstream_p != NULL && downstream_p != NULL) break;
+    }
+    if(upstream_p == NULL) NZ_RETURN_ERR_MSG(NZ_NODE_NOT_FOUND, strdup(id_upstream));
+    if(downstream_p == NULL) NZ_RETURN_ERR_MSG(NZ_NODE_NOT_FOUND, strdup(id_downstream));
+
+    size_t output_index;
+    for(output_index = 0; output_index < upstream_p->block_info.block_n_outputs; output_index++) {
+        if(strcmp(upstream_p->block_info.block_output_names[output_index], output_port) == 0) break;
+    }
+    if(output_index == upstream_p->block_info.block_n_outputs) NZ_RETURN_ERR_MSG(NZ_PORT_NOT_FOUND, strdup(output_port));
+
+    size_t input_index;
+    for(input_index = 0; input_index < downstream_p->block_info.block_n_inputs; input_index++) {
+        if(strcmp(downstream_p->block_info.block_input_names[input_index], input_port) == 0) break;
+    }
+    if(input_index == downstream_p->block_info.block_n_inputs) NZ_RETURN_ERR_MSG(NZ_PORT_NOT_FOUND, strdup(input_port));
+
+    if(upstream_p->downstream_node_p_array[output_index] != NULL) NZ_RETURN_ERR(NZ_PORT_ALREADY_CONNECTED);
+    if(downstream_p->upstream_node_p_array[input_index] != NULL) NZ_RETURN_ERR(NZ_PORT_ALREADY_CONNECTED);
+
+    upstream_p->downstream_node_p_array[output_index] = downstream_p;
+    downstream_p->upstream_node_p_array[input_index] = upstream_p;
+    downstream_p->block.block_upstream_pull_fn_p_array[input_index] = upstream_p->block_info.block_pull_fns[output_index];
+    downstream_p->block.block_upstream_block_array[input_index] = upstream_p->block;
+    downstream_p->block.block_upstream_output_index_array[input_index] = output_index;
+
+    return NZ_SUCCESS;
 }
 
 nz_rc nz_graph_disconnect(
@@ -191,5 +224,5 @@ nz_rc nz_graph_disconnect(
         const char * port_upstream,
         const char * id_downstream,
         const char * port_downstream) {
-    return NZ_NOT_IMPLEMENTED;
+    NZ_RETURN_ERR(NZ_NOT_IMPLEMENTED);
 }

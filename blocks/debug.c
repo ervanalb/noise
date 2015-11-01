@@ -52,7 +52,7 @@ static nz_rc debug_block_create_args(const struct nz_typeclass * typeclass_p, nz
     if(info_p != NULL) {
         info_p->block_n_inputs = 1;
         info_p->block_n_outputs = 0;
-        info_p->block_input_names = (char *[]){(char *)"value"};
+        info_p->block_input_names = calloc(1, sizeof(char *));
         info_p->block_input_typeclasses = calloc(1, sizeof(const struct nz_typeclass *));
         info_p->block_input_types = calloc(1, sizeof(nz_type *));
         info_p->block_n_outputs = 0;
@@ -62,15 +62,18 @@ static nz_rc debug_block_create_args(const struct nz_typeclass * typeclass_p, nz
         info_p->block_pull_fns = NULL;
 
         if(info_p->block_input_typeclasses == 0 ||
-           info_p->block_input_types == 0) {
+           info_p->block_input_types == 0 ||
+           info_p->block_input_names == 0) {
             free(info_p->block_input_typeclasses);
             free(info_p->block_input_types);
+            free(info_p->block_input_names);
             typeclass_p->type_destroy_obj(type_p, obj_p);
             typeclass_p->type_destroy(type_p);
             free(state_p);
             NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
         }
 
+        info_p->block_input_names[0] = (char *)"in";
         info_p->block_input_typeclasses[0] = typeclass_p;
         info_p->block_input_types[0] = type_p;
     }
@@ -112,6 +115,7 @@ void debug_block_destroy(nz_block_state * state_p, struct nz_block_info * info_p
     if(info_p != NULL) {
         free(info_p->block_input_typeclasses);
         free(info_p->block_input_types);
+        free(info_p->block_input_names);
     }
 
     debug_block_state_p->typeclass_p->type_destroy_obj(debug_block_state_p->type_p, debug_block_state_p->obj_p);
