@@ -8,12 +8,14 @@
 const struct nz_blockclass nz_constant_blockclass;
 const struct nz_blockclass nz_debug_blockclass;
 const struct nz_blockclass nz_accumulator_blockclass;
+const struct nz_blockclass nz_tee_blockclass;
 
 nz_rc nz_blocks_init(struct nz_context * context_p) {
     nz_rc rc;
     rc = nz_context_register_blockclass(context_p, &nz_constant_blockclass); if(rc != NZ_SUCCESS) return rc;
     rc = nz_context_register_blockclass(context_p, &nz_debug_blockclass); if(rc != NZ_SUCCESS) return rc;
     rc = nz_context_register_blockclass(context_p, &nz_accumulator_blockclass); if(rc != NZ_SUCCESS) return rc;
+    rc = nz_context_register_blockclass(context_p, &nz_tee_blockclass); if(rc != NZ_SUCCESS) return rc;
     return NZ_SUCCESS;
 }
 

@@ -12,7 +12,8 @@ nz_rc run()
     nz_rc rc = NZ_SUCCESS;
     struct nz_context * context;
     struct nz_graph * graph;
-    struct nz_block * block_handle;
+    struct nz_block * block_handle1;
+    struct nz_block * block_handle2;
 
     if((rc = nz_context_create(&context)) == NZ_SUCCESS)
     {
@@ -21,12 +22,18 @@ nz_rc run()
         {
             rc = nz_graph_add_block(graph, "1", "constant(real, 20)", NULL); if(rc != NZ_SUCCESS) goto err;
             rc = nz_graph_add_block(graph, "2", "accumulator", NULL); if(rc != NZ_SUCCESS) goto err;
-            rc = nz_graph_add_block(graph, "3", "debug(real)", &block_handle); if(rc != NZ_SUCCESS) goto err;
+            rc = nz_graph_add_block(graph, "3", "tee(2, real)", NULL); if(rc != NZ_SUCCESS) goto err;
+            rc = nz_graph_add_block(graph, "4", "debug(real)", &block_handle1); if(rc != NZ_SUCCESS) goto err;
+            rc = nz_graph_add_block(graph, "5", "debug(real)", &block_handle2); if(rc != NZ_SUCCESS) goto err;
             rc = nz_graph_connect(graph, "1", "out", "2", "in"); if(rc != NZ_SUCCESS) goto err;
             rc = nz_graph_connect(graph, "2", "out", "3", "in"); if(rc != NZ_SUCCESS) goto err;
-            rc = debug_pull(block_handle); if(rc != NZ_SUCCESS) goto err;
-            rc = debug_pull(block_handle); if(rc != NZ_SUCCESS) goto err;
-            rc = debug_pull(block_handle); if(rc != NZ_SUCCESS) goto err;
+            rc = nz_graph_connect(graph, "3", "main", "4", "in"); if(rc != NZ_SUCCESS) goto err;
+            rc = nz_graph_connect(graph, "3", "aux 1", "5", "in"); if(rc != NZ_SUCCESS) goto err;
+            rc = debug_pull(block_handle1); if(rc != NZ_SUCCESS) goto err;
+            rc = debug_pull(block_handle2); if(rc != NZ_SUCCESS) goto err;
+            rc = debug_pull(block_handle2); if(rc != NZ_SUCCESS) goto err;
+            rc = debug_pull(block_handle1); if(rc != NZ_SUCCESS) goto err;
+            rc = debug_pull(block_handle2); if(rc != NZ_SUCCESS) goto err;
             err:
             nz_graph_destroy(graph);
         }

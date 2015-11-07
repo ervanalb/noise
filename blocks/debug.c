@@ -40,6 +40,7 @@ static nz_rc debug_block_create_args(const struct nz_typeclass * typeclass_p, nz
 
     rc = typeclass_p->type_create_obj(type_p, &obj_p);
     if(rc != NZ_SUCCESS) {
+        typeclass_p->type_destroy(type_p);
         free(state_p);
         return rc;
     }
@@ -52,6 +53,7 @@ static nz_rc debug_block_create_args(const struct nz_typeclass * typeclass_p, nz
     if((rc = block_info_set_n_io(info_p, 1, 0)) != NZ_SUCCESS ||
        (rc = block_info_set_input(info_p, 0, strdup("in"), typeclass_p, type_p)) != NZ_SUCCESS) {
         typeclass_p->type_destroy_obj(type_p, obj_p);
+        typeclass_p->type_destroy(type_p);
         block_info_term(info_p);
         free(state_p);
         return rc;
@@ -91,8 +93,9 @@ nz_rc debug_block_create(const struct nz_context * context_p, const char * strin
 void debug_block_destroy(nz_block_state * state_p, struct nz_block_info * info_p) {
     struct debug_block_state * debug_block_state_p = (struct debug_block_state *)state_p;
 
-    debug_block_state_p->typeclass_p->type_destroy_obj(debug_block_state_p->type_p, debug_block_state_p->obj_p);
     block_info_term(info_p);
+    debug_block_state_p->typeclass_p->type_destroy_obj(debug_block_state_p->type_p, debug_block_state_p->obj_p);
+    debug_block_state_p->typeclass_p->type_destroy(debug_block_state_p->type_p);
     free(debug_block_state_p);
 }
 

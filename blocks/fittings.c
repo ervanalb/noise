@@ -1,100 +1,128 @@
 #include <stdlib.h>
-
 #include "noise.h"
-#include "blocks/blocks.h"
-#include "core/util.h"
+#include "core/ntypes.h"
 
+struct tee_block_state {
+    size_t n_outputs;
+    const struct nz_typeclass * typeclass_p;
+    nz_type * type_p;
+    nz_obj * obj_p;
+    nz_obj * result_p;
+};
 
-static enum nz_pull_rc wye_pull(struct nz_port * port) {
-    struct nz_node * node = port->port_node;
-    nz_obj_p out = nz_obj_swap(&port->port_value, NZ_NODE_PULL(node, 0));
+nz_obj * tee_main_pull_fn(struct nz_block self, size_t index, nz_obj * obj_p) {
+    struct tee_block_state * tee_block_state_p = (struct tee_block_state *)(self.block_state_p);
 
-    for (size_t i = 1; i < node->node_n_inputs; i++) {
-        NZ_NODE_PULL(node, i);
+    tee_block_state_p->result_p = NZ_PULL(self, 0, tee_block_state_p->obj_p);
+
+    if(tee_block_state_p->result_p == NULL) return NULL;
+
+    if(tee_block_state_p->typeclass_p->type_copy_obj(tee_block_state_p->type_p, obj_p, tee_block_state_p->obj_p) != NZ_SUCCESS) {
+        // THROW PULL-TIME ERROR
+        return NULL;
     }
 
-    return (out == NULL) ? NZ_PULL_RC_NULL : NZ_PULL_RC_OBJECT;
+    return obj_p;
 }
 
-int nz_wye_init(struct nz_node * node, size_t n_inputs) {
-    if (n_inputs < 1) return (errno = EINVAL, -1);
+nz_obj * tee_aux_pull_fn(struct nz_block self, size_t index, nz_obj * obj_p) {
+    struct tee_block_state * tee_block_state_p = (struct tee_block_state *)(self.block_state_p);
 
-    int rc = nz_node_alloc_ports(node, n_inputs, 1);
-    if (rc != 0) return rc;
+    if(tee_block_state_p->result_p == NULL) return NULL;
 
-    node->node_term = &nz_node_term_generic;
-    node->node_name = rsprintf("Wye %lu", n_inputs);
-
-    // Define inputs
-    for (size_t i = 0; i < n_inputs; i++) {
-        node->node_inputs[i] = (struct nz_inport) {
-            .inport_type = NULL,
-            .inport_name = (i == 0) ? strdup("main") : rsprintf("aux %lu", i),
-        };
-    }
-    
-    // Define outputs 
-    node->node_outputs[0] = (struct nz_port) {
-        .port_node = node,
-        .port_name = strdup("out"),
-        .port_pull = &wye_pull,
-        .port_type = NULL,
-        .port_value = NULL,
-    };
-
-    return 0;
-}
-
-//
-
-static enum nz_pull_rc tee_pull_main(struct nz_port * port) {
-    struct nz_node * node = port->port_node;
-    nz_obj_p out = nz_obj_swap(&port->port_value, NZ_NODE_PULL(node, 0));
-
-    for (size_t i = 1; i < node->node_n_outputs; i++) {
-        node->node_outputs[i].port_value = out;
-    }
-    
-    return (out == NULL) ? NZ_PULL_RC_NULL : NZ_PULL_RC_OBJECT;
-}
-
-static enum nz_pull_rc tee_pull_aux(struct nz_port * port) {
-    return NZ_PULL_RC_OBJECT;
-}
-
-int nz_tee_init(struct nz_node * node, size_t n_outputs) {
-    if (n_outputs < 1) return (errno = EINVAL, -1);
-
-    int rc = nz_node_alloc_ports(node, 1, n_outputs);
-    if (rc != 0) return rc;
-
-    node->node_term = &nz_node_term_generic;
-    node->node_name = rsprintf("Tee %lu", n_outputs);
-
-    // Define inputs
-    node->node_inputs[0] = (struct nz_inport) {
-        .inport_type = NULL,
-        .inport_name = strdup("in"),
-    };
-    
-    // Define outputs 
-    node->node_outputs[0] = (struct nz_port) {
-        .port_node = node,
-        .port_name = strdup("main"),
-        .port_pull = &tee_pull_main,
-        .port_type = NULL,
-        .port_value = NULL,
-    };
-    
-    for (size_t i = 1; i < n_outputs; i++) {
-        node->node_outputs[i] = (struct nz_port) {
-            .port_node = node,
-            .port_name = rsprintf("aux %lu", i),
-            .port_pull = &tee_pull_aux,
-            .port_type = NULL,
-            .port_value = NULL,
-        };
+    if(tee_block_state_p->typeclass_p->type_copy_obj(tee_block_state_p->type_p, obj_p, tee_block_state_p->obj_p) != NZ_SUCCESS) {
+        // THROW PULL-TIME ERROR
+        return NULL;
     }
 
-    return 0;
+    return obj_p;
 }
+
+static nz_rc tee_block_create_args(size_t n_outputs, const struct nz_typeclass * typeclass_p, nz_type * type_p, nz_block_state ** state_pp, struct nz_block_info * info_p) {
+    struct tee_block_state * state_p = calloc(1, sizeof(struct tee_block_state));
+    if(state_p == NULL) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
+
+    if(n_outputs < 1) NZ_RETURN_ERR(NZ_BLOCK_ARG_VALUE);
+
+    // This function assumes ownership of typeclass_p and type_p
+    nz_rc rc;
+    nz_obj * obj_p;
+    rc = typeclass_p->type_create_obj(type_p, &obj_p);
+    if(rc != NZ_SUCCESS) {
+        typeclass_p->type_destroy(type_p);
+        free(state_p);
+        return rc;
+    }
+
+    state_p->typeclass_p = typeclass_p;
+    state_p->type_p = type_p;
+    state_p->obj_p = obj_p;
+    state_p->n_outputs = n_outputs;
+
+    if((rc = block_info_set_n_io(info_p, 1, n_outputs)) == NZ_SUCCESS &&
+       (rc = block_info_set_input(info_p, 0, strdup("in"), typeclass_p, type_p)) == NZ_SUCCESS &&
+       (rc = block_info_set_output(info_p, 0, strdup("main"), typeclass_p, type_p, tee_main_pull_fn)) == NZ_SUCCESS) {
+        for(size_t i = 1; i < n_outputs; i++) {
+            if((rc = block_info_set_output(info_p, i, rsprintf("aux %lu", i), typeclass_p, type_p, tee_aux_pull_fn)) != NZ_SUCCESS) break;
+        }
+    }
+
+    if(rc != NZ_SUCCESS) {
+        block_info_term(info_p);
+        typeclass_p->type_destroy_obj(type_p, obj_p);
+        typeclass_p->type_destroy(type_p);
+        free(state_p);
+        return rc;
+    }
+ 
+    *(struct tee_block_state **)(state_pp) = state_p;
+    return NZ_SUCCESS;
+}
+
+nz_rc tee_block_create(const struct nz_context * context_p, const char * string, nz_block_state ** state_pp, struct nz_block_info * info_p) {
+    if(string == NULL) NZ_RETURN_ERR(NZ_EXPECTED_BLOCK_ARGS);
+
+    const char * pos = string;
+    const char * start;
+    size_t length;
+    int end;
+    nz_rc rc;
+
+    const struct nz_typeclass * typeclass_p;
+    nz_type * type_p;
+
+    rc = nz_next_block_arg(string, &pos, &start, &length);
+    if(rc != NZ_SUCCESS) return rc;
+    char * n_outputs_str = strndup(start, length);
+    if(n_outputs_str == NULL) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
+    size_t n_outputs;
+    if(sscanf(n_outputs_str, "%lu%n", &n_outputs, &end) != 1 || end <= 0 || (size_t)end != length) {
+        free(n_outputs_str);
+        NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_PARSE, strdup(string));
+    }
+    free(n_outputs_str);
+
+    rc = nz_next_block_arg(string, &pos, &start, &length);
+    if(rc != NZ_SUCCESS) return rc;
+    char * type_str = strndup(start, length);
+    rc = nz_type_create(context_p, &typeclass_p, &type_p, type_str);
+    free(type_str);
+    if(rc != NZ_SUCCESS) return rc;
+
+    if(pos != NULL) {
+        typeclass_p->type_destroy(type_p);
+        NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_PARSE, strdup(string));
+    }
+
+    return tee_block_create_args(n_outputs, typeclass_p, type_p, state_pp, info_p);
+}
+
+void tee_block_destroy(nz_block_state * state_p, struct nz_block_info * info_p) {
+    struct tee_block_state * tee_block_state_p = (struct tee_block_state *)state_p;
+    block_info_term(info_p);
+    tee_block_state_p->typeclass_p->type_destroy_obj(tee_block_state_p->type_p, tee_block_state_p->obj_p);
+    tee_block_state_p->typeclass_p->type_destroy(tee_block_state_p->type_p);
+    free(state_p);
+}
+
+DECLARE_BLOCKCLASS(tee)

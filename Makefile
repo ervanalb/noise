@@ -12,6 +12,7 @@ OBJECTS = \
 		blocks/constant.o \
 		blocks/debug.o \
 		blocks/accumulator.o \
+		blocks/fittings.o \
 #		core/note.o \
 #		blocks/audio/compressor.o \
 #		blocks/audio/function_gen.o \
