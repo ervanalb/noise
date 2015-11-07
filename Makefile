@@ -13,6 +13,7 @@ OBJECTS = \
 		blocks/debug.o \
 		blocks/accumulator.o \
 		blocks/fittings.o \
+		blocks/maths.o \
 #		core/note.o \
 #		blocks/audio/compressor.o \
 #		blocks/audio/function_gen.o \
@@ -27,13 +28,10 @@ OBJECTS = \
 #		blocks/io/midi_smf.o \
 #		blocks/io/midi_writer.o \
 #		blocks/io/portaudio.o \
-#		blocks/debug.o \
-#		blocks/fittings.o \
 #		blocks/instruments/instrument.o \
 #		blocks/instruments/saw.o \
 #		blocks/instruments/sine.o \
 #		blocks/instruments/snare.o \
-#		blocks/maths.o \
 #		blocks/sequencer.o \
 #		samples/drum.o \
 
