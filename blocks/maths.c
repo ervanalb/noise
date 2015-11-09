@@ -7,8 +7,7 @@ nz_obj * sum_pull_fn(struct nz_block self, size_t index, nz_obj * obj_p) {
     nz_real a;
     nz_real b;
 
-    if(NZ_PULL(self, 0, &a) == NULL) return NULL;
-    if(NZ_PULL(self, 1, &b) == NULL) return NULL;
+    if((NZ_PULL(self, 0, &a) == NULL) | (NZ_PULL(self, 1, &b) == NULL)) return NULL;
 
     *(nz_real *)obj_p = a + b;
 
@@ -20,7 +19,7 @@ nz_obj * diff_pull_fn(struct nz_block self, size_t index, nz_obj * obj_p) {
     nz_real a;
     nz_real b;
 
-    if(NZ_PULL(self, 0, &a) == NULL || NZ_PULL(self, 1, &b) == NULL) return NULL;
+    if((NZ_PULL(self, 0, &a) == NULL) | (NZ_PULL(self, 1, &b) == NULL)) return NULL;
 
     *(nz_real *)obj_p = a - b;
 
@@ -32,7 +31,7 @@ nz_obj * mul_pull_fn(struct nz_block self, size_t index, nz_obj * obj_p) {
     nz_real a;
     nz_real b;
 
-    if(NZ_PULL(self, 0, &a) == NULL || NZ_PULL(self, 1, &b) == NULL) return NULL;
+    if((NZ_PULL(self, 0, &a) == NULL) | (NZ_PULL(self, 1, &b) == NULL)) return NULL;
 
     *(nz_real *)obj_p = a * b;
 
@@ -44,9 +43,7 @@ nz_obj * div_pull_fn(struct nz_block self, size_t index, nz_obj * obj_p) {
     nz_real a;
     nz_real b;
 
-    if(NZ_PULL(self, 0, &a) == NULL ||
-       NZ_PULL(self, 1, &b) == NULL ||
-       b == 0) return NULL;
+    if((NZ_PULL(self, 0, &a) == NULL) | (NZ_PULL(self, 1, &b) == NULL || b == 0)) return NULL;
 
     *(nz_real *)obj_p = a / b;
 
