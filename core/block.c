@@ -14,6 +14,7 @@ const struct nz_blockclass nz_sum_blockclass;
 const struct nz_blockclass nz_diff_blockclass;
 const struct nz_blockclass nz_mul_blockclass;
 const struct nz_blockclass nz_div_blockclass;
+const struct nz_blockclass nz_pa_blockclass;
 
 nz_rc nz_blocks_init(struct nz_context * context_p) {
     nz_rc rc;
@@ -21,6 +22,7 @@ nz_rc nz_blocks_init(struct nz_context * context_p) {
     rc = nz_context_register_blockclass(context_p, &nz_debug_blockclass); if(rc != NZ_SUCCESS) return rc;
     rc = nz_context_register_blockclass(context_p, &nz_accumulator_blockclass); if(rc != NZ_SUCCESS) return rc;
     rc = nz_context_register_blockclass(context_p, &nz_tee_blockclass); if(rc != NZ_SUCCESS) return rc;
+    rc = nz_context_register_blockclass(context_p, &nz_pa_blockclass); if(rc != NZ_SUCCESS) return rc;
     return NZ_SUCCESS;
 }
 

@@ -14,6 +14,7 @@ OBJECTS = \
 		blocks/accumulator.o \
 		blocks/fittings.o \
 		blocks/maths.o \
+        blocks/io/portaudio.o \
 #		core/note.o \
 #		blocks/audio/compressor.o \
 #		blocks/audio/function_gen.o \

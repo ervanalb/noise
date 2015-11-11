@@ -1,129 +1,135 @@
 #include <stdlib.h>
-#include <string.h>
-#include <portaudio.h>
 
 #include "noise.h"
-#include "blocks/io/blocks.h"
+#include "core/util.h"
+#include "core/ntype.h"
+#include "core/ntypes.h"
+#include "core/block.h"
+#include "core/error.h"
 
-PaStreamParameters outputParameters;
-PaError err;
-PaStream* stream;
-float* buffer;
-static struct nz_node sc_node[1];
-int sc_init = 0;
+#include <portaudio.h>
 
-static int soundcard_api_init()
-{
-	/* -- initialize PortAudio -- */
-	err = Pa_Terminate();
-	err = Pa_Initialize();
-	if( err != paNoError ) return 1;
-	/* -- setup output -- */
-	outputParameters.device = Pa_GetDefaultOutputDevice(); /* default output device */
-	outputParameters.channelCount = 1;
-	outputParameters.sampleFormat = paFloat32;
-	outputParameters.suggestedLatency = 0;
-	outputParameters.hostApiSpecificStreamInfo = 0;
-	/* -- setup stream -- */
-	err = Pa_OpenStream(
-		  &stream,
-		  0,
-		  &outputParameters,
-		  nz_frame_rate,
-		  nz_chunk_size,
-		  0,
-		  0, /* no callback, use blocking API */
-		  0 ); /* no callback, so no callback userData */
-	if( err != paNoError ) return 1;
-	/* -- start stream -- */
-	err = Pa_StartStream( stream );
-	if( err != paNoError ) return 1;
+struct pa_block_state {
+    nz_real * chunk_p;
+    PaStream * stream;
+};
 
-	buffer=malloc(nz_chunk_size*sizeof(float));
+nz_rc pa_pull(struct nz_block * block_p) {
+    struct nz_block self = *block_p;
+    struct pa_block_state * state_p = (struct pa_block_state *)(self.block_state_p);
 
-	return 0;
-}
-
-static int soundcard_api_write(double* chunk)
-{
-    //memcpy(buffer, chunk, nz_chunk_size * sizeof(double));
-    for (size_t i = 0; i < nz_chunk_size; i++) {
-        buffer[i] = (float) chunk[i];
-    }
-	err = Pa_WriteStream( stream, buffer, nz_chunk_size);
-	if( err ) return 1;
-	return 0;
-}
-
-static int soundcard_api_deinit()
-{
-	free(buffer);
-	/* -- Now we stop the stream -- */
-	err = Pa_StopStream( stream );
-	if( err != paNoError ) return 1;
-	/* -- don't forget to cleanup! -- */
-	err = Pa_CloseStream( stream );
-	if( err != paNoError ) return 1;
-	Pa_Terminate();
-	return 0;
-}
-
-// --- Block methods ---
-
-void soundcard_destroy(struct nz_node * node) {
-    soundcard_api_deinit();
-    nz_node_term_generic(node);
-    sc_init = 0;
-}
-
-// Public
-
-struct nz_node * nz_soundcard_get() {
-    int rc = nz_node_alloc_ports(sc_node, 1, 0);
-    if (rc != 0) return NULL;
-
-    sc_node->node_term = &soundcard_destroy;
-    sc_node->node_name = strdup("Soundcard");
-
-    // Define inputs
-    sc_node->node_inputs[0] = (struct nz_inport) {
-        .inport_type = nz_chunk_type,
-        .inport_name = strdup("chunks"),
-    };
-    
-    // Setup
-#ifndef FAKESOUND
-    soundcard_api_init();
-#endif
-    (void) soundcard_api_init;
-    (void) soundcard_api_write;
-
-    sc_init = 1;
-
-    return sc_node;
-}
-
-void nz_soundcard_run() {
-    if (!sc_init) {
-        printf("Soundcard not initialized!\n");
-        return;
+    nz_obj * result = NZ_PULL(self, 0, state_p->chunk_p);
+    if(result == NULL) {
+        printf("Got NULL\n");
+    } else {
+        printf("Got chunk\n");
     }
 
-#ifndef FAKESOUND
-    int iters = 2500;
-#else
-    int iters = 10;
-#endif
-    //while (1) {
-    for (int i = 0; i < iters; i++) {
-        nz_obj_p chunk = NZ_NODE_PULL(sc_node, 0);
-
-        if (chunk == NULL) return;
-
-#ifndef FAKESOUND
-        if (soundcard_api_write(&*(double*)chunk)) {
-            printf("pa error\n");
-        }
-#endif
-    }
+    return NZ_SUCCESS;
 }
+
+nz_rc pa_start(struct nz_block * block_p) {
+    struct nz_block self = *block_p;
+    struct pa_block_state * state_p = (struct pa_block_state *)(self.block_state_p);
+
+    PaError err = Pa_StartStream(state_p->stream);
+    if(err != paNoError) NZ_RETURN_ERR_MSG(NZ_INTERNAL_ERROR, strdup(Pa_GetErrorText(err)));
+
+    return NZ_SUCCESS;
+}
+
+static nz_rc pa_block_create_args(PaDeviceIndex device, nz_block_state ** state_pp, struct nz_block_info * info_p) {
+    struct pa_block_state * state_p = calloc(1, sizeof(struct pa_block_state));
+    if(state_p == NULL) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
+
+    state_p->chunk_p = calloc(nz_chunk_size, sizeof(nz_real));
+
+    if(state_p == NULL) {
+        free(state_p);
+        NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
+    }
+
+    PaStreamParameters parameters;
+    parameters.device = device;
+    parameters.channelCount = 1;
+    parameters.sampleFormat = paFloat32;
+    parameters.suggestedLatency = 0;
+    parameters.hostApiSpecificStreamInfo = 0;
+
+    PaError err = Pa_OpenStream(&state_p->stream,
+                                0,
+                                &parameters,
+                                48000,
+                                nz_chunk_size,
+                                0,
+                                NULL,
+                                NULL);
+
+    if(err != paNoError) {
+        free(state_p->chunk_p);
+        free(state_p);
+        NZ_RETURN_ERR_MSG(NZ_INTERNAL_ERROR, strdup(Pa_GetErrorText(err)));
+    }
+
+    err = Pa_StartStream(state_p->stream);
+
+    if(err != paNoError) {
+        Pa_CloseStream(state_p->stream);
+        free(state_p->chunk_p);
+        free(state_p);
+        NZ_RETURN_ERR_MSG(NZ_INTERNAL_ERROR, strdup(Pa_GetErrorText(err)));
+    }
+
+    nz_rc rc;
+    if((rc = block_info_set_n_io(info_p, 1, 0)) != NZ_SUCCESS ||
+       (rc = block_info_set_input(info_p, 0, strdup("in"), &nz_chunk_typeclass, NULL)) != NZ_SUCCESS) {
+        block_info_term(info_p);
+        Pa_CloseStream(state_p->stream);
+        free(state_p->chunk_p);
+        free(state_p);
+        return rc;
+    }
+
+    *(struct pa_block_state **)(state_pp) = state_p;
+    return NZ_SUCCESS;
+}
+
+nz_rc pa_block_create(const struct nz_context * context_p, const char * string, nz_block_state ** state_pp, struct nz_block_info * info_p) {
+    if(string == NULL) NZ_RETURN_ERR(NZ_EXPECTED_BLOCK_ARGS);
+
+    const char * pos = string;
+    const char * start;
+    size_t length;
+    int end;
+    nz_rc rc;
+
+    const struct nz_typeclass * typeclass_p;
+    nz_type * type_p;
+
+    rc = nz_next_block_arg(string, &pos, &start, &length);
+    if(rc != NZ_SUCCESS) return rc;
+    char * type_str = strndup(start, length);
+    if(type_str == NULL) {
+        NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
+    }
+
+    // TODO parse out output device index
+    free(type_str);
+
+    if(pos != NULL) {
+        NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_PARSE, strdup(string));
+    }
+
+    return pa_block_create_args(Pa_GetDefaultOutputDevice(), state_pp, info_p);
+}
+
+void pa_block_destroy(nz_block_state * state_p, struct nz_block_info * info_p) {
+    struct pa_block_state * pa_block_state_p = (struct pa_block_state *)state_p;
+
+    block_info_term(info_p);
+    Pa_CloseStream(&pa_block_state_p->stream);
+    free(pa_block_state_p->chunk_p);
+    free(pa_block_state_p);
+}
+
+DECLARE_BLOCKCLASS(pa)
