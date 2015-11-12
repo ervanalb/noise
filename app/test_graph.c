@@ -23,8 +23,8 @@ nz_rc run()
         // Create a graph
         if((rc = nz_graph_create(context, &graph)) == NZ_SUCCESS)
         {
-            rc = nz_graph_add_block(graph, "1", "constant(chunk,{0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0})", NULL); if(rc != NZ_SUCCESS) goto err;
-            rc = nz_graph_add_block(graph, "2", "pa(0)", &block_handle); if(rc != NZ_SUCCESS) goto err;
+            rc = nz_graph_add_block(graph, "1", "constant(chunk,{0.5 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0})", NULL); if(rc != NZ_SUCCESS) goto err;
+            rc = nz_graph_add_block(graph, "2", "pa", &block_handle); if(rc != NZ_SUCCESS) goto err;
             rc = nz_graph_connect(graph, "1", "out", "2", "in"); if(rc != NZ_SUCCESS) goto err;
             rc = pa_start(block_handle); if(rc != NZ_SUCCESS) goto err;
             err:
