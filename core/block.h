@@ -44,11 +44,6 @@ struct nz_blockclass {
 #define NZ_PULL(SELF,INPUT,OBJ_P) ((SELF).block_upstream_pull_fn_p_array[(INPUT)]((SELF).block_upstream_block_array[(INPUT)], (SELF).block_upstream_output_index_array[(INPUT)], (OBJ_P)))
 
 // --
-// Needed by context
-
-nz_rc nz_blocks_init(struct nz_context * context_p);
-
-// --
 
 nz_rc nz_block_create(const struct nz_context * context, const struct nz_blockclass ** blockclass_pp, nz_block_state ** state_pp, struct nz_block_info * info_p, const char * string);
 

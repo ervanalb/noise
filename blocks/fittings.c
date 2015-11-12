@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include "noise.h"
-#include "core/ntypes.h"
+#include "core/ntype.h"
 
 struct tee_block_state {
     size_t n_outputs;

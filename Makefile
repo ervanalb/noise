@@ -2,19 +2,20 @@
 #C_SRC  = $(wildcard *.c)
 #OBJECTS := $(patsubst %.c,%.o,$(C_SRC))
 OBJECTS = \
-        core/util.o \
+		core/util.o \
 		core/error.o \
-        core/context.o \
+		core/context.o \
 		core/ntype.o \
-		core/ntypes.o \
 		core/block.o \
-        core/graph.o \
+		core/graph.o \
+		types/ntypes.o \
 		blocks/constant.o \
 		blocks/debug.o \
 		blocks/accumulator.o \
 		blocks/fittings.o \
 		blocks/maths.o \
-        blocks/io/portaudio.o \
+		blocks/io/portaudio.o \
+		blocks/blocks.o \
 #		core/note.o \
 #		blocks/audio/compressor.o \
 #		blocks/audio/function_gen.o \

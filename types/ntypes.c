@@ -5,7 +5,6 @@
 #include "noise.h"
 #include "core/context.h"
 #include "core/ntype.h"
-#include "core/ntypes.h"
 #include "core/util.h"
 
 // --

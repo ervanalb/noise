@@ -1,9 +1,8 @@
 #include "core/context.h"
 #include "core/error.h"
-#include "core/ntype.h"
-#include "core/ntypes.h"
-#include "core/block.h"
 #include "core/util.h"
+#include "types/ntypes.h"
+#include "blocks/blocks.h"
 
 static nz_rc nz_typesystem_init(struct nz_context * context_p) {
     context_p->context_n_typeclasses = 0;

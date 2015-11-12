@@ -2,12 +2,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <portaudio.h>
+#include "blocks/blocks.h"
 
 const size_t nz_chunk_size = 128;
-
-// TODO move this somewhere sane
-nz_rc pa_pull(struct nz_block *);
-nz_rc pa_start(struct nz_block *);
 
 nz_rc run()
 {

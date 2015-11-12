@@ -4,30 +4,6 @@
 #include "core/block.h"
 #include "core/util.h"
 
-// TODO move these somewhere sane
-const struct nz_blockclass nz_constant_blockclass;
-const struct nz_blockclass nz_debug_blockclass;
-const struct nz_blockclass nz_accumulator_blockclass;
-const struct nz_blockclass nz_tee_blockclass;
-const struct nz_blockclass nz_wye_blockclass;
-const struct nz_blockclass nz_sum_blockclass;
-const struct nz_blockclass nz_diff_blockclass;
-const struct nz_blockclass nz_mul_blockclass;
-const struct nz_blockclass nz_div_blockclass;
-const struct nz_blockclass nz_pa_blockclass;
-
-nz_rc nz_blocks_init(struct nz_context * context_p) {
-    nz_rc rc;
-    rc = nz_context_register_blockclass(context_p, &nz_constant_blockclass); if(rc != NZ_SUCCESS) return rc;
-    rc = nz_context_register_blockclass(context_p, &nz_debug_blockclass); if(rc != NZ_SUCCESS) return rc;
-    rc = nz_context_register_blockclass(context_p, &nz_accumulator_blockclass); if(rc != NZ_SUCCESS) return rc;
-    rc = nz_context_register_blockclass(context_p, &nz_tee_blockclass); if(rc != NZ_SUCCESS) return rc;
-    rc = nz_context_register_blockclass(context_p, &nz_pa_blockclass); if(rc != NZ_SUCCESS) return rc;
-    return NZ_SUCCESS;
-}
-
-// --
-
 nz_rc nz_block_create(const struct nz_context * context, const struct nz_blockclass ** blockclass, nz_block_state ** state, struct nz_block_info * block_info, const char * string) {
     // Create a block from a spec `string`
     // `struct nz_context * context`: input nz_context, which contains all registered blockclasses

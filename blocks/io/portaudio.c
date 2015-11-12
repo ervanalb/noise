@@ -2,10 +2,9 @@
 
 #include "noise.h"
 #include "core/util.h"
-#include "core/ntype.h"
-#include "core/ntypes.h"
 #include "core/block.h"
 #include "core/error.h"
+#include "types/ntypes.h"
 
 #include <portaudio.h>
 
