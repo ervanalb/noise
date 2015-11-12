@@ -16,12 +16,12 @@ OBJECTS = \
 		blocks/maths.o \
 		blocks/io/portaudio.o \
 		blocks/blocks.o \
+		blocks/audio/mixer.o \
 #		core/note.o \
 #		blocks/audio/compressor.o \
 #		blocks/audio/function_gen.o \
 #		blocks/audio/impulse.o \
 #		blocks/audio/lpf.o \
-#		blocks/audio/mixer.o \
 #		blocks/audio/recorder.o \
 #		blocks/audio/sample.o \
 #		blocks/audio/wave.o \

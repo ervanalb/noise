@@ -93,18 +93,13 @@ static nz_rc pa_block_create_args(PaDeviceIndex device, nz_block_state ** state_
 }
 
 nz_rc pa_block_create(const struct nz_context * context_p, const char * string, nz_block_state ** state_pp, struct nz_block_info * info_p) {
-    if(string == NULL) {
-        return pa_block_create_args(Pa_GetDefaultOutputDevice(), state_pp, info_p);
-    }
+    if(string == NULL) return pa_block_create_args(Pa_GetDefaultOutputDevice(), state_pp, info_p);
 
     const char * pos = string;
     const char * start;
     size_t length;
     int end;
     nz_rc rc;
-
-    const struct nz_typeclass * typeclass_p;
-    nz_type * type_p;
 
     rc = nz_next_block_arg(string, &pos, &start, &length);
     if(rc != NZ_SUCCESS) return rc;

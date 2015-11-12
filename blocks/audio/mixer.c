@@ -1,122 +1,102 @@
-#include <math.h>
 #include <stdlib.h>
-
 #include "noise.h"
-#include "blocks/audio/blocks.h"
+#include "types/ntypes.h"
 #include "core/util.h"
 
-static enum nz_pull_rc mixer_pull(struct nz_port * port) {
-    struct nz_node * node = port->port_node;
-    double * out_chunk = &*(double*)port->port_value;
-    
-    memset(out_chunk, 0, sizeof(double) * nz_chunk_size);
-    
-    for (size_t i = 0; i < node->node_n_inputs; ) {
-        nz_obj_p input_chunk = NZ_NODE_PULL(node, i++);
-        nz_obj_p input_gain = NZ_NODE_PULL(node, i++);
+struct mixer_block_state {
+    size_t n_channels;
+    nz_real * in_chunk_p;
+};
 
-        if (input_chunk == NULL || input_gain == NULL) continue;
+static nz_obj * mixer_pull_fn(struct nz_block self, size_t index, nz_obj * obj_p) {
+    struct mixer_block_state * state_p = (struct mixer_block_state *)(self.block_state_p);
 
-        double gain = *(double*)input_gain;
-        double * mix_chunk = &*(double*)input_chunk;
+    nz_real gain;
+    nz_real * out_chunk_p = (nz_real *)obj_p;
 
-        for (size_t j = 0; j < nz_chunk_size; j++) {
-            out_chunk[j] += gain * mix_chunk[j];
+    for(size_t i = 0; i < nz_chunk_size; i++) out_chunk_p[i] = 0;
+
+    for(size_t i = 0; i < state_p->n_channels; i++) {
+        if((NZ_PULL(self, i * 2, state_p->in_chunk_p) != NULL) & (NZ_PULL(self, i * 2 + 1, &gain) != NULL)) {
+            for(size_t j = 0; j < nz_chunk_size; j++) out_chunk_p[j] += gain * state_p->in_chunk_p[j];
         }
     }
 
-    return NZ_PULL_RC_OBJECT;
+    return obj_p;
 }
 
-int nz_mixer_init(struct nz_node * node, size_t n_channels) {
-    int rc = nz_node_alloc_ports(node, 2 * n_channels, 1);
-    if (rc != 0) return rc;
+static nz_rc mixer_block_create_args(size_t n_channels, nz_block_state ** state_pp, struct nz_block_info * info_p) {
+    struct mixer_block_state * state_p = calloc(1, sizeof(struct mixer_block_state));
+    if(state_p == NULL) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
 
-    node->node_term = &nz_node_term_generic;
-    node->node_name = rsprintf("Mixer %lu", n_channels);
+    state_p->n_channels = n_channels;
 
-    // Define inputs
-    for (size_t i = 0; i < n_channels; i++) {
-        node->node_inputs[2 * i + 0] = (struct nz_inport) {
-            .inport_type = nz_chunk_type,
-            .inport_name = rsprintf("ch %lu", i),
-        };
-        node->node_inputs[2 * i + 1] = (struct nz_inport) {
-            .inport_type = nz_double_type,
-            .inport_name = rsprintf("gain %lu", i),
-        };
+    state_p->in_chunk_p = calloc(nz_chunk_size, sizeof(nz_real));
+    if(state_p->in_chunk_p == NULL) {
+        free(state_p);
+        NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
     }
-    
-    // Define output 
-    node->node_outputs[0] = (struct nz_port) {
-        .port_node = node,
-        .port_name = strdup("mixout"),
-        .port_pull = &mixer_pull,
-        .port_type = nz_chunk_type,
-        .port_value = nz_obj_create(nz_chunk_type),
-    };
 
-    if (node->node_outputs[0].port_value == NULL)
-        return (nz_node_term(node), -1);
+    nz_rc rc;
+    if((rc = block_info_set_n_io(info_p, 2 * n_channels, 1)) == NZ_SUCCESS &&
+       (rc = block_info_set_output(info_p, 0, strdup("out"), &nz_chunk_typeclass, NULL, &mixer_pull_fn)) == NZ_SUCCESS) {
 
-    return 0;
-}
-
-//
-
-static enum nz_pull_rc cmixer_pull(struct nz_port * port) {
-    struct nz_node * node = port->port_node;
-    double * output = &*(double*)port->port_value;
-    
-    memset(output, 0, sizeof(double) * nz_chunk_size);
-    
-    for (size_t i = 0; i < node->node_n_inputs; ) {
-        nz_obj_p input_chunk = NZ_NODE_PULL(node, i++);
-        nz_obj_p input_gains = NZ_NODE_PULL(node, i++);
-
-        if (input_chunk == NULL || input_gains == NULL) continue;
-
-        double * chunk = &*(double*)input_chunk;
-        double * gains = &*(double*)input_gains;
-
-        for (size_t j = 0; j < nz_chunk_size; j++) {
-            output[j] = gains[j] * chunk[j];
+        for(size_t i = 0; i < n_channels; i++) {
+           if((rc = block_info_set_input(info_p, i * 2, rsprintf("in %lu", i + 1), &nz_chunk_typeclass, NULL)) != NZ_SUCCESS ||
+              (rc = block_info_set_input(info_p, i * 2 + 1, rsprintf("gain %lu", i + 1), &nz_real_typeclass, NULL)) != NZ_SUCCESS) break;
         }
     }
 
-    return NZ_PULL_RC_OBJECT;
-}
-
-int nz_cmixer_init(struct nz_node * node, size_t n_channels) {
-    int rc = nz_node_alloc_ports(node, 2 * n_channels, 1);
-    if (rc != 0) return rc;
-
-    node->node_term = &nz_node_term_generic;
-    node->node_name = rsprintf("CMixer %lu", n_channels);
-
-    // Define inputs
-    for (size_t i = 0; i < n_channels; i++) {
-        node->node_inputs[2 * i + 0] = (struct nz_inport) {
-            .inport_type = nz_chunk_type,
-            .inport_name = rsprintf("ch %lu", i),
-        };
-        node->node_inputs[2 * i + 1] = (struct nz_inport) {
-            .inport_type = nz_chunk_type,
-            .inport_name = rsprintf("gain %lu", i),
-        };
+    if(rc != NZ_SUCCESS) {
+        block_info_term(info_p);
+        free(state_p->in_chunk_p);
+        free(state_p);
+        return rc;
     }
-    
-    // Define output 
-    node->node_outputs[0] = (struct nz_port) {
-        .port_node = node,
-        .port_name = strdup("mixout"),
-        .port_pull = &cmixer_pull,
-        .port_type = nz_chunk_type,
-        .port_value = nz_obj_create(nz_chunk_type),
-    };
 
-    if (node->node_outputs[0].port_value == NULL)
-        return (nz_node_term(node), -1);
-
-    return 0;
+    *(struct mixer_block_state **)(state_pp) = state_p;
+    return NZ_SUCCESS;
 }
+
+void mixer_block_destroy(nz_block_state * state_p, struct nz_block_info * info_p) {
+    struct mixer_block_state * mixer_block_state_p = (struct mixer_block_state *)state_p;
+    block_info_term(info_p);
+    free(mixer_block_state_p->in_chunk_p);
+    free(mixer_block_state_p);
+}
+
+nz_rc mixer_block_create(const struct nz_context * context_p, const char * string, nz_block_state ** state_pp, struct nz_block_info * info_p) {
+    if(string == NULL) NZ_RETURN_ERR(NZ_EXPECTED_BLOCK_ARGS);
+
+    const char * pos = string;
+    const char * start;
+    size_t length;
+    int end;
+    nz_rc rc;
+
+    const struct nz_typeclass * typeclass_p;
+    nz_type * type_p;
+
+    rc = nz_next_block_arg(string, &pos, &start, &length);
+    if(rc != NZ_SUCCESS) return rc;
+    char * n_channels_str = strndup(start, length);
+    if(n_channels_str == NULL) {
+        NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
+    }
+
+    size_t n_channels;
+    if(sscanf(n_channels_str, "%lu%n", &n_channels, &end) != 1 || end <= 0 || (size_t)end != length) {
+        free(n_channels_str);
+        NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_PARSE, strdup(string));
+    }
+    free(n_channels_str);
+
+    if(pos != NULL) {
+        NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_PARSE, strdup(string));
+    }
+
+    return mixer_block_create_args(n_channels, state_pp, info_p);
+}
+
+
+DECLARE_BLOCKCLASS(mixer)

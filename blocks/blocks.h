@@ -15,6 +15,7 @@ const struct nz_blockclass nz_diff_blockclass;
 const struct nz_blockclass nz_mul_blockclass;
 const struct nz_blockclass nz_div_blockclass;
 const struct nz_blockclass nz_pa_blockclass;
+const struct nz_blockclass nz_mixer_blockclass;
 
 // --
 

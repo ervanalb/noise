@@ -10,7 +10,7 @@ struct tee_block_state {
     nz_obj * result_p;
 };
 
-nz_obj * tee_main_pull_fn(struct nz_block self, size_t index, nz_obj * obj_p) {
+static nz_obj * tee_main_pull_fn(struct nz_block self, size_t index, nz_obj * obj_p) {
     struct tee_block_state * tee_block_state_p = (struct tee_block_state *)(self.block_state_p);
 
     tee_block_state_p->result_p = NZ_PULL(self, 0, tee_block_state_p->obj_p);
@@ -25,7 +25,7 @@ nz_obj * tee_main_pull_fn(struct nz_block self, size_t index, nz_obj * obj_p) {
     return obj_p;
 }
 
-nz_obj * tee_aux_pull_fn(struct nz_block self, size_t index, nz_obj * obj_p) {
+static nz_obj * tee_aux_pull_fn(struct nz_block self, size_t index, nz_obj * obj_p) {
     struct tee_block_state * tee_block_state_p = (struct tee_block_state *)(self.block_state_p);
 
     if(tee_block_state_p->result_p == NULL) return NULL;
