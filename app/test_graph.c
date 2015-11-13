@@ -4,8 +4,6 @@
 #include <portaudio.h>
 #include "blocks/blocks.h"
 
-const size_t nz_chunk_size = 128;
-
 nz_rc run()
 {
     nz_rc rc = NZ_SUCCESS;
@@ -20,15 +18,19 @@ nz_rc run()
         // Create a graph
         if((rc = nz_graph_create(context, &graph)) == NZ_SUCCESS)
         {
-            rc = nz_graph_add_block(graph, "sound1", "constant(chunk,{0.5 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0})", NULL); if(rc != NZ_SUCCESS) goto err;
-            rc = nz_graph_add_block(graph, "sound2", "constant(chunk,{0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.5 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0})", NULL); if(rc != NZ_SUCCESS) goto err;
-            rc = nz_graph_add_block(graph, "vol", "constant(real,1)", NULL); if(rc != NZ_SUCCESS) goto err;
+            rc = nz_graph_add_block(graph, "sound1", "wave(saw)", NULL); if(rc != NZ_SUCCESS) goto err;
+            rc = nz_graph_add_block(graph, "sound2", "wave(saw)", NULL); if(rc != NZ_SUCCESS) goto err;
+            rc = nz_graph_add_block(graph, "freq1", "constant(real,440)", NULL); if(rc != NZ_SUCCESS) goto err;
+            rc = nz_graph_add_block(graph, "freq2", "constant(real,554.4)", NULL); if(rc != NZ_SUCCESS) goto err;
+            rc = nz_graph_add_block(graph, "vol", "constant(real,0.5)", NULL); if(rc != NZ_SUCCESS) goto err;
             rc = nz_graph_add_block(graph, "tee", "tee(2,real)", NULL); if(rc != NZ_SUCCESS) goto err;
             rc = nz_graph_add_block(graph, "mix", "mixer(2)", NULL); if(rc != NZ_SUCCESS) goto err;
             rc = nz_graph_add_block(graph, "soundcard", "pa", &block_handle); if(rc != NZ_SUCCESS) goto err;
-            rc = nz_graph_connect(graph, "vol", "out", "tee", "in"); if(rc != NZ_SUCCESS) goto err;
+            rc = nz_graph_connect(graph, "freq1", "out", "sound1", "freq"); if(rc != NZ_SUCCESS) goto err;
+            rc = nz_graph_connect(graph, "freq2", "out", "sound2", "freq"); if(rc != NZ_SUCCESS) goto err;
             rc = nz_graph_connect(graph, "sound1", "out", "mix", "in 1"); if(rc != NZ_SUCCESS) goto err;
             rc = nz_graph_connect(graph, "sound2", "out", "mix", "in 2"); if(rc != NZ_SUCCESS) goto err;
+            rc = nz_graph_connect(graph, "vol", "out", "tee", "in"); if(rc != NZ_SUCCESS) goto err;
             rc = nz_graph_connect(graph, "tee", "main", "mix", "gain 1"); if(rc != NZ_SUCCESS) goto err;
             rc = nz_graph_connect(graph, "tee", "aux 1", "mix", "gain 2"); if(rc != NZ_SUCCESS) goto err;
             rc = nz_graph_connect(graph, "mix", "out", "soundcard", "in"); if(rc != NZ_SUCCESS) goto err;

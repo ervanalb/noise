@@ -17,6 +17,7 @@ OBJECTS = \
 		blocks/io/portaudio.o \
 		blocks/blocks.o \
 		blocks/audio/mixer.o \
+		blocks/audio/wave.o \
 #		core/note.o \
 #		blocks/audio/compressor.o \
 #		blocks/audio/function_gen.o \
@@ -24,7 +25,6 @@ OBJECTS = \
 #		blocks/audio/lpf.o \
 #		blocks/audio/recorder.o \
 #		blocks/audio/sample.o \
-#		blocks/audio/wave.o \
 #		blocks/io/midi_integrator.o \
 #		blocks/io/midi_reader.o \
 #		blocks/io/midi_smf.o \

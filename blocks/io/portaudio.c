@@ -64,7 +64,7 @@ static nz_rc pa_block_create_args(PaDeviceIndex device, nz_block_state ** state_
     PaError err = Pa_OpenStream(&state_p->stream,
                                 0,
                                 &parameters,
-                                48000,
+                                nz_frame_rate,
                                 nz_chunk_size,
                                 0,
                                 NULL,

@@ -2,8 +2,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-const size_t nz_chunk_size = 128;
-
 nz_rc run()
 {
     nz_rc rc = NZ_SUCCESS;

@@ -4,6 +4,10 @@
 #include "types/ntypes.h"
 #include "blocks/blocks.h"
 
+// TODO put these in a more reasonable spot
+const size_t nz_chunk_size = 128;
+const size_t nz_frame_rate = 44100;
+
 static nz_rc nz_typesystem_init(struct nz_context * context_p) {
     context_p->context_n_typeclasses = 0;
     context_p->context_typeclass_capacity = 16;

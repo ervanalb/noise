@@ -12,6 +12,6 @@
 //#include "core/note.h"
 
 extern const size_t nz_chunk_size;
-extern const double nz_frame_rate;
+extern const size_t nz_frame_rate;
 
 #endif
