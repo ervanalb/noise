@@ -5,47 +5,72 @@ from gi.repository import Gdk
 import cairo
 
 class Block(object):
-    def __init__(self, blocktype):
+    def __init__(self, blocktype, x, y):
         self.blocktype = blocktype
+        self.highlight = False
+        self.x = x
+        self.y = y
+
+        self.setup = False
 
     def draw(self, ctx):
-        ctx.select_font_face("Helvetica", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
-        ctx.set_font_size(60)
+        if not self.setup:
+            ctx.select_font_face("Helvetica", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
+            ctx.set_font_size(60)
 
-        (text_x, text_y, text_width, text_height, dx, dy) = ctx.text_extents(self.blocktype)
+            (self.text_x, self.text_y, self.text_width, self.text_height, dx, dy) = ctx.text_extents(self.blocktype)
 
-        rect_width = text_width + 60
-        rect_height = text_height + 60
+            self.width = self.text_width + 60
+            self.height = self.text_height + 60
+            self.setup = True
 
         ctx.set_line_width(20)
         ctx.set_line_join(cairo.LINE_JOIN_ROUND)
-        ctx.set_source_rgb(0, 0, 0)
 
-        ctx.move_to(-rect_width / 2, -rect_height / 2)
-        ctx.rel_line_to(rect_width, 0)
-        ctx.rel_line_to(0, rect_height)
-        ctx.rel_line_to(-rect_width, 0)
+        if self.highlight:
+            ctx.set_source_rgb(100, 0, 0)
+        else:
+            ctx.set_source_rgb(0, 0, 0)
+
+        ctx.move_to(self.x - self.width / 2, self.y - self.height / 2)
+        ctx.rel_line_to(self.width, 0)
+        ctx.rel_line_to(0, self.height)
+        ctx.rel_line_to(-self.width, 0)
         ctx.close_path()
 
         ctx.stroke_preserve()
         ctx.set_source_rgb(200, 200, 200)
         ctx.fill()
 
-        ctx.move_to(-text_width / 2 - text_x, -text_height / 2 - text_y)
+        ctx.select_font_face("Helvetica", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
+        ctx.set_font_size(60)
+        ctx.move_to(self.x - self.text_width / 2 - self.text_x, self.y - self.text_height / 2 - self.text_y)
         ctx.set_source_rgb(0, 0, 0)
         ctx.show_text(self.blocktype)
 
-b = Block("synth")
+    def handle_motion(self, x, y):
+        if not self.setup:
+            return
+        (x, y) = scaled_coords(x, y)
+        new_highlight = (abs(x - self.x) < self.width / 2 and abs(y - self.y) < self.height / 2)
+        if new_highlight != self.highlight:
+            self.highlight = new_highlight
+            drawingarea.queue_draw()
 
 cx = 200
 cy = 200
 scale = 0.5
 dragging = False
 
+def scaled_coords(x, y):
+    global cx, cy, scale
+    return ((x - cx) / scale, (y - cy) / scale)
+
 def draw(da, ctx):
     ctx.translate(cx, cy)
     ctx.scale(scale, scale)
-    b.draw(ctx)
+    b1.draw(ctx)
+    b2.draw(ctx)
 
 def scroll(w, event):
     ZOOM_SPEED = 0.1
@@ -74,8 +99,12 @@ def motion(w, event):
     global dragging
     global cx, cy, lx, ly
     global drawingarea
+
+    global b1, b2
+    b1.handle_motion(event.x, event.y)
+    b2.handle_motion(event.x, event.y)
+
     if dragging:
-        event.x, event.y
         cx += event.x - lx
         cy += event.y - ly
         lx = event.x
@@ -83,7 +112,7 @@ def motion(w, event):
         drawingarea.queue_draw()
 
 def main():
-    global win, drawingarea
+    global win, drawingarea, b1, b2
 
     win = Gtk.Window()
     win.add_events(Gdk.EventMask.SCROLL_MASK | Gdk.EventMask.POINTER_MOTION_MASK)
@@ -98,6 +127,9 @@ def main():
     drawingarea = Gtk.DrawingArea()
     win.add(drawingarea)
     drawingarea.connect('draw', draw)
+
+    b1 = Block("synth", 100, 100)
+    b2 = Block("speaker", 400, 250)
 
     win.show_all()
     Gtk.main()
