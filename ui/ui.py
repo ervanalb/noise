@@ -4,16 +4,109 @@ from gi.repository import Gtk
 from gi.repository import Gdk
 import cairo
 
+class Graph(Gtk.DrawingArea):
+    ZOOM_SPEED = 0.1
+
+    def __init__(self, win, *args, **kwargs):
+        super(Graph, self).__init__(*args, **kwargs)
+        win.add_events(Gdk.EventMask.SCROLL_MASK | Gdk.EventMask.POINTER_MOTION_MASK)
+        win.connect('button-press-event', self.button_down_event)
+        win.connect('button-release-event', self.button_up_event)
+        win.connect('scroll-event', self.scroll_event)
+        win.connect('motion-notify-event', self.motion_event)
+        self.connect('draw', self.draw_event)
+        win.add(self)
+
+        self.cx = 0
+        self.cy = 0
+        self.scale = 1
+
+        self.panning = False
+        self.dragging = False
+        self.mouse_handler = None
+        self.selected = ()
+
+        self.blocks = []
+
+    def conv_screen_coords(self, x, y):
+        return ((x - self.cx) / self.scale, (y - self.cy) / self.scale)
+
+    def draw_event(self, da, ctx):
+        ctx.translate(self.cx, self.cy)
+        ctx.scale(self.scale, self.scale)
+
+        for block in self.blocks:
+            block.draw(ctx, selected = block in self.selected)
+
+    def scroll_event(self, win, event):
+        factor = 1 - event.delta_y * self.ZOOM_SPEED
+        self.scale *= factor
+        self.cx = (self.cx - event.x) * factor + event.x
+        self.cy = (self.cy - event.y) * factor + event.y
+        self.queue_draw()
+
+    def button_down_event(self, win, event):
+        if event.button == 1:
+            handled = False
+            selected = ()
+            for block in self.blocks:
+                if block.mouse_hit(event):
+                    selected = (block,)
+                    if block.handle_button_down(event):
+                        self.mouse_handler = block
+                    else:
+                        self.lx = event.x
+                        self.ly = event.y
+                        self.dragging = True
+                    break
+            if selected != self.selected:
+                self.selected = selected
+                self.queue_draw()
+        elif event.button == 3:
+            self.lx = event.x
+            self.ly = event.y
+            self.panning = True
+
+    def button_up_event(self, win, event):
+        if event.button == 1:
+            if self.mouse_handler is not None:
+                self.mouse_handler.handle_button_up(event)
+                self.mouse_handler = None
+            elif self.dragging:
+                self.dragging = False
+        if event.button == 3:
+            self.panning = False
+
+    def motion_event(self, win, event):
+        if self.panning:
+            self.cx += event.x - self.lx
+            self.cy += event.y - self.ly
+            self.lx = event.x
+            self.ly = event.y
+            self.queue_draw()
+        elif self.mouse_handler is not None:
+            self.mouse_handler.handle_motion(event)
+        elif self.dragging:
+            dx = (event.x - self.lx) / self.scale
+            dy = (event.y - self.ly) / self.scale
+            self.lx = event.x
+            self.ly = event.y
+            for obj in self.selected:
+                if isinstance(obj, Block):
+                    obj.x += dx
+                    obj.y += dy
+            self.queue_draw()
+
 class Block(object):
-    def __init__(self, blocktype, x, y):
+    def __init__(self, parent, blocktype, x, y):
+        self.parent = parent
         self.blocktype = blocktype
-        self.highlight = False
         self.x = x
         self.y = y
 
         self.setup = False
 
-    def draw(self, ctx):
+    def draw(self, ctx, selected = False):
         if not self.setup:
             ctx.select_font_face("Helvetica", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
             ctx.set_font_size(60)
@@ -27,7 +120,7 @@ class Block(object):
         ctx.set_line_width(20)
         ctx.set_line_join(cairo.LINE_JOIN_ROUND)
 
-        if self.highlight:
+        if selected:
             ctx.set_source_rgb(100, 0, 0)
         else:
             ctx.set_source_rgb(0, 0, 0)
@@ -48,88 +141,33 @@ class Block(object):
         ctx.set_source_rgb(0, 0, 0)
         ctx.show_text(self.blocktype)
 
-    def handle_motion(self, x, y):
+    def handle_motion(self, event):
+        pass
+
+    def handle_button_down(self, event):
+        pass
+
+    def handle_button_up(self, event):
+        pass
+
+    def mouse_hit(self, event):
         if not self.setup:
-            return
-        (x, y) = scaled_coords(x, y)
-        new_highlight = (abs(x - self.x) < self.width / 2 and abs(y - self.y) < self.height / 2)
-        if new_highlight != self.highlight:
-            self.highlight = new_highlight
-            drawingarea.queue_draw()
+            return False
 
-cx = 200
-cy = 200
-scale = 0.5
-dragging = False
-
-def scaled_coords(x, y):
-    global cx, cy, scale
-    return ((x - cx) / scale, (y - cy) / scale)
-
-def draw(da, ctx):
-    ctx.translate(cx, cy)
-    ctx.scale(scale, scale)
-    b1.draw(ctx)
-    b2.draw(ctx)
-
-def scroll(w, event):
-    ZOOM_SPEED = 0.1
-    global scale, drawingarea
-    global cx, cy
-    factor = 1 - event.delta_y * ZOOM_SPEED
-    scale *= factor
-    cx = (cx - event.x) * factor + event.x
-    cy = (cy - event.y) * factor + event.y
-    drawingarea.queue_draw()
-
-def button_down(w, event):
-    global dragging
-    global lx, ly
-    if event.button == 1:
-        lx = event.x
-        ly = event.y
-        dragging = True
-
-def button_up(w, event):
-    global dragging
-    if event.button == 1:
-        dragging = False
-
-def motion(w, event):
-    global dragging
-    global cx, cy, lx, ly
-    global drawingarea
-
-    global b1, b2
-    b1.handle_motion(event.x, event.y)
-    b2.handle_motion(event.x, event.y)
-
-    if dragging:
-        cx += event.x - lx
-        cy += event.y - ly
-        lx = event.x
-        ly = event.y
-        drawingarea.queue_draw()
+        (x, y) = self.parent.conv_screen_coords(event.x, event.y)
+        return abs(x - self.x) < self.width / 2 and abs(y - self.y) < self.height / 2
 
 def main():
-    global win, drawingarea, b1, b2
-
     win = Gtk.Window()
-    win.add_events(Gdk.EventMask.SCROLL_MASK | Gdk.EventMask.POINTER_MOTION_MASK)
-    win.connect('destroy', lambda w: Gtk.main_quit())
-    win.connect('button-press-event', button_down)
-    win.connect('button-release-event', button_up)
-    win.connect('scroll-event', scroll)
-    win.connect('motion-notify-event', motion)
-
     win.set_default_size(450, 550)
+    win.connect('destroy', lambda w: Gtk.main_quit())
 
-    drawingarea = Gtk.DrawingArea()
-    win.add(drawingarea)
-    drawingarea.connect('draw', draw)
+    nzgraph = Graph(win)
 
-    b1 = Block("synth", 100, 100)
-    b2 = Block("speaker", 400, 250)
+    b1 = Block(nzgraph, "synth", 0, 0)
+    b2 = Block(nzgraph, "speaker", 400, 250)
+
+    nzgraph.blocks = [b1, b2]
 
     win.show_all()
     Gtk.main()
