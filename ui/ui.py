@@ -238,6 +238,7 @@ class Connection(object):
 class Block(object):
     TERM_WIDTH = 20
     TERM_HEIGHT = 20
+    TERM_SPACING = 60
 
     def __init__(self, parent, x, y, blocktype, inputs, outputs):
         self.parent = parent
@@ -257,7 +258,12 @@ class Block(object):
             (self.text_x, self.text_y, self.text_width, self.text_height, dx, dy) = ctx.text_extents(self.blocktype)
 
             self.width = self.text_width + 60
-            self.height = self.text_height + 60
+            text_height = self.text_height + 60
+            input_height = self.TERM_SPACING * len(self.inputs)
+            output_height = self.TERM_SPACING * len(self.outputs)
+
+            self.height = max(text_height, input_height, output_height)
+
             self.setup = True
 
         ctx.set_line_width(self.parent.LINE_WIDTH)
@@ -312,10 +318,12 @@ class Block(object):
             ctx.stroke()
 
     def input_location(self, input_index):
-        return (self.x - self.width / 2, self.y)
+        input_slots = float(len(self.inputs) - 1)
+        return (self.x - self.width / 2, self.y - (input_index - input_slots / 2) * self.TERM_SPACING)
 
     def output_location(self, output_index):
-        return (self.x + self.width / 2, self.y)
+        output_slots = float(len(self.outputs) - 1)
+        return (self.x + self.width / 2, self.y - (output_index - output_slots / 2) * self.TERM_SPACING)
 
     def mouse_hit_input(self, event):
         (x, y) = self.parent.conv_screen_coords(event.x, event.y)
@@ -354,8 +362,8 @@ def main():
 
     nzgraph = Graph(win)
 
-    b1 = Block(nzgraph, 0, 0, "synth", [], ["out"])
-    b2 = Block(nzgraph, 400, 250, "speaker", ["in"], [])
+    b1 = Block(nzgraph, 0, 0, "synth", [], ["out1", "out2", "out3", "out4"])
+    b2 = Block(nzgraph, 400, 250, "speaker", ["in1", "in2", "in3", "inb4", "in5"], [])
 
     nzgraph.blocks = [b1, b2]
 
