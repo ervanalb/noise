@@ -3,9 +3,11 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 from gi.repository import Gdk
 import cairo
+import math
 
 class Graph(Gtk.DrawingArea):
     ZOOM_SPEED = 0.1
+    LINE_WIDTH = 5
 
     def __init__(self, win, *args, **kwargs):
         super(Graph, self).__init__(*args, **kwargs)
@@ -21,12 +23,16 @@ class Graph(Gtk.DrawingArea):
         self.cy = 0
         self.scale = 1
 
+        self.held_buttons = set()
         self.panning = False
         self.dragging = False
         self.mouse_handler = None
         self.selected = ()
+        self.output_term = None
+        self.input_term = None
 
         self.blocks = []
+        self.connections = []
 
     def conv_screen_coords(self, x, y):
         return ((x - self.cx) / self.scale, (y - self.cy) / self.scale)
@@ -38,6 +44,29 @@ class Graph(Gtk.DrawingArea):
         for block in self.blocks:
             block.draw(ctx, selected = block in self.selected)
 
+        for conn in self.connections:
+            conn.draw(ctx, selected = conn in self.selected)
+
+        if self.input_term is not None:
+            startp = self.conv_screen_coords(self.lx, self.ly)
+            (block, index) = self.input_term
+            endp = block.input_location(index)
+            self.draw_pending_connection(ctx, startp, endp)
+        elif self.output_term is not None:
+            (block, index) = self.output_term
+            startp = block.output_location(index)
+            endp = self.conv_screen_coords(self.lx, self.ly)
+            self.draw_pending_connection(ctx, startp, endp)
+
+    def draw_pending_connection(self, ctx, startp, endp):
+        ctx.set_line_width(self.LINE_WIDTH)
+        ctx.set_line_cap(cairo.LINE_CAP_ROUND);
+        ctx.set_source_rgb(0, 0, 0)
+        ctx.new_path()
+        ctx.move_to(*startp)
+        ctx.line_to(*endp)
+        ctx.stroke()
+
     def scroll_event(self, win, event):
         factor = 1 - event.delta_y * self.ZOOM_SPEED
         self.scale *= factor
@@ -46,44 +75,116 @@ class Graph(Gtk.DrawingArea):
         self.queue_draw()
 
     def button_down_event(self, win, event):
+        # Debounce (why?)
+        if event.button not in self.held_buttons:
+            self.held_buttons.add(event.button)
+        else:
+            return
+
+        redraw = False
         if event.button == 1:
             handled = False
             selected = ()
+            input_term = self.input_term
+            output_term = self.output_term
+            hit_term = False
             for block in self.blocks:
-                if block.mouse_hit(event):
+                input_index = block.mouse_hit_input(event)
+                output_index = block.mouse_hit_output(event)
+                if input_index is not None:
+                    input_term = (block, input_index)
+                    hit_term = True
+                elif output_index is not None:
+                    output_term = (block, output_index)
+                    hit_term = True
+                elif block.mouse_hit(event):
                     selected = (block,)
                     if block.handle_button_down(event):
                         self.mouse_handler = block
                     else:
-                        self.lx = event.x
-                        self.ly = event.y
                         self.dragging = True
-                    break
+
+            if not hit_term:
+                input_term = None
+                output_term = None
+
             if selected != self.selected:
                 self.selected = selected
-                self.queue_draw()
+                redraw = True
+            if input_term != self.input_term or output_term != self.output_term:
+                self.input_term = input_term
+                self.output_term = output_term
+                redraw = True
+            if self.input_term is not None and self.output_term is not None:
+                self.add_connection(*self.output_term, *self.input_term)
+                self.input_term = None
+                self.output_term = None
+                redraw = True
         elif event.button == 3:
-            self.lx = event.x
-            self.ly = event.y
             self.panning = True
+            redraw = True
+
+        self.lx = event.x
+        self.ly = event.y
+
+        if redraw:
+            self.queue_draw()
 
     def button_up_event(self, win, event):
+        # Debounce (why?)
+        if event.button in self.held_buttons:
+            self.held_buttons.remove(event.button)
+        else:
+            return
+
+        redraw = False
         if event.button == 1:
             if self.mouse_handler is not None:
                 self.mouse_handler.handle_button_up(event)
                 self.mouse_handler = None
             elif self.dragging:
                 self.dragging = False
-        if event.button == 3:
+                redraw = True
+            elif self.input_term is not None or self.output_term is not None:
+                input_term = self.input_term
+                output_term = self.output_term
+                hit_term = False
+                for block in self.blocks:
+                    input_index = block.mouse_hit_input(event)
+                    output_index = block.mouse_hit_output(event)
+                    if input_index is not None:
+                        input_term = (block, input_index)
+                        hit_term = True
+                    elif output_index is not None:
+                        output_term = (block, output_index)
+                        hit_term = True
+                if not hit_term:
+                    input_term = None
+                    output_term = None
+                if input_term != self.input_term or output_term != self.output_term:
+                    self.input_term = input_term
+                    self.output_term = output_term
+                    redraw = True
+                if self.input_term is not None and self.output_term is not None:
+                    self.add_connection(*self.input_term, *self.output_term)
+                    self.input_term = None
+                    self.output_term = None
+        elif event.button == 3:
             self.panning = False
+            redraw = True
+
+        self.lx = event.x
+        self.ly = event.y
+
+        if redraw:
+            self.queue_draw()
 
     def motion_event(self, win, event):
+        redraw = False
         if self.panning:
             self.cx += event.x - self.lx
             self.cy += event.y - self.ly
-            self.lx = event.x
-            self.ly = event.y
-            self.queue_draw()
+            redraw = True
         elif self.mouse_handler is not None:
             self.mouse_handler.handle_motion(event)
         elif self.dragging:
@@ -95,12 +196,54 @@ class Graph(Gtk.DrawingArea):
                 if isinstance(obj, Block):
                     obj.x += dx
                     obj.y += dy
+            redraw = True
+        elif self.input_term is not None or self.output_term is not None:
+            redraw = True
+
+        if redraw:
             self.queue_draw()
 
+        self.lx = event.x
+        self.ly = event.y
+
+    def add_connection(self, output_block, output_index, input_block, input_index):
+        self.connections.append(Connection(self, output_block, output_index, input_block, input_index))
+
+class Connection(object):
+    def __init__(self, parent, output_block, output_index, input_block, input_index):
+        self.parent = parent
+        self.output_block = output_block
+        self.output_index = output_index
+        self.input_block = input_block
+        self.input_index = input_index
+
+    def draw(self, ctx, selected = False):
+        startp = self.output_block.output_location(self.output_index)
+        endp = self.input_block.input_location(self.input_index)
+
+        ctx.set_line_width(self.parent.LINE_WIDTH)
+        ctx.set_line_cap(cairo.LINE_CAP_ROUND);
+        ctx.set_source_rgb(0, 0, 0)
+        ctx.new_path()
+        ctx.move_to(*startp)
+        ctx.line_to(*endp)
+
+        if selected:
+            ctx.stroke_preserve()
+            ctx.set_line_width(self.LINE_WIDTH * 3)
+            ctx.set_source_rgb(200, 0, 0)
+
+        ctx.stroke()
+
 class Block(object):
-    def __init__(self, parent, blocktype, x, y):
+    TERM_WIDTH = 20
+    TERM_HEIGHT = 20
+
+    def __init__(self, parent, x, y, blocktype, inputs, outputs):
         self.parent = parent
         self.blocktype = blocktype
+        self.inputs = inputs
+        self.outputs = outputs
         self.x = x
         self.y = y
 
@@ -117,29 +260,76 @@ class Block(object):
             self.height = self.text_height + 60
             self.setup = True
 
-        ctx.set_line_width(20)
+        ctx.set_line_width(self.parent.LINE_WIDTH)
         ctx.set_line_join(cairo.LINE_JOIN_ROUND)
 
-        if selected:
-            ctx.set_source_rgb(100, 0, 0)
-        else:
-            ctx.set_source_rgb(0, 0, 0)
-
+        ctx.new_path()
         ctx.move_to(self.x - self.width / 2, self.y - self.height / 2)
         ctx.rel_line_to(self.width, 0)
         ctx.rel_line_to(0, self.height)
         ctx.rel_line_to(-self.width, 0)
         ctx.close_path()
 
-        ctx.stroke_preserve()
         ctx.set_source_rgb(200, 200, 200)
-        ctx.fill()
+        ctx.fill_preserve()
+
+        if selected:
+            ctx.set_source_rgb(100, 0, 0)
+        else:
+            ctx.set_source_rgb(0, 0, 0)
+        ctx.stroke()
 
         ctx.select_font_face("Helvetica", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
         ctx.set_font_size(60)
         ctx.move_to(self.x - self.text_width / 2 - self.text_x, self.y - self.text_height / 2 - self.text_y)
         ctx.set_source_rgb(0, 0, 0)
         ctx.show_text(self.blocktype)
+
+        for i in range(len(self.inputs)):
+            (x, y) = self.input_location(i)
+            ctx.new_path()
+            ctx.move_to(x - self.TERM_WIDTH / 2, y - self.TERM_HEIGHT / 2)
+            ctx.rel_line_to(self.TERM_WIDTH, 0)
+            ctx.rel_line_to(0, self.TERM_HEIGHT)
+            ctx.rel_line_to(-self.TERM_WIDTH, 0)
+            ctx.close_path()
+            ctx.set_source_rgb(200, 200, 200)
+            ctx.fill_preserve()
+            ctx.set_source_rgb(0, 0, 0)
+            ctx.stroke_preserve()
+
+        for i in range(len(self.outputs)):
+            (x, y) = self.output_location(i)
+            ctx.new_path()
+            ctx.move_to(x - self.TERM_WIDTH / 2, y - self.TERM_HEIGHT / 2)
+            ctx.rel_line_to(self.TERM_WIDTH, 0)
+            ctx.rel_line_to(0, self.TERM_HEIGHT)
+            ctx.rel_line_to(-self.TERM_WIDTH, 0)
+            ctx.close_path()
+            ctx.set_source_rgb(200, 200, 200)
+            ctx.fill_preserve()
+            ctx.set_source_rgb(0, 0, 0)
+            ctx.stroke()
+
+    def input_location(self, input_index):
+        return (self.x - self.width / 2, self.y)
+
+    def output_location(self, output_index):
+        return (self.x + self.width / 2, self.y)
+
+    def mouse_hit_input(self, event):
+        (x, y) = self.parent.conv_screen_coords(event.x, event.y)
+        for input_index in range(len(self.inputs)):
+            (inp_x, inp_y) = self.input_location(input_index)
+            if abs(x - inp_x) < self.TERM_WIDTH and abs(y - inp_y) < self.TERM_HEIGHT:
+                return input_index
+
+    def mouse_hit_output(self, event):
+        (x, y) = self.parent.conv_screen_coords(event.x, event.y)
+        for output_index in range(len(self.outputs)):
+            (out_x, out_y) = self.output_location(output_index)
+            if abs(x - out_x) < self.TERM_WIDTH and abs(y - out_y) < self.TERM_HEIGHT:
+                return output_index
 
     def handle_motion(self, event):
         pass
@@ -164,8 +354,8 @@ def main():
 
     nzgraph = Graph(win)
 
-    b1 = Block(nzgraph, "synth", 0, 0)
-    b2 = Block(nzgraph, "speaker", 400, 250)
+    b1 = Block(nzgraph, 0, 0, "synth", [], ["out"])
+    b2 = Block(nzgraph, 400, 250, "speaker", ["in"], [])
 
     nzgraph.blocks = [b1, b2]
 
