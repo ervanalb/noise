@@ -4,12 +4,13 @@ from gi.repository import Gtk
 from gi.repository import Gdk
 import cairo
 import math
+import nz
 
 class Graph(Gtk.DrawingArea):
     ZOOM_SPEED = 0.1
     LINE_WIDTH = 5
 
-    def __init__(self, win, *args, **kwargs):
+    def __init__(self, win, nz_context, *args, **kwargs):
         super(Graph, self).__init__(*args, **kwargs)
         self.win = win
         win.add_events(Gdk.EventMask.SCROLL_MASK | Gdk.EventMask.POINTER_MOTION_MASK)
@@ -35,6 +36,9 @@ class Graph(Gtk.DrawingArea):
 
         self.blocks = []
         self.connections = []
+
+        self.nz_graph = nz.Graph(nz_context)
+        self.block_counter = 1
 
     def conv_screen_coords(self, x, y):
         return ((x - self.cx) / self.scale, (y - self.cy) / self.scale)
@@ -219,12 +223,28 @@ class Graph(Gtk.DrawingArea):
             self.queue_draw()
         elif event.keyval == Gdk.KEY_a:
             self.add_block()
+        elif event.keyval == Gdk.KEY_s:
+            for obj in self.selected:
+                if isinstance(obj, Block) and obj.blocktype == 'pa':
+                    nz.pa.start(self.nz_graph.block_handle(obj.name))
 
     def add_connection(self, output_block, output_index, input_block, input_index):
-        self.connections.append(Connection(self, output_block, output_index, input_block, input_index))
+        try:
+            self.nz_graph.connect(output_block.name, output_block.outputs[output_index], input_block.name, input_block.inputs[input_index])
+            self.connections.append(Connection(self, output_block, output_index, input_block, input_index))
+        except nz.NoiseError as e:
+            self.msg(str(e))
 
     def add_block(self):
-        print(self.dialog("Block name?"))
+        constructor = self.dialog("Block:")
+        if constructor is None:
+            return
+        try:
+            self.blocks.append(Block(self, "Block{0}".format(self.block_counter, constructor), constructor))
+            self.block_counter += 1
+            self.queue_draw()
+        except nz.NoiseError as e:
+            self.msg(str(e))
 
     def dialog(self, prompt):
         dialogWindow = Gtk.MessageDialog(self.win,
@@ -238,12 +258,28 @@ class Graph(Gtk.DrawingArea):
         userEntry.set_size_request(250,0)
         dialogBox.pack_end(userEntry, False, False, 0)
 
+        userEntry.set_activates_default(True)
+        okButton = dialogWindow.get_widget_for_response(response_id=Gtk.ResponseType.OK)
+        okButton.set_can_default(True)
+        okButton.grab_default()
+
         dialogWindow.show_all()
         response = dialogWindow.run()
         text = userEntry.get_text() 
         dialogWindow.destroy()
         if (response == Gtk.ResponseType.OK) and (text != ''):
             return text
+
+    def msg(self, prompt):
+        dialogWindow = Gtk.MessageDialog(self.win,
+                              Gtk.DialogFlags.MODAL | Gtk.DialogFlags.DESTROY_WITH_PARENT,
+                              Gtk.MessageType.QUESTION,
+                              Gtk.ButtonsType.OK,
+                              prompt)
+
+        dialogWindow.show_all()
+        response = dialogWindow.run()
+        dialogWindow.destroy()
 
 class Connection(object):
     def __init__(self, parent, output_block, output_index, input_block, input_index):
@@ -255,6 +291,7 @@ class Connection(object):
         self.setup = False
 
     def delete(self):
+        self.parent.nz_graph.disconnect(self.output_block.name, self.output_block.outputs[self.output_index], self.input_block.name, self.input_block.inputs[self.input_index])
         self.parent.connections.remove(self)
 
     def draw(self, ctx, selected = False):
@@ -295,11 +332,16 @@ class Block(object):
     TERM_HEIGHT = 20
     TERM_SPACING = 60
 
-    def __init__(self, parent, x, y, blocktype, inputs, outputs):
+    def __init__(self, parent, name, constructor, x = 0, y = 0):
+        parent.nz_graph.add_block(name, constructor)
+
+        info = parent.nz_graph.block_info(name)
+
         self.parent = parent
-        self.blocktype = blocktype
-        self.inputs = inputs
-        self.outputs = outputs
+        self.name = name
+        self.blocktype = constructor
+        self.inputs = info.inputs
+        self.outputs = info.outputs
         self.x = x
         self.y = y
 
@@ -312,6 +354,7 @@ class Block(object):
                 connection.delete()
 
         self.parent.blocks.remove(self)
+        self.parent.nz_graph.del_block(self.name)
 
     def draw(self, ctx, selected = False):
         if not self.setup:
@@ -423,15 +466,12 @@ def main():
     win.set_default_size(450, 550)
     win.connect('destroy', lambda w: Gtk.main_quit())
 
-    nzgraph = Graph(win)
+    with nz.pa:
+        nzcontext = nz.Context()
+        graph = Graph(win, nzcontext)
 
-    b1 = Block(nzgraph, 0, 0, "synth", [], ["out1", "out2", "out3", "out4"])
-    b2 = Block(nzgraph, 400, 250, "speaker", ["in1", "in2", "in3", "inb4", "in5"], [])
-
-    nzgraph.blocks = [b1, b2]
-
-    win.show_all()
-    Gtk.main()
+        win.show_all()
+        Gtk.main()
 
 if __name__ == '__main__':
     main()

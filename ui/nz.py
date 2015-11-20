@@ -34,7 +34,7 @@ class NoiseError(Exception):
             self.extra = extra
             text = "{0} \"{3}\" on {1}:{2}".format(self.code_str, self.filename, self.linenum, self.extra)
         else:
-            text = "{0} on {1}:{2}".format(self.code_str, self.filename, self.linenum, self.extra)
+            text = "{0} on {1}:{2}".format(self.code_str, self.filename, self.linenum)
         super(NoiseError, self).__init__(text, *args, **kwargs)
 
 def handle_nzrc(rc):
@@ -117,8 +117,7 @@ class Graph(object):
         return block_handle
 
     def del_block(self, name):
-        if self.block_added:
-            handle_nzrc(nz.nz_graph_del_block(self.graph.gp, bytes(self.name, encoding = 'latin-1')))
+        handle_nzrc(nz.nz_graph_del_block(self.gp, bytes(name, encoding = 'latin-1')))
 
     def connect(self, output_block, output_port, input_block, input_port):
         handle_nzrc(nz.nz_graph_connect(
@@ -142,11 +141,11 @@ class BlockInfo(object):
     def __init__(self, struct_pointer):
         inputs = []
         for i in range(struct_pointer.contents.block_n_inputs):
-            inputs.append(struct_pointer.contents.block_input_port_array[i].block_port_name)
+            inputs.append(str(struct_pointer.contents.block_input_port_array[i].block_port_name, encoding = 'latin-1'))
         self.inputs = inputs
         outputs = []
         for i in range(struct_pointer.contents.block_n_outputs):
-            outputs.append(struct_pointer.contents.block_output_port_array[i].block_port_name)
+            outputs.append(str(struct_pointer.contents.block_output_port_array[i].block_port_name, encoding = 'latin-1'))
         self.outputs = outputs
 
 class _PortAudio:
