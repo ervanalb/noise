@@ -41,7 +41,7 @@ static void nz_typesystem_term(struct nz_context * context_p) {
 static nz_rc nz_blocksystem_init(struct nz_context * context_p) {
     context_p->context_n_blockclasses = 0;
     context_p->context_blockclass_capacity = 16;
-    context_p->context_blockclasses = calloc(context_p->context_blockclass_capacity, sizeof(struct nz_blockclass *));
+    context_p->context_blockclasses = calloc(context_p->context_blockclass_capacity + 1, sizeof(struct nz_blockclass *));
     if(context_p->context_blockclasses == NULL) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
     return NZ_SUCCESS;
 }

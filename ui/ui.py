@@ -11,11 +11,13 @@ class Graph(Gtk.DrawingArea):
 
     def __init__(self, win, *args, **kwargs):
         super(Graph, self).__init__(*args, **kwargs)
+        self.win = win
         win.add_events(Gdk.EventMask.SCROLL_MASK | Gdk.EventMask.POINTER_MOTION_MASK)
         win.connect('button-press-event', self.button_down_event)
         win.connect('button-release-event', self.button_up_event)
         win.connect('scroll-event', self.scroll_event)
         win.connect('motion-notify-event', self.motion_event)
+        win.connect('key-press-event', self.key_down_event)
         self.connect('draw', self.draw_event)
         win.add(self)
 
@@ -103,6 +105,10 @@ class Graph(Gtk.DrawingArea):
                         self.mouse_handler = block
                     else:
                         self.dragging = True
+
+            for connection in self.connections:
+                if connection.mouse_hit(event):
+                    selected = (connection,)
 
             if not hit_term:
                 input_term = None
@@ -206,8 +212,38 @@ class Graph(Gtk.DrawingArea):
         self.lx = event.x
         self.ly = event.y
 
+    def key_down_event(self, win, event):
+        if event.keyval == Gdk.KEY_Delete:
+            for item in self.selected:
+                item.delete()
+            self.queue_draw()
+        elif event.keyval == Gdk.KEY_a:
+            self.add_block()
+
     def add_connection(self, output_block, output_index, input_block, input_index):
         self.connections.append(Connection(self, output_block, output_index, input_block, input_index))
+
+    def add_block(self):
+        print(self.dialog("Block name?"))
+
+    def dialog(self, prompt):
+        dialogWindow = Gtk.MessageDialog(self.win,
+                              Gtk.DialogFlags.MODAL | Gtk.DialogFlags.DESTROY_WITH_PARENT,
+                              Gtk.MessageType.QUESTION,
+                              Gtk.ButtonsType.OK_CANCEL,
+                              prompt)
+
+        dialogBox = dialogWindow.get_content_area()
+        userEntry = Gtk.Entry()
+        userEntry.set_size_request(250,0)
+        dialogBox.pack_end(userEntry, False, False, 0)
+
+        dialogWindow.show_all()
+        response = dialogWindow.run()
+        text = userEntry.get_text() 
+        dialogWindow.destroy()
+        if (response == Gtk.ResponseType.OK) and (text != ''):
+            return text
 
 class Connection(object):
     def __init__(self, parent, output_block, output_index, input_block, input_index):
@@ -216,24 +252,43 @@ class Connection(object):
         self.output_index = output_index
         self.input_block = input_block
         self.input_index = input_index
+        self.setup = False
+
+    def delete(self):
+        self.parent.connections.remove(self)
 
     def draw(self, ctx, selected = False):
+        if not self.setup:
+            self.setup = True
+
         startp = self.output_block.output_location(self.output_index)
         endp = self.input_block.input_location(self.input_index)
 
-        ctx.set_line_width(self.parent.LINE_WIDTH)
-        ctx.set_line_cap(cairo.LINE_CAP_ROUND);
-        ctx.set_source_rgb(0, 0, 0)
         ctx.new_path()
         ctx.move_to(*startp)
         ctx.line_to(*endp)
 
-        if selected:
-            ctx.stroke_preserve()
-            ctx.set_line_width(self.LINE_WIDTH * 3)
-            ctx.set_source_rgb(200, 0, 0)
+        self.hitpath = ctx.copy_path_flat()
+        self.ctx = ctx
 
+        if selected:
+            ctx.set_line_width(self.parent.LINE_WIDTH * 3)
+            ctx.set_line_cap(cairo.LINE_CAP_ROUND)
+            ctx.set_source_rgb(200, 0, 0)
+            ctx.stroke_preserve()
+
+        ctx.set_line_width(self.parent.LINE_WIDTH)
+        ctx.set_line_cap(cairo.LINE_CAP_ROUND)
+        ctx.set_source_rgb(0, 0, 0)
         ctx.stroke()
+
+    def mouse_hit(self, event):
+        (x, y) = self.parent.conv_screen_coords(event.x, event.y)
+        self.ctx.new_path()
+        self.ctx.set_line_width(self.parent.LINE_WIDTH)
+        self.ctx.set_line_cap(cairo.LINE_CAP_ROUND)
+        self.ctx.append_path(self.hitpath)
+        return self.ctx.in_stroke(x, y)
 
 class Block(object):
     TERM_WIDTH = 20
@@ -249,6 +304,14 @@ class Block(object):
         self.y = y
 
         self.setup = False
+
+    def delete(self):
+        connections = self.parent.connections
+        for connection in connections:
+            if connection.input_block == self or connection.output_block == self:
+                connection.delete()
+
+        self.parent.blocks.remove(self)
 
     def draw(self, ctx, selected = False):
         if not self.setup:

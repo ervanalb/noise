@@ -48,3 +48,17 @@ nz_rc nz_type_create(const struct nz_context * context_p, const struct nz_typecl
 
     NZ_RETURN_ERR(NZ_TYPE_NOT_FOUND);
 }
+
+nz_rc nz_type_list(struct nz_context * context_p, char const *** typeclass_string_array_p) {
+    char const ** typeclass_string_array = calloc(context_p->context_n_typeclasses + 1, sizeof(const char *));
+    if(typeclass_string_array == NULL) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
+    for(size_t i = 0; i < context_p->context_n_typeclasses; i++) {
+        typeclass_string_array[i] = context_p->context_typeclasses[i]->type_id;
+    }
+    *typeclass_string_array_p = typeclass_string_array;
+    return NZ_SUCCESS;
+}
+
+void nz_type_list_free(char const ** typeclass_string_array) {
+    free(typeclass_string_array);
+} 

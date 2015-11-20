@@ -41,6 +41,7 @@ extern int nz_error_line;
 #define NZ_RETURN_ERR_MSG(ERR, STR) {NZ_ERR_MSG(STR); return (ERR);}
 
 const char * nz_error_rc_str(nz_rc rc);
+void nz_error_string_free();
 
 #endif
 

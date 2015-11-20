@@ -128,6 +128,7 @@ struct nz_typeclass {
 // Needed by block system
 
 nz_rc nz_type_create(const struct nz_context * context_p, const struct nz_typeclass ** typeclass_pp, nz_type ** type_pp, const char * string);
+nz_rc nz_type_list(struct nz_context * context_p, char const *** typeclass_string_array_p);
 
 int nz_types_are_equal(const struct nz_typeclass * typeclass_p,       const nz_type * type_p,
                        const struct nz_typeclass * other_typeclass_p, const nz_type * other_type_p);

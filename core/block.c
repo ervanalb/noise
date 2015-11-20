@@ -45,6 +45,20 @@ nz_rc nz_block_create(const struct nz_context * context, const struct nz_blockcl
     NZ_RETURN_ERR_MSG(NZ_BLOCK_NOT_FOUND, strdup(string));
 }
 
+nz_rc nz_block_list(struct nz_context * context_p, char const *** blockclass_string_array_p) {
+    char const ** blockclass_string_array = calloc(context_p->context_n_blockclasses + 1, sizeof(const char *));
+    if(blockclass_string_array == NULL) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
+    for(size_t i = 0; i < context_p->context_n_blockclasses; i++) {
+        blockclass_string_array[i] = context_p->context_blockclasses[i]->block_id;
+    }
+    *blockclass_string_array_p = blockclass_string_array;
+    return NZ_SUCCESS;
+}
+
+void nz_block_list_free(char const ** blockclass_string_array) {
+    free(blockclass_string_array);
+}
+
 nz_obj * nz_null_pull_fn(struct nz_block self, size_t index, nz_obj * obj_p) {
     return NULL;
 }

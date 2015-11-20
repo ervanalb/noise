@@ -47,6 +47,8 @@ struct nz_blockclass {
 
 nz_rc nz_block_create(const struct nz_context * context, const struct nz_blockclass ** blockclass_pp, nz_block_state ** state_pp, struct nz_block_info * info_p, const char * string);
 
+nz_rc nz_block_list(struct nz_context * context_p, char const *** blockclass_string_array_p);
+
 nz_obj * nz_null_pull_fn(struct nz_block self, size_t index, nz_obj * obj_p);
 
 #define DECLARE_BLOCKCLASS(NAME) \
