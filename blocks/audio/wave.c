@@ -84,8 +84,9 @@ nz_rc wave_block_create(const struct nz_context * context_p, const char * string
     } else if(strcmp("saw", shape_str) == 0) {
         pull_fn = sine_wave_pull_fn;
     } else {
+        char * shape_str_copy = strdup(shape_str);
         free(shape_str);
-        NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_VALUE, strdup(shape_str));
+        NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_VALUE, shape_str_copy);
     }
     free(shape_str);
 
