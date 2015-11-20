@@ -66,8 +66,7 @@ void nz_graph_destroy(struct nz_graph * graph_p) {
 nz_rc nz_graph_add_block(
         struct nz_graph * graph_p,
         const char * id,
-        const char * block,
-        struct nz_block ** block_pp) {
+        const char * block) {
 
     struct nz_node * node_p;
     nz_rc rc;
@@ -148,8 +147,6 @@ nz_rc nz_graph_add_block(
     // Append node to linked list
 
     ll_p->next = node_p;
-
-    if(block_pp != NULL) *block_pp = &node_p->block;
 
     return NZ_SUCCESS;
 }
@@ -266,3 +263,20 @@ nz_rc nz_graph_disconnect(
 
     return NZ_SUCCESS;
 }
+
+nz_rc nz_graph_block_info(struct nz_graph * graph_p, const char * id, struct nz_block_info ** info_pp) {
+    struct nz_node * node_p;
+    for(node_p = graph_p->graph_node_head_p->next; node_p != NULL && strcmp(node_p->node_id, id) != 0; node_p = node_p->next);
+    if(node_p == NULL) NZ_RETURN_ERR_MSG(NZ_NODE_NOT_FOUND, strdup(id));
+    *info_pp = &node_p->block_info;
+    return NZ_SUCCESS;
+}
+
+nz_rc nz_graph_block_handle(struct nz_graph * graph_p, const char * id, struct nz_block ** block_pp) {
+    struct nz_node * node_p;
+    for(node_p = graph_p->graph_node_head_p->next; node_p != NULL && strcmp(node_p->node_id, id) != 0; node_p = node_p->next);
+    if(node_p == NULL) NZ_RETURN_ERR_MSG(NZ_NODE_NOT_FOUND, strdup(id));
+    *block_pp = &node_p->block;
+    return NZ_SUCCESS;
+}
+

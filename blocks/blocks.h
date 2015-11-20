@@ -20,6 +20,8 @@ const struct nz_blockclass nz_wave_blockclass;
 
 // --
 
+nz_rc pa_init();
 nz_rc pa_start(struct nz_block *);
+void pa_term();
 
 #endif

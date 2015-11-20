@@ -14,6 +14,16 @@ struct pa_block_state {
     PaStream * stream;
 };
 
+nz_rc pa_init() {
+    PaError err = Pa_Initialize();
+    if(err != paNoError) NZ_RETURN_ERR_MSG(NZ_INTERNAL_ERROR, strdup(Pa_GetErrorText(err)));
+    return NZ_SUCCESS;
+}
+
+void pa_term() {
+    Pa_Terminate();
+}
+
 nz_rc pa_start(struct nz_block * block_p) {
     struct nz_block self = *block_p;
     struct pa_block_state * state_p = (struct pa_block_state *)(self.block_state_p);
