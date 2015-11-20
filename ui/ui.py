@@ -176,7 +176,7 @@ class Graph(Gtk.DrawingArea):
                     self.output_term = output_term
                     redraw = True
                 if self.input_term is not None and self.output_term is not None:
-                    self.add_connection(*self.input_term, *self.output_term)
+                    self.add_connection(*self.output_term, *self.input_term)
                     self.input_term = None
                     self.output_term = None
         elif event.button == 3:
