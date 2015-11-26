@@ -64,7 +64,7 @@ static nz_rc debug_block_create_args(const struct nz_typeclass * typeclass_p, nz
 }
 
 nz_rc debug_block_create(const struct nz_context * context_p, const char * string, nz_block_state ** state_pp, struct nz_block_info * info_p) {
-    if(string == NULL) NZ_RETURN_ERR(NZ_EXPECTED_BLOCK_ARGS);
+    if(string == NULL) NZ_RETURN_ERR(NZ_EXPECTED_ARGS);
 
     const char * pos = string;
     const char * start;
@@ -84,7 +84,7 @@ nz_rc debug_block_create(const struct nz_context * context_p, const char * strin
 
     if(pos != NULL) {
         typeclass_p->type_destroy(type_p);
-        NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_PARSE, strdup(string));
+        NZ_RETURN_ERR_MSG(NZ_ARG_PARSE, strdup(string));
     }
 
     return debug_block_create_args(typeclass_p, type_p, state_pp, info_p);

@@ -66,7 +66,7 @@ void mixer_block_destroy(nz_block_state * state_p, struct nz_block_info * info_p
 }
 
 nz_rc mixer_block_create(const struct nz_context * context_p, const char * string, nz_block_state ** state_pp, struct nz_block_info * info_p) {
-    if(string == NULL) NZ_RETURN_ERR(NZ_EXPECTED_BLOCK_ARGS);
+    if(string == NULL) NZ_RETURN_ERR(NZ_EXPECTED_ARGS);
 
     const char * pos = string;
     const char * start;
@@ -87,12 +87,12 @@ nz_rc mixer_block_create(const struct nz_context * context_p, const char * strin
     size_t n_channels;
     if(sscanf(n_channels_str, "%lu%n", &n_channels, &end) != 1 || end <= 0 || (size_t)end != length) {
         free(n_channels_str);
-        NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_PARSE, strdup(string));
+        NZ_RETURN_ERR_MSG(NZ_ARG_PARSE, strdup(string));
     }
     free(n_channels_str);
 
     if(pos != NULL) {
-        NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_PARSE, strdup(string));
+        NZ_RETURN_ERR_MSG(NZ_ARG_PARSE, strdup(string));
     }
 
     return mixer_block_create_args(n_channels, state_pp, info_p);

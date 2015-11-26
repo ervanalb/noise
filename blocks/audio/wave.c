@@ -58,7 +58,7 @@ void wave_block_destroy(nz_block_state * state_p, struct nz_block_info * info_p)
 }
 
 nz_rc wave_block_create(const struct nz_context * context_p, const char * string, nz_block_state ** state_pp, struct nz_block_info * info_p) {
-    if(string == NULL) NZ_RETURN_ERR(NZ_EXPECTED_BLOCK_ARGS);
+    if(string == NULL) NZ_RETURN_ERR(NZ_EXPECTED_ARGS);
 
     const char * pos = string;
     const char * start;
@@ -86,12 +86,12 @@ nz_rc wave_block_create(const struct nz_context * context_p, const char * string
     } else {
         char * shape_str_copy = strdup(shape_str);
         free(shape_str);
-        NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_VALUE, shape_str_copy);
+        NZ_RETURN_ERR_MSG(NZ_ARG_VALUE, shape_str_copy);
     }
     free(shape_str);
 
     if(pos != NULL) {
-        NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_PARSE, strdup(string));
+        NZ_RETURN_ERR_MSG(NZ_ARG_PARSE, strdup(string));
     }
 
     return wave_block_create_args(pull_fn, state_pp, info_p);

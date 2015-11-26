@@ -13,7 +13,8 @@
     #define M_PI 3.14159265358979323846
 #endif
 
-#include "core/error.h" // is this one ok?
+//#include "core/error.h" // is this one ok?
+#include "error.h" // is this one ok?
 
 struct strbuf {
     size_t len;
@@ -24,6 +25,7 @@ char * strbuf_alloc  (struct strbuf * buf);
 char * strbuf_clear  (struct strbuf * buf, char * str);
 char * strbuf_resize (struct strbuf * buf, char * str, size_t capacity);
 char * strbuf_printf (struct strbuf * buf, char * str, const char * fmt, ...) __attribute__ ((format (printf, 3, 4)));
+char * strbuf_putc   (struct strbuf * buf, char * str, char c);
 
 // --
 // String functions

@@ -35,7 +35,7 @@ static nz_rc accumulator_block_create_args(nz_block_state ** state_pp, struct nz
 }
 
 nz_rc accumulator_block_create(const struct nz_context * context_p, const char * string, nz_block_state ** state_pp, struct nz_block_info * info_p) {
-    if(string != NULL) NZ_RETURN_ERR(NZ_UNEXPECTED_BLOCK_ARGS);
+    if(string != NULL) NZ_RETURN_ERR(NZ_UNEXPECTED_ARGS);
     return accumulator_block_create_args(state_pp, info_p);
 }
 

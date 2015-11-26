@@ -46,7 +46,7 @@ static nz_rc chunk_type_init_obj(const nz_type * type_p, nz_obj * obj_p, const c
     a = malloc(sizeof(double) * nz_chunk_size);
     if(a == NULL) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
 
-    if(string[0] != '{') NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_PARSE, strdup(string));
+    if(string[0] != '{') NZ_RETURN_ERR_MSG(NZ_ARG_PARSE, strdup(string));
     string += 1;
 
     for(size_t i = 0; i < nz_chunk_size; i++)
@@ -54,14 +54,14 @@ static nz_rc chunk_type_init_obj(const nz_type * type_p, nz_obj * obj_p, const c
         result = sscanf(string, " %lf %n", &a[i], &n);
         if(result != 1) {
             free(a);
-            NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_PARSE, strdup(string));
+            NZ_RETURN_ERR_MSG(NZ_ARG_PARSE, strdup(string));
         }
         string += n;
     }
 
     if(string[0] != '}' || string[1] != '\0') {
         free(a);
-        NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_PARSE, strdup(string));
+        NZ_RETURN_ERR_MSG(NZ_ARG_PARSE, strdup(string));
     }
 
     memcpy((double *)obj_p, a, sizeof(double) * nz_chunk_size);
@@ -137,7 +137,7 @@ DECLARE_TYPECLASS(string)
 // Array
 nz_rc array_type_create_args(nz_type ** type_pp, size_t size, const struct nz_typeclass * typeclass_p, const nz_type * type_p)
 {
-    if(size == 0) NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_VALUE, strdup("0"));
+    if(size == 0) NZ_RETURN_ERR_MSG(NZ_ARG_VALUE, strdup("0"));
 
     struct nz_array_type * array_type_p = malloc(sizeof(struct nz_array_type));
     if(array_type_p == NULL) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
@@ -152,7 +152,7 @@ nz_rc array_type_create_args(nz_type ** type_pp, size_t size, const struct nz_ty
 }
 
 static nz_rc array_type_create(const struct nz_context * context_p, nz_type ** type_pp, const char * string) {
-    if(string == NULL) NZ_RETURN_ERR(NZ_EXPECTED_TYPE_ARGS);
+    if(string == NULL) NZ_RETURN_ERR(NZ_EXPECTED_ARGS);
 
     // TODO this leaks memory on failure
 
@@ -168,11 +168,11 @@ static nz_rc array_type_create(const struct nz_context * context_p, nz_type ** t
     size_t n_elements;
     if(sscanf(n_elements_str, "%lu%n", &n_elements, &end) != 1 || end <= 0 || (size_t)end != length) {
         free(n_elements_str);
-        NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_PARSE, strdup(string));
+        NZ_RETURN_ERR_MSG(NZ_ARG_PARSE, strdup(string));
     }
     free(n_elements_str);
 
-    if(pos == NULL) NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_PARSE, strdup(string));
+    if(pos == NULL) NZ_RETURN_ERR_MSG(NZ_ARG_PARSE, strdup(string));
 
     rc = nz_next_type_arg(string, &pos, &start, &length);
     if(rc != NZ_SUCCESS) return rc;
@@ -183,7 +183,7 @@ static nz_rc array_type_create(const struct nz_context * context_p, nz_type ** t
     free(type_str);
     if(rc != NZ_SUCCESS) return rc;
 
-    if(pos != NULL) NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_PARSE, strdup(string));
+    if(pos != NULL) NZ_RETURN_ERR_MSG(NZ_ARG_PARSE, strdup(string));
 
     return array_type_create_args(type_pp, n_elements, element_typeclass_p, element_type_p);
 }
@@ -251,7 +251,7 @@ static nz_rc array_type_init_obj(const nz_type * type_p, nz_obj * obj_p, const c
     nz_obj ** obj_p_array = (nz_obj **)obj_p;
 
     size_t len = strlen(string);
-    if(string[0] != '{' || string[len-1] != '}') NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_PARSE, strdup(string));
+    if(string[0] != '{' || string[len-1] != '}') NZ_RETURN_ERR_MSG(NZ_ARG_PARSE, strdup(string));
 
     char * elem_list = strndup(&string[1], len - 2);
     if(elem_list == NULL) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
@@ -265,7 +265,7 @@ static nz_rc array_type_init_obj(const nz_type * type_p, nz_obj * obj_p, const c
         if(pos == NULL) {
             NZ_ERR_MSG(strdup(elem_list));
             free(elem_list);
-            return NZ_OBJ_ARG_PARSE;
+            return NZ_ARG_PARSE;
         }
         nz_rc rc = nz_next_list_arg(elem_list, &pos, &start, &length);
         if(rc != NZ_SUCCESS) {
@@ -289,7 +289,7 @@ static nz_rc array_type_init_obj(const nz_type * type_p, nz_obj * obj_p, const c
     if(pos != NULL) {
         NZ_ERR_MSG(strdup(elem_list));
         free(elem_list);
-        return NZ_OBJ_ARG_PARSE;
+        return NZ_ARG_PARSE;
     }
     return NZ_SUCCESS;
 }

@@ -48,7 +48,7 @@ static nz_rc constant_block_create_args(const struct nz_typeclass * typeclass_p,
 }
 
 nz_rc constant_block_create(const struct nz_context * context_p, const char * string, nz_block_state ** state_pp, struct nz_block_info * info_p) {
-    if(string == NULL) NZ_RETURN_ERR(NZ_EXPECTED_BLOCK_ARGS);
+    if(string == NULL) NZ_RETURN_ERR(NZ_EXPECTED_ARGS);
 
     const char * pos = string;
     const char * start;
@@ -69,7 +69,7 @@ nz_rc constant_block_create(const struct nz_context * context_p, const char * st
 
     if(pos == NULL) {
         typeclass_p->type_destroy(type_p);
-        NZ_RETURN_ERR_MSG(NZ_BLOCK_ARG_PARSE, strdup(string));
+        NZ_RETURN_ERR_MSG(NZ_ARG_PARSE, strdup(string));
     }
 
     rc = typeclass_p->type_create_obj(type_p, &obj_p);
@@ -96,7 +96,7 @@ nz_rc constant_block_create(const struct nz_context * context_p, const char * st
     if(pos != NULL) {
         typeclass_p->type_destroy_obj(type_p, obj_p);
         typeclass_p->type_destroy(type_p);
-        NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_PARSE, strdup(string));
+        NZ_RETURN_ERR_MSG(NZ_ARG_PARSE, strdup(string));
     }
 
     return constant_block_create_args(typeclass_p, type_p, obj_p, state_pp, info_p);

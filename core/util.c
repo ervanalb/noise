@@ -89,6 +89,24 @@ char * strbuf_printf(struct strbuf * buf, char * str, const char * fmt, ...)
     return str;
 }
 
+char * strbuf_putc(struct strbuf * buf, char * str, char c)
+{
+    if(!str) return NULL;
+
+    if(buf->len + 1 > buf->capacity)
+    {
+        str = strbuf_resize(buf, str, buf->len + 1);
+        if(!str) return NULL;
+    }
+
+    str[buf->len - 1] = c;
+    str[buf->len] = '\0';
+
+    buf->len++;
+
+    return str;
+}
+
 // --
 
 double nz_note_to_freq(double note) {
@@ -268,16 +286,16 @@ static enum arg_rc next_arg(const char * string, const char ** pos, const char *
 }
 
 nz_rc nz_next_type_arg(const char * string, const char ** pos, const char ** start, size_t * length) {
-    if(next_arg(string, pos, start, length, '<', '>') != SUCCESS) NZ_RETURN_ERR_MSG(NZ_TYPE_ARG_PARSE, strdup(string));
+    if(next_arg(string, pos, start, length, '<', '>') != SUCCESS) NZ_RETURN_ERR_MSG(NZ_ARG_PARSE, strdup(string));
     return NZ_SUCCESS;
 }
 
 nz_rc nz_next_list_arg(const char * string, const char ** pos, const char ** start, size_t * length) {
-    if(next_arg(string, pos, start, length, '{', '}') != SUCCESS) NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_PARSE, strdup(string));
+    if(next_arg(string, pos, start, length, '{', '}') != SUCCESS) NZ_RETURN_ERR_MSG(NZ_ARG_PARSE, strdup(string));
     return NZ_SUCCESS;
 }
 
 nz_rc nz_next_block_arg(const char * string, const char ** pos, const char ** start, size_t * length) {
-    if(next_arg(string, pos, start, length, '(', ')') != SUCCESS) NZ_RETURN_ERR_MSG(NZ_BLOCK_ARG_PARSE, strdup(string));
+    if(next_arg(string, pos, start, length, '(', ')') != SUCCESS) NZ_RETURN_ERR_MSG(NZ_ARG_PARSE, strdup(string));
     return NZ_SUCCESS;
 }

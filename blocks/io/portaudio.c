@@ -121,12 +121,12 @@ nz_rc pa_block_create(const struct nz_context * context_p, const char * string, 
     PaDeviceIndex device_index;
     if(sscanf(device_index_str, "%d%n", &device_index, &end) != 1 || end <= 0 || (size_t)end != length) {
         free(device_index_str);
-        NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_PARSE, strdup(string));
+        NZ_RETURN_ERR_MSG(NZ_ARG_PARSE, strdup(string));
     }
     free(device_index_str);
 
     if(pos != NULL) {
-        NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_PARSE, strdup(string));
+        NZ_RETURN_ERR_MSG(NZ_ARG_PARSE, strdup(string));
     }
 
     return pa_block_create_args(device_index, state_pp, info_p);

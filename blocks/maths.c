@@ -69,22 +69,22 @@ static nz_rc math_block_create_args(nz_pull_fn * pull_fn, nz_block_state ** stat
 }
 
 nz_rc sum_block_create(const struct nz_context * context_p, const char * string, nz_block_state ** state_pp, struct nz_block_info * info_p) {
-    if(string != NULL) NZ_RETURN_ERR(NZ_UNEXPECTED_BLOCK_ARGS);
+    if(string != NULL) NZ_RETURN_ERR(NZ_UNEXPECTED_ARGS);
     return math_block_create_args(sum_pull_fn, state_pp, info_p);
 }
 
 nz_rc diff_block_create(const struct nz_context * context_p, const char * string, nz_block_state ** state_pp, struct nz_block_info * info_p) {
-    if(string != NULL) NZ_RETURN_ERR(NZ_UNEXPECTED_BLOCK_ARGS);
+    if(string != NULL) NZ_RETURN_ERR(NZ_UNEXPECTED_ARGS);
     return math_block_create_args(diff_pull_fn, state_pp, info_p);
 }
 
 nz_rc mul_block_create(const struct nz_context * context_p, const char * string, nz_block_state ** state_pp, struct nz_block_info * info_p) {
-    if(string != NULL) NZ_RETURN_ERR(NZ_UNEXPECTED_BLOCK_ARGS);
+    if(string != NULL) NZ_RETURN_ERR(NZ_UNEXPECTED_ARGS);
     return math_block_create_args(mul_pull_fn, state_pp, info_p);
 }
 
 nz_rc div_block_create(const struct nz_context * context_p, const char * string, nz_block_state ** state_pp, struct nz_block_info * info_p) {
-    if(string != NULL) NZ_RETURN_ERR(NZ_UNEXPECTED_BLOCK_ARGS);
+    if(string != NULL) NZ_RETURN_ERR(NZ_UNEXPECTED_ARGS);
     return math_block_create_args(div_pull_fn, state_pp, info_p);
 }
 

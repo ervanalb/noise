@@ -42,7 +42,7 @@ static nz_rc tee_block_create_args(size_t n_outputs, const struct nz_typeclass *
     struct tee_block_state * state_p = calloc(1, sizeof(struct tee_block_state));
     if(state_p == NULL) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
 
-    if(n_outputs < 1) NZ_RETURN_ERR(NZ_BLOCK_ARG_VALUE);
+    if(n_outputs < 1) NZ_RETURN_ERR(NZ_ARG_VALUE);
 
     // This function assumes ownership of typeclass_p and type_p
     nz_rc rc;
@@ -79,7 +79,7 @@ static nz_rc tee_block_create_args(size_t n_outputs, const struct nz_typeclass *
 }
 
 nz_rc tee_block_create(const struct nz_context * context_p, const char * string, nz_block_state ** state_pp, struct nz_block_info * info_p) {
-    if(string == NULL) NZ_RETURN_ERR(NZ_EXPECTED_BLOCK_ARGS);
+    if(string == NULL) NZ_RETURN_ERR(NZ_EXPECTED_ARGS);
 
     const char * pos = string;
     const char * start;
@@ -97,7 +97,7 @@ nz_rc tee_block_create(const struct nz_context * context_p, const char * string,
     size_t n_outputs;
     if(sscanf(n_outputs_str, "%lu%n", &n_outputs, &end) != 1 || end <= 0 || (size_t)end != length) {
         free(n_outputs_str);
-        NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_PARSE, strdup(string));
+        NZ_RETURN_ERR_MSG(NZ_ARG_PARSE, strdup(string));
     }
     free(n_outputs_str);
 
@@ -110,7 +110,7 @@ nz_rc tee_block_create(const struct nz_context * context_p, const char * string,
 
     if(pos != NULL) {
         typeclass_p->type_destroy(type_p);
-        NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_PARSE, strdup(string));
+        NZ_RETURN_ERR_MSG(NZ_ARG_PARSE, strdup(string));
     }
 
     return tee_block_create_args(n_outputs, typeclass_p, type_p, state_pp, info_p);
@@ -155,7 +155,7 @@ static nz_rc wye_block_create_args(size_t n_inputs, const struct nz_typeclass * 
     struct wye_block_state * state_p = calloc(1, sizeof(struct wye_block_state));
     if(state_p == NULL) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
 
-    if(n_inputs < 1) NZ_RETURN_ERR(NZ_BLOCK_ARG_VALUE);
+    if(n_inputs < 1) NZ_RETURN_ERR(NZ_ARG_VALUE);
 
     // This function assumes ownership of typeclass_p and type_p
     nz_rc rc;
@@ -192,7 +192,7 @@ static nz_rc wye_block_create_args(size_t n_inputs, const struct nz_typeclass * 
 }
 
 nz_rc wye_block_create(const struct nz_context * context_p, const char * string, nz_block_state ** state_pp, struct nz_block_info * info_p) {
-    if(string == NULL) NZ_RETURN_ERR(NZ_EXPECTED_BLOCK_ARGS);
+    if(string == NULL) NZ_RETURN_ERR(NZ_EXPECTED_ARGS);
 
     const char * pos = string;
     const char * start;
@@ -210,7 +210,7 @@ nz_rc wye_block_create(const struct nz_context * context_p, const char * string,
     size_t n_inputs;
     if(sscanf(n_inputs_str, "%lu%n", &n_inputs, &end) != 1 || end <= 0 || (size_t)end != length) {
         free(n_inputs_str);
-        NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_PARSE, strdup(string));
+        NZ_RETURN_ERR_MSG(NZ_ARG_PARSE, strdup(string));
     }
     free(n_inputs_str);
 
@@ -223,7 +223,7 @@ nz_rc wye_block_create(const struct nz_context * context_p, const char * string,
 
     if(pos != NULL) {
         typeclass_p->type_destroy(type_p);
-        NZ_RETURN_ERR_MSG(NZ_OBJ_ARG_PARSE, strdup(string));
+        NZ_RETURN_ERR_MSG(NZ_ARG_PARSE, strdup(string));
     }
 
     return wye_block_create_args(n_inputs, typeclass_p, type_p, state_pp, info_p);
