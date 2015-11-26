@@ -1,12 +1,5 @@
 #include "core/argparse.h"
 
-struct arg_spec {
-    const char * name;
-    size_t name_len;
-    enum {GENERIC, STRING, INT, REAL} type;
-    int required;
-};
-
 const char opening_group_symbols[] = {'(', '[', '{', '<'};
 const char closing_group_symbols[] = {')', ']', '}', '>'};
 
@@ -188,16 +181,34 @@ static nz_rc next_arg(const char * string, const char ** pos,
     return NZ_SUCCESS;
 }
 
+struct arg_spec {
+    const char * name;
+    size_t name_len;
+    enum {GENERIC, STRING, INT, REAL} type;
+    int required;
+};
+
 nz_rc arg_parse(char * args, const char * fmt, nz_arg *** arg_p_array_p) {
-    size_t fmt_len = strlen(fmt);
-    size_t item_cnt = 1;
-    for(size_t i = 0; i < fmt_len; i++) {
-        if(fmt[i] == ',') item_cnt++;
-    }
-    struct arg_spec * arg_spec_array = calloc(item_cnt, sizeof(struct arg_spec));
-    for(size_t i = 0; i < fmt_len; i++) {
-        
+    const char * pos;
+    const char * key_start;
+    size_t key_length;
+    const char * value_start;
+    size_t value_length;
+    nz_rc result;
+
+    while(pos) {
+        struct arg_spec spec;
+
+        result = next_arg(fmt, pos,
+                          &key_start, &key_length,
+                          &value_start, &value_length);
+
+        if(key_start != NULL) NZ_RETURN_ERR(NZ_INTERNAL_ERROR);
+
+        // TODO parse things here like
+        // required int thing1
     }
 
     return NZ_SUCCESS;
 }
+
