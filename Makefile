@@ -41,8 +41,8 @@ OBJECTS = \
 APP_OBJECTS = \
 		app/test_types.o \
 		app/test_block.o \
-		app/test_graph.o 
-#		app/test_argparse.o
+		app/test_graph.o \
+		app/test_argparse.o
 #				app/test.o \
 #				app/test_midi.o \
 #				app/test_synth.o \

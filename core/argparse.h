@@ -6,6 +6,6 @@
 
 typedef void nz_arg;
 
-nz_rc arg_parse(char * args, const char * fmt, nz_arg *** arg_p_array_p);
+nz_rc arg_parse(const char * args, const char * fmt, nz_arg ** arg_p_array);
 
 #endif

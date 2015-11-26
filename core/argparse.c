@@ -368,7 +368,7 @@ static nz_rc parse_one_arg(enum arg_spec_type type, const char * value_start, si
     return NZ_SUCCESS;
 }
 
-nz_rc arg_parse(char * args, const char * fmt, nz_arg *** arg_p_array_p) {
+nz_rc arg_parse(const char * args, const char * fmt, nz_arg ** arg_p_array) {
     struct arg_spec * arg_spec_array;
     size_t arg_spec_array_length;
     nz_rc result;
@@ -384,8 +384,9 @@ nz_rc arg_parse(char * args, const char * fmt, nz_arg *** arg_p_array_p) {
     result = arg_parse_fmt(fmt, &arg_spec_array, &arg_spec_array_length);
     if(result != NZ_SUCCESS) return result;
 
-    *arg_p_array_p = calloc(arg_spec_array_length, sizeof(nz_arg *));
-    if(*arg_p_array_p == NULL) return NZ_NOT_ENOUGH_MEMORY;
+    for(size_t i = 0; i < arg_spec_array_length; i++) {
+        arg_p_array[i] = NULL;
+    }
 
     while(pos) {
         result = next_arg(args, &pos,
@@ -396,20 +397,18 @@ nz_rc arg_parse(char * args, const char * fmt, nz_arg *** arg_p_array_p) {
             if(kwargs == 1 || pargs >= arg_spec_array_length) {
                 for(size_t i = 0; i < arg_spec_array_length; i++) {
                     free(arg_spec_array[i].name);
-                    free((*arg_p_array_p)[i]);
+                    free(arg_p_array[i]);
                 }
                 free(arg_spec_array);
-                free(*arg_p_array_p);
                 NZ_RETURN_ERR_MSG(NZ_BAD_PARG, rsprintf("%lu", value_start - args));
             }
-            result = parse_one_arg(arg_spec_array[pargs].type, value_start, value_length, &(*arg_p_array_p)[pargs]);
+            result = parse_one_arg(arg_spec_array[pargs].type, value_start, value_length, &arg_p_array[pargs]);
             if(result != NZ_SUCCESS) {
                 for(size_t i = 0; i < arg_spec_array_length; i++) {
                     free(arg_spec_array[i].name);
-                    free((*arg_p_array_p)[i]);
+                    free(arg_p_array[i]);
                 }
                 free(arg_spec_array);
-                free(*arg_p_array_p);
                 return result;
             }
             pargs++;
@@ -417,16 +416,15 @@ nz_rc arg_parse(char * args, const char * fmt, nz_arg *** arg_p_array_p) {
             kwargs = 1;
             size_t i;
             for(i = pargs; i < arg_spec_array_length; i++) {
-                if((*arg_p_array_p)[i] != NULL) continue;
+                if(arg_p_array[i] != NULL) continue;
                 if(strncmp(arg_spec_array[i].name, key_start, key_length) == 0) {
-                    result = parse_one_arg(arg_spec_array[i].type, value_start, value_length, &(*arg_p_array_p)[i]);
+                    result = parse_one_arg(arg_spec_array[i].type, value_start, value_length, &arg_p_array[i]);
                     if(result != NZ_SUCCESS) {
                         for(size_t i = 0; i < arg_spec_array_length; i++) {
                             free(arg_spec_array[i].name);
-                            free((*arg_p_array_p)[i]);
+                            free(arg_p_array[i]);
                         }
                         free(arg_spec_array);
-                        free(*arg_p_array_p);
                         return result;
                     }
                     break;
@@ -435,24 +433,22 @@ nz_rc arg_parse(char * args, const char * fmt, nz_arg *** arg_p_array_p) {
             if(i == arg_spec_array_length) {
                 for(size_t i = 0; i < arg_spec_array_length; i++) {
                     free(arg_spec_array[i].name);
-                    free((*arg_p_array_p)[i]);
+                    free(arg_p_array[i]);
                 }
                 free(arg_spec_array);
-                free(*arg_p_array_p);
                 NZ_RETURN_ERR_MSG(NZ_BAD_KWARG, rsprintf("%lu", key_start - args));
             }
         }
     }
 
     for(size_t i = 0; i < arg_spec_array_length; i++) {
-        if(arg_spec_array[i].required == 1 && (*arg_p_array_p)[i] == NULL) {
+        if(arg_spec_array[i].required == 1 && arg_p_array[i] == NULL) {
             char * missing = strdup(arg_spec_array[i].name);
             for(size_t i = 0; i < arg_spec_array_length; i++) {
                 free(arg_spec_array[i].name);
-                free((*arg_p_array_p)[i]);
+                free(arg_p_array[i]);
             }
             free(arg_spec_array);
-            free(*arg_p_array_p);
             NZ_RETURN_ERR_MSG(NZ_ARG_MISSING, missing);
         }
     }
