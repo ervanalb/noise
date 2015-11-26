@@ -197,9 +197,10 @@ static nz_rc next_tok(const char * string, const char ** pos,
     return NZ_SUCCESS;
 }
 
+enum arg_spec_type {GENERIC, STRING, INT, REAL};
 struct arg_spec {
     char * name;
-    enum {GENERIC, STRING, INT, REAL} type;
+    enum arg_spec_type type;
     int required;
 };
 
@@ -320,16 +321,143 @@ static nz_rc arg_parse_fmt(const char * fmt, struct arg_spec ** arg_spec_array_p
     return NZ_SUCCESS;
 }
 
+static nz_rc parse_one_arg(enum arg_spec_type type, const char * value_start, size_t value_length, nz_arg ** arg_pp) {
+    char * value = strndup(value_start, value_length);
+    if(value == NULL) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
+
+    int n;
+    int result;
+
+    switch(type) {
+        case GENERIC:
+            *arg_pp = value;
+            break;
+        case STRING:
+            free(value);
+            NZ_RETURN_ERR(NZ_NOT_IMPLEMENTED);
+            break;
+        case INT:
+            *arg_pp = calloc(1, sizeof(long));
+            if(*arg_pp == NULL) {
+                free(value);
+                NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
+            }
+            result = sscanf(value, "%ld%n", (long *)*arg_pp, &n);
+            if(result != 1 || n < 0 || value[n] != '\0') {
+                free(value);
+                free(*arg_pp);
+                NZ_RETURN_ERR_MSG(NZ_ARG_VALUE, strdup(value));
+            }
+            free(value);
+            break;
+        case REAL:
+            *arg_pp = calloc(1, sizeof(double));
+            if(*arg_pp == NULL) {
+                free(value);
+                NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
+            }
+            result = sscanf(value, "%lf%n", (double *)*arg_pp, &n);
+            if(result != 1 || n < 0 || value[n] != '\0') {
+                free(value);
+                free(*arg_pp);
+                NZ_RETURN_ERR_MSG(NZ_ARG_VALUE, strdup(value));
+            }
+            free(value);
+            break;
+    }
+    return NZ_SUCCESS;
+}
+
 nz_rc arg_parse(char * args, const char * fmt, nz_arg *** arg_p_array_p) {
     struct arg_spec * arg_spec_array;
     size_t arg_spec_array_length;
     nz_rc result;
 
+    const char * pos = args;
+    const char * key_start;
+    size_t key_length;
+    const char * value_start;
+    size_t value_length;
+    size_t pargs = 0;
+    int kwargs = 0;
+
     result = arg_parse_fmt(fmt, &arg_spec_array, &arg_spec_array_length);
     if(result != NZ_SUCCESS) return result;
 
+    *arg_p_array_p = calloc(arg_spec_array_length, sizeof(nz_arg *));
+    if(*arg_p_array_p == NULL) return NZ_NOT_ENOUGH_MEMORY;
+
+    while(pos) {
+        result = next_arg(args, &pos,
+                          &key_start, &key_length,
+                          &value_start, &value_length);
+
+        if(key_start == NULL) {
+            if(kwargs == 1 || pargs >= arg_spec_array_length) {
+                for(size_t i = 0; i < arg_spec_array_length; i++) {
+                    free(arg_spec_array[i].name);
+                    free((*arg_p_array_p)[i]);
+                }
+                free(arg_spec_array);
+                free(*arg_p_array_p);
+                NZ_RETURN_ERR_MSG(NZ_BAD_PARG, rsprintf("%lu", value_start - args));
+            }
+            result = parse_one_arg(arg_spec_array[pargs].type, value_start, value_length, &(*arg_p_array_p)[pargs]);
+            if(result != NZ_SUCCESS) {
+                for(size_t i = 0; i < arg_spec_array_length; i++) {
+                    free(arg_spec_array[i].name);
+                    free((*arg_p_array_p)[i]);
+                }
+                free(arg_spec_array);
+                free(*arg_p_array_p);
+                return result;
+            }
+            pargs++;
+        } else {
+            kwargs = 1;
+            size_t i;
+            for(i = pargs; i < arg_spec_array_length; i++) {
+                if((*arg_p_array_p)[i] != NULL) continue;
+                if(strncmp(arg_spec_array[i].name, key_start, key_length) == 0) {
+                    result = parse_one_arg(arg_spec_array[i].type, value_start, value_length, &(*arg_p_array_p)[i]);
+                    if(result != NZ_SUCCESS) {
+                        for(size_t i = 0; i < arg_spec_array_length; i++) {
+                            free(arg_spec_array[i].name);
+                            free((*arg_p_array_p)[i]);
+                        }
+                        free(arg_spec_array);
+                        free(*arg_p_array_p);
+                        return result;
+                    }
+                    break;
+                }
+            }
+            if(i == arg_spec_array_length) {
+                for(size_t i = 0; i < arg_spec_array_length; i++) {
+                    free(arg_spec_array[i].name);
+                    free((*arg_p_array_p)[i]);
+                }
+                free(arg_spec_array);
+                free(*arg_p_array_p);
+                NZ_RETURN_ERR_MSG(NZ_BAD_KWARG, rsprintf("%lu", key_start - args));
+            }
+        }
+    }
+
+    for(size_t i = 0; i < arg_spec_array_length; i++) {
+        if(arg_spec_array[i].required == 1 && (*arg_p_array_p)[i] == NULL) {
+            char * missing = strdup(arg_spec_array[i].name);
+            for(size_t i = 0; i < arg_spec_array_length; i++) {
+                free(arg_spec_array[i].name);
+                free((*arg_p_array_p)[i]);
+            }
+            free(arg_spec_array);
+            free(*arg_p_array_p);
+            NZ_RETURN_ERR_MSG(NZ_ARG_MISSING, missing);
+        }
+    }
+
     for(size_t i = 0; i < arg_spec_array_length; i++) free(arg_spec_array[i].name);
     free(arg_spec_array);
-
-    return NZ_NOT_IMPLEMENTED;
+    return NZ_SUCCESS;
 }
