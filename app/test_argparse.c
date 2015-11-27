@@ -5,10 +5,10 @@ nz_rc run() {
     nz_rc result;
     nz_arg * arg_p_array[3];
 
-    result = arg_parse("requred int thing1, required real thing2, required general thing3", "13, 14.5, saw", arg_p_array);
+    result = arg_parse("required int thing1, required real thing2, required generic thing3", "13, 14.5, saw", arg_p_array);
     if(result != NZ_SUCCESS) return result;
 
-    printf("Decoded %ld %lf %s", *(long *)arg_p_array[0], *(double *)arg_p_array[2], (char *)arg_p_array[1]);
+    printf("Decoded %ld %lf %s\n", *(long *)arg_p_array[0], *(double *)arg_p_array[1], (char *)arg_p_array[2]);
 
     for(size_t i = 0; i < 3; i++) {
         free(arg_p_array[i]);
