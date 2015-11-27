@@ -5,6 +5,7 @@
 #include "core/ntype.h"
 #include "core/block.h"
 #include "core/error.h"
+#include "core/argparse.h"
 
 struct debug_block_state {
     const struct nz_typeclass * typeclass_p;
@@ -64,28 +65,17 @@ static nz_rc debug_block_create_args(const struct nz_typeclass * typeclass_p, nz
 }
 
 nz_rc debug_block_create(const struct nz_context * context_p, const char * string, nz_block_state ** state_pp, struct nz_block_info * info_p) {
-    if(string == NULL) NZ_RETURN_ERR(NZ_EXPECTED_ARGS);
-
-    const char * pos = string;
-    const char * start;
-    size_t length;
-    int end;
-    nz_rc rc;
+    nz_arg * args[1];
+    nz_rc rc = arg_parse("required generic type", string, args);
+    if(rc != NZ_SUCCESS) return rc;
+    char * type_str = (char *)args[0];
 
     const struct nz_typeclass * typeclass_p;
     nz_type * type_p;
 
-    rc = nz_next_block_arg(string, &pos, &start, &length);
-    if(rc != NZ_SUCCESS) return rc;
-    char * type_str = strndup(start, length);
     rc = nz_type_create(context_p, &typeclass_p, &type_p, type_str);
     free(type_str);
     if(rc != NZ_SUCCESS) return rc;
-
-    if(pos != NULL) {
-        typeclass_p->type_destroy(type_p);
-        NZ_RETURN_ERR_MSG(NZ_ARG_PARSE, strdup(string));
-    }
 
     return debug_block_create_args(typeclass_p, type_p, state_pp, info_p);
 }

@@ -5,6 +5,7 @@
 #include "core/block.h"
 #include "core/error.h"
 #include "types/ntypes.h"
+#include "core/argparse.h"
 
 #include <portaudio.h>
 
@@ -103,33 +104,19 @@ static nz_rc pa_block_create_args(PaDeviceIndex device, nz_block_state ** state_
 }
 
 nz_rc pa_block_create(const struct nz_context * context_p, const char * string, nz_block_state ** state_pp, struct nz_block_info * info_p) {
-    if(string == NULL) return pa_block_create_args(Pa_GetDefaultOutputDevice(), state_pp, info_p);
-
-    const char * pos = string;
-    const char * start;
-    size_t length;
-    int end;
-    nz_rc rc;
-
-    rc = nz_next_block_arg(string, &pos, &start, &length);
+    nz_arg * args[1];
+    nz_rc rc = arg_parse("int output_device", string, args);
     if(rc != NZ_SUCCESS) return rc;
-    char * device_index_str = strndup(start, length);
-    if(device_index_str == NULL) {
-        NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
+
+    PaDeviceIndex output_device;
+    if(args[0] == NULL) {
+        output_device = Pa_GetDefaultOutputDevice();
+    } else {
+        output_device = *(long *)args[0];
+        free(args[0]);
     }
 
-    PaDeviceIndex device_index;
-    if(sscanf(device_index_str, "%d%n", &device_index, &end) != 1 || end <= 0 || (size_t)end != length) {
-        free(device_index_str);
-        NZ_RETURN_ERR_MSG(NZ_ARG_PARSE, strdup(string));
-    }
-    free(device_index_str);
-
-    if(pos != NULL) {
-        NZ_RETURN_ERR_MSG(NZ_ARG_PARSE, strdup(string));
-    }
-
-    return pa_block_create_args(device_index, state_pp, info_p);
+    return pa_block_create_args(output_device, state_pp, info_p);
 }
 
 void pa_block_destroy(nz_block_state * state_p, struct nz_block_info * info_p) {

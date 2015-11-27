@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include "noise.h"
 #include "core/ntype.h"
+#include "core/argparse.h"
 
 struct tee_block_state {
     size_t n_outputs;
@@ -79,39 +80,24 @@ static nz_rc tee_block_create_args(size_t n_outputs, const struct nz_typeclass *
 }
 
 nz_rc tee_block_create(const struct nz_context * context_p, const char * string, nz_block_state ** state_pp, struct nz_block_info * info_p) {
-    if(string == NULL) NZ_RETURN_ERR(NZ_EXPECTED_ARGS);
-
-    const char * pos = string;
-    const char * start;
-    size_t length;
-    int end;
-    nz_rc rc;
+    nz_arg * args[2];
+    nz_rc rc = arg_parse("required int n_outputs, required generic type", string, args);
+    if(rc != NZ_SUCCESS) return rc;
+    long n_outputs = *(long *)args[0];
+    char * type_str = (char *)args[1];
+    free(args[0]);
 
     const struct nz_typeclass * typeclass_p;
     nz_type * type_p;
 
-    rc = nz_next_block_arg(string, &pos, &start, &length);
-    if(rc != NZ_SUCCESS) return rc;
-    char * n_outputs_str = strndup(start, length);
-    if(n_outputs_str == NULL) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
-    size_t n_outputs;
-    if(sscanf(n_outputs_str, "%lu%n", &n_outputs, &end) != 1 || end <= 0 || (size_t)end != length) {
-        free(n_outputs_str);
-        NZ_RETURN_ERR_MSG(NZ_ARG_PARSE, strdup(string));
+    if(n_outputs < 0) {
+        free(type_str);
+        NZ_RETURN_ERR_MSG(NZ_ARG_VALUE, rsprintf("%ld", n_outputs));
     }
-    free(n_outputs_str);
 
-    rc = nz_next_block_arg(string, &pos, &start, &length);
-    if(rc != NZ_SUCCESS) return rc;
-    char * type_str = strndup(start, length);
     rc = nz_type_create(context_p, &typeclass_p, &type_p, type_str);
     free(type_str);
     if(rc != NZ_SUCCESS) return rc;
-
-    if(pos != NULL) {
-        typeclass_p->type_destroy(type_p);
-        NZ_RETURN_ERR_MSG(NZ_ARG_PARSE, strdup(string));
-    }
 
     return tee_block_create_args(n_outputs, typeclass_p, type_p, state_pp, info_p);
 }
@@ -192,41 +178,26 @@ static nz_rc wye_block_create_args(size_t n_inputs, const struct nz_typeclass * 
 }
 
 nz_rc wye_block_create(const struct nz_context * context_p, const char * string, nz_block_state ** state_pp, struct nz_block_info * info_p) {
-    if(string == NULL) NZ_RETURN_ERR(NZ_EXPECTED_ARGS);
-
-    const char * pos = string;
-    const char * start;
-    size_t length;
-    int end;
-    nz_rc rc;
+    nz_arg * args[2];
+    nz_rc rc = arg_parse("required int n_inputs, required generic type", string, args);
+    if(rc != NZ_SUCCESS) return rc;
+    long n_inputs = *(long *)args[0];
+    char * type_str = (char *)args[1];
+    free(args[0]);
 
     const struct nz_typeclass * typeclass_p;
     nz_type * type_p;
 
-    rc = nz_next_block_arg(string, &pos, &start, &length);
-    if(rc != NZ_SUCCESS) return rc;
-    char * n_inputs_str = strndup(start, length);
-    if(n_inputs_str == NULL) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
-    size_t n_inputs;
-    if(sscanf(n_inputs_str, "%lu%n", &n_inputs, &end) != 1 || end <= 0 || (size_t)end != length) {
-        free(n_inputs_str);
-        NZ_RETURN_ERR_MSG(NZ_ARG_PARSE, strdup(string));
+    if(n_inputs < 0) {
+        free(type_str);
+        NZ_RETURN_ERR_MSG(NZ_ARG_VALUE, rsprintf("%ld", n_inputs));
     }
-    free(n_inputs_str);
 
-    rc = nz_next_block_arg(string, &pos, &start, &length);
-    if(rc != NZ_SUCCESS) return rc;
-    char * type_str = strndup(start, length);
     rc = nz_type_create(context_p, &typeclass_p, &type_p, type_str);
     free(type_str);
     if(rc != NZ_SUCCESS) return rc;
 
-    if(pos != NULL) {
-        typeclass_p->type_destroy(type_p);
-        NZ_RETURN_ERR_MSG(NZ_ARG_PARSE, strdup(string));
-    }
-
-    return wye_block_create_args(n_inputs, typeclass_p, type_p, state_pp, info_p);
+    return tee_block_create_args(n_inputs, typeclass_p, type_p, state_pp, info_p);
 }
 
 void wye_block_destroy(nz_block_state * state_p, struct nz_block_info * info_p) {

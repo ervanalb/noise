@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include "noise.h"
 #include "types/ntypes.h"
+#include "core/argparse.h"
 
 nz_obj * sum_pull_fn(struct nz_block self, size_t index, nz_obj * obj_p) {
     nz_real * math_value_p = (nz_real *)(self.block_state_p);
@@ -69,22 +70,26 @@ static nz_rc math_block_create_args(nz_pull_fn * pull_fn, nz_block_state ** stat
 }
 
 nz_rc sum_block_create(const struct nz_context * context_p, const char * string, nz_block_state ** state_pp, struct nz_block_info * info_p) {
-    if(string != NULL) NZ_RETURN_ERR(NZ_UNEXPECTED_ARGS);
+    nz_rc result = arg_parse(NULL, string, NULL);
+    if(result != NZ_SUCCESS) return result;
     return math_block_create_args(sum_pull_fn, state_pp, info_p);
 }
 
 nz_rc diff_block_create(const struct nz_context * context_p, const char * string, nz_block_state ** state_pp, struct nz_block_info * info_p) {
-    if(string != NULL) NZ_RETURN_ERR(NZ_UNEXPECTED_ARGS);
+    nz_rc result = arg_parse(NULL, string, NULL);
+    if(result != NZ_SUCCESS) return result;
     return math_block_create_args(diff_pull_fn, state_pp, info_p);
 }
 
 nz_rc mul_block_create(const struct nz_context * context_p, const char * string, nz_block_state ** state_pp, struct nz_block_info * info_p) {
-    if(string != NULL) NZ_RETURN_ERR(NZ_UNEXPECTED_ARGS);
+    nz_rc result = arg_parse(NULL, string, NULL);
+    if(result != NZ_SUCCESS) return result;
     return math_block_create_args(mul_pull_fn, state_pp, info_p);
 }
 
 nz_rc div_block_create(const struct nz_context * context_p, const char * string, nz_block_state ** state_pp, struct nz_block_info * info_p) {
-    if(string != NULL) NZ_RETURN_ERR(NZ_UNEXPECTED_ARGS);
+    nz_rc result = arg_parse(NULL, string, NULL);
+    if(result != NZ_SUCCESS) return result;
     return math_block_create_args(div_pull_fn, state_pp, info_p);
 }
 

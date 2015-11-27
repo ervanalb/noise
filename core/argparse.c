@@ -375,9 +375,10 @@ static nz_rc parse_one_arg(enum arg_spec_type type, const char * value_start, si
 }
 
 nz_rc arg_parse(const char * fmt, const char * args, nz_arg ** arg_p_array) {
-    if(fmt == NULL && args == NULL) return NZ_SUCCESS;
-    if(fmt == NULL && args != NULL) NZ_RETURN_ERR(NZ_UNEXPECTED_ARGS);
-    if(fmt != NULL && args == NULL) NZ_RETURN_ERR(NZ_EXPECTED_ARGS);
+    if(fmt == NULL) {
+        if(args == NULL) return NZ_SUCCESS;
+        NZ_RETURN_ERR(NZ_UNEXPECTED_ARGS);
+    }
 
     struct arg_spec * arg_spec_array;
     size_t arg_spec_array_length;

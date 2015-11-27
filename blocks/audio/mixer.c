@@ -2,6 +2,7 @@
 #include "noise.h"
 #include "types/ntypes.h"
 #include "core/util.h"
+#include "core/argparse.h"
 
 struct mixer_block_state {
     size_t n_channels;
@@ -66,34 +67,13 @@ void mixer_block_destroy(nz_block_state * state_p, struct nz_block_info * info_p
 }
 
 nz_rc mixer_block_create(const struct nz_context * context_p, const char * string, nz_block_state ** state_pp, struct nz_block_info * info_p) {
-    if(string == NULL) NZ_RETURN_ERR(NZ_EXPECTED_ARGS);
-
-    const char * pos = string;
-    const char * start;
-    size_t length;
-    int end;
-    nz_rc rc;
-
-    const struct nz_typeclass * typeclass_p;
-    nz_type * type_p;
-
-    rc = nz_next_block_arg(string, &pos, &start, &length);
+    nz_arg * args[1];
+    nz_rc rc = arg_parse("required int n_channels", string, args);
     if(rc != NZ_SUCCESS) return rc;
-    char * n_channels_str = strndup(start, length);
-    if(n_channels_str == NULL) {
-        NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
-    }
+    long n_channels = *(long *)args[0];
+    free(args[0]);
 
-    size_t n_channels;
-    if(sscanf(n_channels_str, "%lu%n", &n_channels, &end) != 1 || end <= 0 || (size_t)end != length) {
-        free(n_channels_str);
-        NZ_RETURN_ERR_MSG(NZ_ARG_PARSE, strdup(string));
-    }
-    free(n_channels_str);
-
-    if(pos != NULL) {
-        NZ_RETURN_ERR_MSG(NZ_ARG_PARSE, strdup(string));
-    }
+    if(n_channels < 0) NZ_RETURN_ERR_MSG(NZ_ARG_VALUE, rsprintf("%ld", n_channels));
 
     return mixer_block_create_args(n_channels, state_pp, info_p);
 }
