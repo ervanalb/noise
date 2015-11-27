@@ -16,6 +16,7 @@ struct pa_block_state {
     PaStream * stream;
     pthread_t thread;
     pthread_mutex_t running;
+    pthread_mutex_t mutex;
 };
 
 nz_rc pa_init() {
@@ -28,6 +29,7 @@ void pa_term() {
     Pa_Terminate();
 }
 
+// TODO figure out how to handle error conditions that happen in this thread
 static void * pa_run(void * data) {
     struct nz_block * block_p = data;
     struct nz_block self = *block_p;
@@ -38,6 +40,9 @@ static void * pa_run(void * data) {
         PaError err = Pa_WriteStream(state_p->stream, state_p->buffer_p, nz_chunk_size);
         //if(err != paNoError) NZ_RETURN_ERR_MSG(NZ_INTERNAL_ERROR, strdup(Pa_GetErrorText(err)));
 
+        ptrc = pthread_mutex_lock(&state_p->mutex);
+        // Check ptrc?
+
         if(NZ_PULL(self, 0, state_p->chunk_p) == NULL) {
             for(size_t i = 0; i < nz_chunk_size; i++) {
                 state_p->buffer_p[i] = 0;
@@ -47,6 +52,9 @@ static void * pa_run(void * data) {
                 state_p->buffer_p[i] = state_p->chunk_p[i];
             }
         }
+
+        ptrc = pthread_mutex_unlock(&state_p->mutex);
+        // Check ptrc?
     }
     if(ptrc == 0) {
         ptrc = pthread_mutex_unlock(&state_p->running);
@@ -56,8 +64,7 @@ static void * pa_run(void * data) {
 }
 
 nz_rc pa_start(struct nz_block * block_p) {
-    struct nz_block self = *block_p;
-    struct pa_block_state * state_p = (struct pa_block_state *)(self.block_state_p);
+    struct pa_block_state * state_p = (struct pa_block_state *)(block_p->block_state_p);
     int ptrc;
 
     PaError err = Pa_StartStream(state_p->stream);
@@ -69,16 +76,26 @@ nz_rc pa_start(struct nz_block * block_p) {
         NZ_RETURN_ERR_MSG(NZ_INTERNAL_ERROR, strdup(strerror(ptrc)));
     }
 
-    ptrc = pthread_mutex_lock(&state_p->running);
+    ptrc = pthread_mutex_init(&state_p->mutex, NULL);
     if(ptrc != 0) {
         pthread_mutex_destroy(&state_p->running);
         Pa_StopStream(state_p->stream);
         NZ_RETURN_ERR_MSG(NZ_INTERNAL_ERROR, strdup(strerror(ptrc)));
     }
 
-    ptrc = pthread_create(&state_p->thread, NULL, pa_run, block_p);
+    ptrc = pthread_mutex_lock(&state_p->running);
     if(ptrc != 0) {
         pthread_mutex_destroy(&state_p->running);
+        pthread_mutex_destroy(&state_p->mutex);
+        Pa_StopStream(state_p->stream);
+        NZ_RETURN_ERR_MSG(NZ_INTERNAL_ERROR, strdup(strerror(ptrc)));
+    }
+
+    ptrc = pthread_create(&state_p->thread, NULL, pa_run, block_p);
+    if(ptrc != 0) {
+        pthread_mutex_unlock(&state_p->running);
+        pthread_mutex_destroy(&state_p->running);
+        pthread_mutex_destroy(&state_p->mutex);
         Pa_StopStream(state_p->stream);
         NZ_RETURN_ERR_MSG(NZ_INTERNAL_ERROR, strdup(strerror(ptrc)));
     }
@@ -86,15 +103,29 @@ nz_rc pa_start(struct nz_block * block_p) {
     return NZ_SUCCESS;
 }
 
+nz_rc pa_lock(struct nz_block * block_p) {
+    struct pa_block_state * state_p = (struct pa_block_state *)(block_p->block_state_p);
+    int ptrc = pthread_mutex_lock(&state_p->running);
+    if(ptrc != 0) NZ_RETURN_ERR_MSG(NZ_INTERNAL_ERROR, strdup(strerror(ptrc)));
+    return NZ_SUCCESS;
+}
+
+nz_rc pa_unlock(struct nz_block * block_p) {
+    struct pa_block_state * state_p = (struct pa_block_state *)(block_p->block_state_p);
+    int ptrc = pthread_mutex_unlock(&state_p->running);
+    if(ptrc != 0) NZ_RETURN_ERR_MSG(NZ_INTERNAL_ERROR, strdup(strerror(ptrc)));
+    return NZ_SUCCESS;
+}
+
 nz_rc pa_stop(struct nz_block * block_p) {
-    struct nz_block self = *block_p;
-    struct pa_block_state * state_p = (struct pa_block_state *)(self.block_state_p);
+    struct pa_block_state * state_p = (struct pa_block_state *)(block_p->block_state_p);
 
     int ptrc = pthread_mutex_unlock(&state_p->running);
     if(ptrc != 0) {
         pthread_cancel(state_p->thread);
         pthread_join(state_p->thread, NULL);
         pthread_mutex_destroy(&state_p->running);
+        pthread_mutex_destroy(&state_p->mutex);
         Pa_StopStream(state_p->stream);
         NZ_RETURN_ERR_MSG(NZ_INTERNAL_ERROR, strdup(strerror(ptrc)));
     }
@@ -104,11 +135,19 @@ nz_rc pa_stop(struct nz_block * block_p) {
         pthread_cancel(state_p->thread);
         pthread_join(state_p->thread, NULL);
         pthread_mutex_destroy(&state_p->running);
+        pthread_mutex_destroy(&state_p->mutex);
         Pa_StopStream(state_p->stream);
         NZ_RETURN_ERR_MSG(NZ_INTERNAL_ERROR, strdup(strerror(ptrc)));
     }
 
     ptrc = pthread_mutex_destroy(&state_p->running);
+    if(ptrc != 0) {
+        pthread_mutex_destroy(&state_p->mutex);
+        Pa_StopStream(state_p->stream);
+        NZ_RETURN_ERR_MSG(NZ_INTERNAL_ERROR, strdup(strerror(ptrc)));
+    }
+
+    ptrc = pthread_mutex_destroy(&state_p->mutex);
     if(ptrc != 0) {
         Pa_StopStream(state_p->stream);
         NZ_RETURN_ERR_MSG(NZ_INTERNAL_ERROR, strdup(strerror(ptrc)));
