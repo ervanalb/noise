@@ -2,6 +2,7 @@
 #include "noise.h"
 #include "types/ntypes.h"
 #include "core/util.h"
+#include "core/argparse.h"
 
 static nz_real sine_wave(nz_real t) {
     return sin(t * 2 * M_PI);
@@ -58,23 +59,10 @@ void wave_block_destroy(nz_block_state * state_p, struct nz_block_info * info_p)
 }
 
 nz_rc wave_block_create(const struct nz_context * context_p, const char * string, nz_block_state ** state_pp, struct nz_block_info * info_p) {
-    if(string == NULL) NZ_RETURN_ERR(NZ_EXPECTED_ARGS);
-
-    const char * pos = string;
-    const char * start;
-    size_t length;
-    int end;
-    nz_rc rc;
-
-    const struct nz_typeclass * typeclass_p;
-    nz_type * type_p;
-
-    rc = nz_next_block_arg(string, &pos, &start, &length);
+    nz_arg * args[1];
+    nz_rc rc = arg_parse("required generic shape", string, args);
     if(rc != NZ_SUCCESS) return rc;
-    char * shape_str = strndup(start, length);
-    if(shape_str == NULL) {
-        NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
-    }
+    char * shape_str = (char *)args[0];
 
     nz_pull_fn * pull_fn;
     if(strcmp("sine", shape_str) == 0) {
@@ -84,15 +72,10 @@ nz_rc wave_block_create(const struct nz_context * context_p, const char * string
     } else if(strcmp("saw", shape_str) == 0) {
         pull_fn = sine_wave_pull_fn;
     } else {
-        char * shape_str_copy = strdup(shape_str);
-        free(shape_str);
-        NZ_RETURN_ERR_MSG(NZ_ARG_VALUE, shape_str_copy);
+        // Instead of dup & free, just pass it to the error handler and let it free it
+        NZ_RETURN_ERR_MSG(NZ_ARG_VALUE, shape_str);
     }
     free(shape_str);
-
-    if(pos != NULL) {
-        NZ_RETURN_ERR_MSG(NZ_ARG_PARSE, strdup(string));
-    }
 
     return wave_block_create_args(pull_fn, state_pp, info_p);
 }

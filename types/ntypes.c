@@ -6,6 +6,7 @@
 #include "core/context.h"
 #include "core/ntype.h"
 #include "core/util.h"
+#include "core/argparse.h"
 
 // --
 // Declarations
@@ -135,8 +136,7 @@ static nz_rc string_type_str_obj(const nz_type * type_p, const nz_obj * obj_p, c
 DECLARE_TYPECLASS(string)
 
 // Array
-nz_rc array_type_create_args(nz_type ** type_pp, size_t size, const struct nz_typeclass * typeclass_p, const nz_type * type_p)
-{
+nz_rc array_type_create_args(nz_type ** type_pp, size_t size, const struct nz_typeclass * typeclass_p, const nz_type * type_p) {
     if(size == 0) NZ_RETURN_ERR_MSG(NZ_ARG_VALUE, strdup("0"));
 
     struct nz_array_type * array_type_p = malloc(sizeof(struct nz_array_type));
@@ -152,40 +152,26 @@ nz_rc array_type_create_args(nz_type ** type_pp, size_t size, const struct nz_ty
 }
 
 static nz_rc array_type_create(const struct nz_context * context_p, nz_type ** type_pp, const char * string) {
-    if(string == NULL) NZ_RETURN_ERR(NZ_EXPECTED_ARGS);
-
-    // TODO this leaks memory on failure
-
-    const char * pos = string;
-    const char * start;
-    size_t length;
-    int end;
-    nz_rc rc;
-
-    rc = nz_next_type_arg(string, &pos, &start, &length);
+    nz_arg * args[2];
+    nz_rc rc = arg_parse("required int n, required generic element_type", string, args);
     if(rc != NZ_SUCCESS) return rc;
-    char * n_elements_str = strndup(start, length);
-    size_t n_elements;
-    if(sscanf(n_elements_str, "%lu%n", &n_elements, &end) != 1 || end <= 0 || (size_t)end != length) {
-        free(n_elements_str);
-        NZ_RETURN_ERR_MSG(NZ_ARG_PARSE, strdup(string));
-    }
-    free(n_elements_str);
+    long n = *(long *)args[0];
+    char * element_type_str = (char *)args[1];
+    free(args[0]);
 
-    if(pos == NULL) NZ_RETURN_ERR_MSG(NZ_ARG_PARSE, strdup(string));
-
-    rc = nz_next_type_arg(string, &pos, &start, &length);
-    if(rc != NZ_SUCCESS) return rc;
-    char * type_str = strndup(start, length);
     const struct nz_typeclass * element_typeclass_p;
     nz_type * element_type_p;
-    rc = nz_type_create(context_p, &element_typeclass_p, &element_type_p, type_str);
-    free(type_str);
+
+    if(n < 0) {
+        free(element_type_str);
+        NZ_RETURN_ERR_MSG(NZ_ARG_VALUE, rsprintf("%ld", n));
+    }
+
+    rc = nz_type_create(context_p, &element_typeclass_p, &element_type_p, element_type_str);
+    free(element_type_str);
     if(rc != NZ_SUCCESS) return rc;
 
-    if(pos != NULL) NZ_RETURN_ERR_MSG(NZ_ARG_PARSE, strdup(string));
-
-    return array_type_create_args(type_pp, n_elements, element_typeclass_p, element_type_p);
+    return array_type_create_args(type_pp, n, element_typeclass_p, element_type_p);
 }
 
 static void array_type_destroy(nz_type * type_p) {

@@ -151,7 +151,8 @@ typedef double nz_real;
 
 #define GEN_SIMPLE_TYPE_FNS(NAME) \
 static nz_rc NAME ## _type_create (const struct nz_context * context_p, nz_type ** type_pp, const char * string) {\
-    if(string != NULL) NZ_RETURN_ERR_MSG(NZ_UNEXPECTED_ARGS, strdup(string)); \
+    nz_rc result = arg_parse(NULL, string, NULL); \
+    if(result != NZ_SUCCESS) return result; \
     *type_pp = NULL; \
     return NZ_SUCCESS; \
 }\
