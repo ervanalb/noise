@@ -158,6 +158,9 @@ class _PortAudio:
     def start(self, blockhandle):
         handle_nzrc(nz.pa_start(blockhandle))
 
+    def stop(self, blockhandle):
+        handle_nzrc(nz.pa_stop(blockhandle))
+
 pa = _PortAudio()
 
 if __name__ == '__main__':

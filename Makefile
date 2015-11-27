@@ -69,7 +69,7 @@ DEPS = $(OBJECTS:.o=.d) $(APP_OBJECTS:.o=.d)
 override CFLAGS += $(INC) -O0 -g -Wall -Wextra -Werror -Wno-unused-parameter -Wno-unused -Wwrite-strings -std=c99 -fPIC
 #override CFLAGS += $(INC) -O3 -g -Wall -Wextra -Werror -Wno-unused-parameter -Wno-unused -Wwrite-strings -std=c99 
 override LFLAGS += $(LIB) $(CFLAGS)
-LIBS = -lm -lportaudio -lsndfile
+LIBS = -lm -lportaudio -lsndfile -lpthread
 
 # Targets
 .PHONY: clean all python

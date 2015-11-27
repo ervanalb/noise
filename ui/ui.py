@@ -226,7 +226,12 @@ class Graph(Gtk.DrawingArea):
         elif event.keyval == Gdk.KEY_s:
             for obj in self.selected:
                 if isinstance(obj, Block) and obj.blocktype == 'pa':
-                    nz.pa.start(self.nz_graph.block_handle(obj.name))
+                    if not hasattr(obj, "playing") or not obj.playing:
+                        nz.pa.start(self.nz_graph.block_handle(obj.name))
+                        obj.playing = True
+                    else:
+                        nz.pa.stop(self.nz_graph.block_handle(obj.name))
+                        obj.playing = False
 
     def add_connection(self, output_block, output_index, input_block, input_index):
         try:
