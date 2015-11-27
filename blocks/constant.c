@@ -53,7 +53,7 @@ nz_rc constant_block_create(const struct nz_context * context_p, const char * st
     nz_rc rc = arg_parse("required generic type, required generic value", string, args);
     if(rc != NZ_SUCCESS) return rc;
     char * type_str = (char *)args[0];
-    char * value_str = (char *)args[0];
+    char * value_str = (char *)args[1];
 
     const struct nz_typeclass * typeclass_p;
     nz_type * type_p;
@@ -75,7 +75,6 @@ nz_rc constant_block_create(const struct nz_context * context_p, const char * st
     }
 
     rc = typeclass_p->type_init_obj(type_p, obj_p, value_str);
-
     if(rc != NZ_SUCCESS) {
         free(type_str);
         free(value_str);
