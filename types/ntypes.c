@@ -243,8 +243,10 @@ static nz_rc array_type_init_obj(const nz_type * type_p, nz_obj * obj_p, const c
     if(elem_list == NULL) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
 
     const char * pos = elem_list;
-    const char * start;
-    size_t length;
+    const char * key_start;
+    size_t key_length;
+    const char * value_start;
+    size_t value_length;
     int end;
 
     for(size_t i = 0; i < array_type_p->size; i++) {
@@ -253,12 +255,18 @@ static nz_rc array_type_init_obj(const nz_type * type_p, nz_obj * obj_p, const c
             free(elem_list);
             return NZ_ARG_PARSE;
         }
-        nz_rc rc = nz_next_list_arg(elem_list, &pos, &start, &length);
+        nz_rc rc = next_arg(elem_list, &pos,
+                             &key_start, &key_length,
+                             &value_start, &value_length);
         if(rc != NZ_SUCCESS) {
             free(elem_list);
             return rc;
         }
-        char * element_str = strndup(start, length);
+        if(key_start != NULL) {
+            free(elem_list);
+            NZ_RETURN_ERR(NZ_ARG_PARSE);
+        }
+        char * element_str = strndup(value_start, value_length);
         if(strcmp(element_str, NZ_NULL_STR) == 0) {
             obj_p_array[i] = NULL;
             free(element_str);

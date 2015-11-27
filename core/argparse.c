@@ -17,9 +17,9 @@ static char is_closing(char c) {
     return '\0';
 }
 
-static nz_rc next_arg(const char * string, const char ** pos,
-                      const char ** key_start, size_t * key_length,
-                      const char ** value_start, size_t * value_length) {
+nz_rc next_arg(const char * string, const char ** pos,
+               const char ** key_start, size_t * key_length,
+               const char ** value_start, size_t * value_length) {
 
     struct strbuf open_groups;
     char * open_groups_str = strbuf_alloc(&open_groups);
