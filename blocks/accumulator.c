@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include "noise.h"
 #include "types/ntypes.h"
+#include "core/argparse.h"
 
 nz_obj * accumulator_pull_fn(struct nz_block self, size_t index, nz_obj * obj_p) {
     nz_real * accumulator_value_p = (nz_real *)(self.block_state_p);
@@ -35,7 +36,8 @@ static nz_rc accumulator_block_create_args(nz_block_state ** state_pp, struct nz
 }
 
 nz_rc accumulator_block_create(const struct nz_context * context_p, const char * string, nz_block_state ** state_pp, struct nz_block_info * info_p) {
-    if(string != NULL) NZ_RETURN_ERR(NZ_UNEXPECTED_ARGS);
+    nz_rc result = arg_parse(NULL, string, NULL);
+    if(result != NZ_SUCCESS) return result;
     return accumulator_block_create_args(state_pp, info_p);
 }
 
