@@ -16,6 +16,7 @@ OBJECTS = \
 		blocks/accumulator.o \
 		blocks/fittings.o \
 		blocks/maths.o \
+		blocks/lpf.o \
 		blocks/io/portaudio.o \
 		blocks/io/midi_reader.o \
 		blocks/io/midi_smf.o \

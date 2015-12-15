@@ -18,6 +18,7 @@ const struct nz_blockclass nz_div_blockclass;
 const struct nz_blockclass nz_pa_blockclass;
 const struct nz_blockclass nz_mixer_blockclass;
 const struct nz_blockclass nz_wave_blockclass;
+const struct nz_blockclass nz_lpf_blockclass;
 
 //audio
 const struct nz_blockclass nz_envelope_blockclass;

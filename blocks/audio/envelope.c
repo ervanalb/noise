@@ -23,15 +23,18 @@ static nz_obj * envelope_pull_fn(struct nz_block self, size_t index, nz_obj * ob
     struct state * state = (struct state *) self.block_state_p;
 
     nz_real chunk[nz_chunk_size];
-    if(NZ_PULL(self, 0, chunk) == NULL) {
+    nz_real velocity = 0;
+    void * chunk_ptr = NZ_PULL(self, 0, chunk);
+    void * velocity_ptr = NZ_PULL(self, 1, &velocity);
+
+    if(chunk_ptr == NULL) {
         state->value = 0;
         state->phase = PHASE_ATTACK;
         return NULL;
     }
     //TODO: refactor, omg this is bad
 
-    nz_real velocity = 0;
-    if (NZ_PULL(self, 1, &velocity) == NULL) {
+    if (velocity_ptr == NULL) {
         switch (state->phase) {
             case PHASE_ATTACK:
             case PHASE_SUSTAIN:
@@ -44,8 +47,14 @@ static nz_obj * envelope_pull_fn(struct nz_block self, size_t index, nz_obj * ob
         velocity = state->last_velocity;
     } else {
         state->last_velocity = velocity;
-        if (state->phase == PHASE_OFF) {
-            state->phase = PHASE_ATTACK;
+        switch (state->phase) {
+            case PHASE_ATTACK:
+            case PHASE_SUSTAIN:
+                break;
+            case PHASE_RELEASE:
+            case PHASE_OFF:
+                state->phase = PHASE_ATTACK;
+                break;
         }
     }
 

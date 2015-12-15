@@ -70,7 +70,7 @@ nz_rc wave_block_create(const struct nz_context * context_p, const char * string
     } else if(strcmp("square", shape_str) == 0) {
         pull_fn = square_wave_pull_fn;
     } else if(strcmp("saw", shape_str) == 0) {
-        pull_fn = sine_wave_pull_fn;
+        pull_fn = saw_wave_pull_fn;
     } else {
         // Instead of dup & free, just pass it to the error handler and let it free it
         NZ_RETURN_ERR_MSG(NZ_ARG_VALUE, shape_str);

@@ -55,6 +55,7 @@ static nz_rc pull_upstream(struct nz_block self) {
         }
     }
 
+    //printf("note = %d; velocity = %d\n", state->note, state->velocity);
     state->pulls = PULL_NONE;
 
     return NZ_SUCCESS;
