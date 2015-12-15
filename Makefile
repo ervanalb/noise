@@ -22,6 +22,7 @@ OBJECTS = \
 		blocks/io/midi_melody.o \
 		blocks/io/wavfile.o \
 		blocks/blocks.o \
+		blocks/audio/envelope.o \
 		blocks/audio/mixer.o \
 		blocks/audio/wave.o \
 #		core/note.o \

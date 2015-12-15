@@ -19,6 +19,9 @@ const struct nz_blockclass nz_pa_blockclass;
 const struct nz_blockclass nz_mixer_blockclass;
 const struct nz_blockclass nz_wave_blockclass;
 
+//audio
+const struct nz_blockclass nz_envelope_blockclass;
+
 //io
 const struct nz_blockclass nz_wavfileout_blockclass;
 int wavfileout_record(struct nz_block * block, nz_real seconds);

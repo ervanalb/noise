@@ -44,7 +44,8 @@ static nz_rc pull_upstream(struct nz_block self) {
                 break;
             case 0x80: ; // Note off
                 if (state->note == ev->midiev_data1) {
-                    state->note = -1;
+                    // Sustain notes
+                    //state->note = -1; 
                     state->velocity = -1;
                 }
                 break;
@@ -89,7 +90,7 @@ static nz_obj * midimelody_velocity_pull_fn(struct nz_block self, size_t index, 
 
     state->pulls |= PULL_VELOCITY;
 
-    if (state->note == -1) {
+    if (state->velocity == -1) {
         return NULL;
     }
 
