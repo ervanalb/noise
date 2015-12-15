@@ -10,12 +10,17 @@ OBJECTS = \
 		core/graph.o \
 		core/argparse.o \
 		types/ntypes.o \
+		types/midi.o \
 		blocks/constant.o \
 		blocks/debug.o \
 		blocks/accumulator.o \
 		blocks/fittings.o \
 		blocks/maths.o \
 		blocks/io/portaudio.o \
+		blocks/io/midi_reader.o \
+		blocks/io/midi_smf.o \
+		blocks/io/midi_melody.o \
+		blocks/io/wavfile.o \
 		blocks/blocks.o \
 		blocks/audio/mixer.o \
 		blocks/audio/wave.o \
@@ -27,8 +32,6 @@ OBJECTS = \
 #		blocks/audio/recorder.o \
 #		blocks/audio/sample.o \
 #		blocks/io/midi_integrator.o \
-#		blocks/io/midi_reader.o \
-#		blocks/io/midi_smf.o \
 #		blocks/io/midi_writer.o \
 #		blocks/io/portaudio.o \
 #		blocks/instruments/instrument.o \
@@ -42,7 +45,8 @@ APP_OBJECTS = \
 		app/test_types.o \
 		app/test_block.o \
 		app/test_graph.o \
-		app/test_argparse.o
+		app/test_argparse.o \
+		app/test_midi_new.o
 #				app/test.o \
 #				app/test_midi.o \
 #				app/test_synth.o \

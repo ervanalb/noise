@@ -13,7 +13,10 @@ class Graph(Gtk.DrawingArea):
     def __init__(self, win, nz_context, *args, **kwargs):
         super(Graph, self).__init__(*args, **kwargs)
         self.win = win
-        win.add_events(Gdk.EventMask.SCROLL_MASK | Gdk.EventMask.POINTER_MOTION_MASK)
+        win.add_events(Gdk.EventMask.SCROLL_MASK 
+                     | Gdk.EventMask.POINTER_MOTION_MASK 
+                     | Gdk.EventMask.BUTTON_RELEASE_MASK 
+                     | Gdk.EventMask.BUTTON_PRESS_MASK)
         win.connect('button-press-event', self.button_down_event)
         win.connect('button-release-event', self.button_up_event)
         win.connect('scroll-event', self.scroll_event)
@@ -126,7 +129,7 @@ class Graph(Gtk.DrawingArea):
                 self.output_term = output_term
                 redraw = True
             if self.input_term is not None and self.output_term is not None:
-                self.add_connection(*self.output_term, *self.input_term)
+                self.add_connection(*(self.output_term + self.input_term))
                 self.input_term = None
                 self.output_term = None
                 redraw = True
@@ -176,7 +179,7 @@ class Graph(Gtk.DrawingArea):
                     self.output_term = output_term
                     redraw = True
                 if self.input_term is not None and self.output_term is not None:
-                    self.add_connection(*self.output_term, *self.input_term)
+                    self.add_connection(*(self.output_term + self.input_term))
                     self.input_term = None
                     self.output_term = None
         elif event.button == 3:

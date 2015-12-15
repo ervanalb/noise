@@ -8,6 +8,8 @@
 #include "core/util.h"
 #include "core/argparse.h"
 
+#include "types/ntypes.h"
+
 // --
 // Declarations
 
@@ -334,5 +336,6 @@ nz_rc nz_types_init(struct nz_context * context_p) {
     rc = nz_context_register_typeclass(context_p, &nz_chunk_typeclass); if(rc != NZ_SUCCESS) return rc;
     rc = nz_context_register_typeclass(context_p, &nz_string_typeclass); if(rc != NZ_SUCCESS) return rc;
     rc = nz_context_register_typeclass(context_p, &nz_array_typeclass); if(rc != NZ_SUCCESS) return rc;
+    rc = nz_context_register_typeclass(context_p, &nz_midiev_typeclass); if(rc != NZ_SUCCESS) return rc;
     return NZ_SUCCESS;
 }

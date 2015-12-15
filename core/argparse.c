@@ -337,8 +337,9 @@ static nz_rc parse_one_arg(enum arg_spec_type type, const char * value_start, si
             break;
         case STRING:
             // TODO
-            free(value);
-            NZ_RETURN_ERR_MSG(NZ_NOT_IMPLEMENTED, strdup("lol you want string! need to write some code first!"));
+            *arg_pp = value;
+            //free(value);
+            //NZ_RETURN_ERR_MSG(NZ_NOT_IMPLEMENTED, strdup("lol you want string! need to write some code first!"));
             break;
         case INT:
             *arg_pp = calloc(1, sizeof(long));

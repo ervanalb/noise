@@ -100,7 +100,7 @@ struct smf_track * smf_parse_track_chunk(const struct smf_chunk * chunk) {
 
     // SMF files are kind of terrible at letting you predict the number of events in a track
     // Smallest events are 2 bytes
-    struct smf_track * track = malloc(sizeof(track) + sizeof(struct smf_event) * (chunk->chunk_length / 2));
+    struct smf_track * track = calloc(1, sizeof(track) + sizeof(struct smf_event) * (chunk->chunk_length / 2));
     if (track == NULL) return NULL;
 
     size_t offset = 0;
