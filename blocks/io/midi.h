@@ -11,6 +11,9 @@ const struct nz_blockclass nz_midireader_blockclass;
 // MidiMelody<> :: (array<128,midiev>) -> (real pitch, real velocity); Extract melody from MIDI stream
 const struct nz_blockclass nz_midimelody_blockclass;
 
+// MidiDrums<> :: (array<128,midiev>) -> (real ch_0_velocity, real ch_1_velocity, ...); Extract drum events from MIDI stream
+const struct nz_blockclass nz_mididrums_blockclass;
+
 //// MidiIntegrator :: (vector<midi_event>) -> (vector<notes>); "Integrates" events into notes
 //int nz_midiintegrator_init(struct nz_node * node);
 

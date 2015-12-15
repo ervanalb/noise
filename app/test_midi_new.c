@@ -22,6 +22,8 @@ nz_rc run()
         {
             rc = nz_graph_add_block(graph, "time", "accumulator"); if(rc != NZ_SUCCESS) goto err;
             rc = nz_graph_add_block(graph, "delta_time", "constant(real,0.0135)"); if(rc != NZ_SUCCESS) goto err;
+            rc = nz_graph_add_block(graph, "n_beats_in_bar", "constant(real,32.0)"); if(rc != NZ_SUCCESS) goto err;
+            rc = nz_graph_add_block(graph, "beat_in_bar", "mod"); if(rc != NZ_SUCCESS) goto err;
             rc = nz_graph_add_block(graph, "unison_smf", "midireader(unison.midi)"); if(rc != NZ_SUCCESS) goto err;
             rc = nz_graph_add_block(graph, "melody", "midimelody"); if(rc != NZ_SUCCESS) goto err;
             rc = nz_graph_add_block(graph, "lpf_alpha", "constant(real,0.1)"); if(rc != NZ_SUCCESS) goto err;
@@ -33,7 +35,9 @@ nz_rc run()
             rc = nz_graph_add_block(graph, "mix", "mixer(2)"); if(rc != NZ_SUCCESS) goto err;
             rc = nz_graph_add_block(graph, "soundcard", "wavfileout(new_unison.wav)"); if(rc != NZ_SUCCESS) goto err;
             rc = nz_graph_connect(graph, "delta_time", "out", "time", "in"); if(rc != NZ_SUCCESS) goto err;
-            rc = nz_graph_connect(graph, "time", "out", "unison_smf", "in"); if(rc != NZ_SUCCESS) goto err;
+            rc = nz_graph_connect(graph, "time", "out", "beat_in_bar", "a"); if(rc != NZ_SUCCESS) goto err;
+            rc = nz_graph_connect(graph, "n_beats_in_bar", "out", "beat_in_bar", "b"); if(rc != NZ_SUCCESS) goto err;
+            rc = nz_graph_connect(graph, "beat_in_bar", "out", "unison_smf", "in"); if(rc != NZ_SUCCESS) goto err;
             rc = nz_graph_connect(graph, "unison_smf", "out", "melody", "in"); if(rc != NZ_SUCCESS) goto err;
             rc = nz_graph_connect(graph, "melody", "pitch out", "lpf", "in"); if(rc != NZ_SUCCESS) goto err;
             rc = nz_graph_connect(graph, "lpf_alpha", "out", "lpf", "alpha"); if(rc != NZ_SUCCESS) goto err;

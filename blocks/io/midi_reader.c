@@ -31,6 +31,11 @@ nz_obj * midireader_pull_fn(struct nz_block self, size_t index, nz_obj * obj_p) 
     }
     //printf("time t %f\n", t);
 
+    if (t < state->last_t) {
+        state->last_idx = 0;
+        state->last_t = 0;
+    }
+
     if (state->last_idx >= state->track->track_nevents) return NULL;
 
     // Has NZ_N_MIDIEVS elements
@@ -46,7 +51,8 @@ nz_obj * midireader_pull_fn(struct nz_block self, size_t index, nz_obj * obj_p) 
         if (delta_t >= event_delta_t) {
             state->last_t += event_delta_t;
             state->last_idx++;
-            if (state->last_idx >= state->track->track_nevents) return NULL;
+
+            if (state->last_idx >= state->track->track_nevents) return obj_p;
 
             // Skip 'meta/sysex' events
             if ((smf_ev->event_data[0] & 0xF0) == 0xF0) continue;
@@ -57,6 +63,7 @@ nz_obj * midireader_pull_fn(struct nz_block self, size_t index, nz_obj * obj_p) 
                 .midiev_data1 = smf_ev->event_data[1],
                 .midiev_data2 = smf_ev->event_length >= 2 ? smf_ev->event_data[2] : 0,
             };
+
             //printf("Put event %#2x %#2x %#2x\n", output[i].midiev_status, output[i].midiev_data1, output[i].midiev_data2);
 
             //printf("adding ev 0x%02x %u %u %ld\n", midi_ev.midiev_status, midi_ev.midiev_data1, midi_ev.midiev_data2, nz_vector_get_size(port->port_value));

@@ -21,6 +21,7 @@ OBJECTS = \
 		blocks/io/midi_reader.o \
 		blocks/io/midi_smf.o \
 		blocks/io/midi_melody.o \
+		blocks/io/midi_drums.o \
 		blocks/io/wavfile.o \
 		blocks/blocks.o \
 		blocks/audio/envelope.o \

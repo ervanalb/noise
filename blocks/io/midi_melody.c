@@ -26,6 +26,8 @@ static nz_rc pull_upstream(struct nz_block self) {
     struct state * state = (struct state *) self.block_state_p;
     struct nz_midiev midievs[NZ_N_MIDIEVS];
 
+    state->pulls = PULL_NONE;
+
     if(NZ_PULL(self, 0, &midievs) == NULL) {
         state->note = -1;
         state->velocity -1;
@@ -54,9 +56,7 @@ static nz_rc pull_upstream(struct nz_block self) {
                 break;
         }
     }
-
     //printf("note = %d; velocity = %d\n", state->note, state->velocity);
-    state->pulls = PULL_NONE;
 
     return NZ_SUCCESS;
 }
@@ -71,7 +71,11 @@ static nz_obj * midimelody_pitch_pull_fn(struct nz_block self, size_t index, nz_
 
     state->pulls |= PULL_NOTE;
 
+    static int i = 0;
+    i++;
+
     if (state->note == -1) {
+        printf("null pitch %d\n", i);
         return NULL;
     }
 
