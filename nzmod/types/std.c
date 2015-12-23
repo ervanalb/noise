@@ -2,13 +2,7 @@
 #include <string.h>
 #include <stdio.h>
 
-#include "noise.h"
-#include "core/context.h"
-#include "core/ntype.h"
-#include "core/util.h"
-#include "core/argparse.h"
-
-#include "types/midi.h"
+#include "std.h"
 
 // --
 // Declarations

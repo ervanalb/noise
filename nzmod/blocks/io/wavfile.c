@@ -1,13 +1,7 @@
 #include <stdlib.h>
 #include <sndfile.h>
 
-#include "noise.h"
-#include "core/util.h"
-#include "core/block.h"
-#include "core/error.h"
-#include "core/argparse.h"
-
-#include "types/std.h"
+#include "std.h"
 
 struct state {
     SNDFILE * file;

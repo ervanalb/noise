@@ -1,10 +1,8 @@
 #include <stdlib.h>
-#include "noise.h"
+#include <math.h>
+#include <string.h>
 
-#include "core/util.h"
-#include "core/argparse.h"
-
-#include "types/std.h"
+#include "std.h"
 
 static nz_real sine_wave(nz_real t) {
     return sin(t * 2 * M_PI);

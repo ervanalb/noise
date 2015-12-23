@@ -21,7 +21,7 @@ C_SRC = \
 
 OBJECTS = $(C_SRC:%.c=%.o)
 
-TARGET = libnzmodstd.so
+TARGET = libstd.so
 
 CC = gcc
 

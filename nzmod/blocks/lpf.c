@@ -1,10 +1,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-#include "noise.h"
-#include "core/argparse.h"
-
-#include "types/std.h"
+#include "std.h"
 
 struct state {
     nz_real value;

@@ -1,7 +1,5 @@
 #include <stdlib.h>
-#include "noise.h"
-#include "core/ntype.h"
-#include "core/argparse.h"
+#include "std.h"
 
 struct tee_block_state {
     size_t n_outputs;

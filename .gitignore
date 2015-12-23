@@ -1,5 +1,5 @@
 *.o
-noise.so
+*.so
 *.swp
 *.swo
 *.swn

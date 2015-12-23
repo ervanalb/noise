@@ -2,13 +2,7 @@
 #include <string.h>
 #include <stdio.h>
 
-#include "noise.h"
-#include "core/argparse.h"
-#include "core/context.h"
-#include "core/ntype.h"
-#include "core/util.h"
-
-#include "types/midi.h"
+#include "std.h"
 
 static nz_rc midiev_type_init_obj (const nz_type * type_p, nz_obj * obj_p, const char * string) {
     nz_arg * args[3];

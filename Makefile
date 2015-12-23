@@ -44,7 +44,7 @@ override LFLAGS += $(LIB) $(CFLAGS)
 .DEFAULT_GOAL = all
 all: $(TARGET) $(APP_TARGETS)
 clean:
-	-rm -f $(OBJECTS) $(APP_OBJECTS) $(APP_TARRGETS)
+	-rm -f $(OBJECTS) $(APP_OBJECTS) $(APP_TARGETS) $(DEPS)
 
 $(TARGET): $(OBJECTS)
 	$(CC) -shared -Wl,-soname,$@ -o $@ $^

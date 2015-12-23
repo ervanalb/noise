@@ -1,9 +1,8 @@
 #include <stdlib.h>
+#include <math.h>
+#include <string.h>
 
-#include "noise.h"
-#include "core/argparse.h"
-
-#include "types/std.h"
+#include "std.h"
 
 struct state {
     nz_real attack;

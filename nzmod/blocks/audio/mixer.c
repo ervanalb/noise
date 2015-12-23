@@ -1,10 +1,6 @@
 #include <stdlib.h>
-#include "noise.h"
 
-#include "core/util.h"
-#include "core/argparse.h"
-
-#include "types/std.h"
+#include "std.h"
 
 struct mixer_block_state {
     size_t n_channels;

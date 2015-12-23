@@ -1,7 +1,6 @@
 #include <stdlib.h>
-#include "noise.h"
-#include "types/std.h"
-#include "core/argparse.h"
+
+#include "std.h"
 
 nz_obj * accumulator_pull_fn(struct nz_block self, size_t index, nz_obj * obj_p) {
     nz_real * accumulator_value_p = (nz_real *)(self.block_state_p);

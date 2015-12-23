@@ -1,12 +1,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <stdio.h>
 
-#include "noise.h"
-#include "core/argparse.h"
-
-#include "types/std.h"
-#include "blocks/io/midi.h"
+#include "std.h"
 #include "blocks/io/midi_smf.h"
 
 #define STRINGIFY(x) STRINGIFY2(x)

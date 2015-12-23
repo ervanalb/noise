@@ -1,12 +1,9 @@
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
+#include <math.h>
 
-#include "noise.h"
-#include "core/argparse.h"
-
-#include "types/std.h"
-#include "blocks/io/midi.h"
-#include "blocks/io/midi_smf.h"
+#include "std.h"
 
 #define STRINGIFY(x) STRINGIFY2(x)
 #define STRINGIFY2(x) #x
@@ -59,6 +56,10 @@ static nz_rc pull_upstream(struct nz_block self) {
     //printf("note = %d; velocity = %d\n", state->note, state->velocity);
 
     return NZ_SUCCESS;
+}
+
+static nz_real nz_note_to_freq(nz_real note) {
+    return pow(2,(note-69)/12)*440;
 }
 
 static nz_obj * midimelody_pitch_pull_fn(struct nz_block self, size_t index, nz_obj * obj_p) {

@@ -1,7 +1,7 @@
 #include <stdlib.h>
-#include "noise.h"
-#include "types/std.h"
-#include "core/argparse.h"
+#include <math.h>
+
+#include "std.h"
 
 nz_obj * sum_pull_fn(struct nz_block self, size_t index, nz_obj * obj_p) {
     nz_real * math_value_p = (nz_real *)(self.block_state_p);

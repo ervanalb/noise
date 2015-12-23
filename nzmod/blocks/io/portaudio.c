@@ -2,14 +2,10 @@
 #include <portaudio.h>
 #include <pthread.h>
 #include <errno.h>
+#include <stdio.h>
+#include <string.h>
 
-#include "noise.h"
-#include "core/util.h"
-#include "core/block.h"
-#include "core/error.h"
-#include "core/argparse.h"
-
-#include "types/std.h"
+#include "std.h"
 
 struct pa_block_state {
     nz_real * chunk_p;

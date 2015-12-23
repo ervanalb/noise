@@ -1,11 +1,6 @@
 #include <stdlib.h>
 
-#include "noise.h"
-#include "core/util.h"
-#include "core/ntype.h"
-#include "core/block.h"
-#include "core/error.h"
-#include "core/argparse.h"
+#include "std.h"
 
 struct constant_block_state {
     const struct nz_typeclass * typeclass_p;
