@@ -40,6 +40,7 @@ typedef double nz_real;
     DECLARE_ERROR(NZ_TYPE_MISMATCH) \
     DECLARE_ERROR(NZ_PORTS_NOT_CONNECTED) \
     DECLARE_ERROR(NZ_INTERNAL_ERROR) \
+    DECLARE_ERROR(NZ_CANT_LOAD_LIBRARY)
 
 // Errors are passed through this return code object:
 #define DECLARE_ERROR(X) X ,
@@ -107,6 +108,7 @@ struct nz_block_info {
 // ------------------------------------
 
 struct nz_context;
+struct nz_lib;
 
 nz_rc nz_context_create(struct nz_context ** context_pp);
 void nz_context_destroy(struct nz_context * context_p);
@@ -117,6 +119,8 @@ nz_rc nz_context_register_typeclass(struct nz_context * context_p, struct nz_typ
 nz_rc nz_block_list(struct nz_context * context_p, char const *** blockclass_string_array_p);
 nz_rc nz_type_list(struct nz_context * context_p, char const *** typeclass_string_array_p);
 
+nz_rc nz_context_load_lib(struct nz_context * context_p, const char * lib_name, struct nz_lib ** lib_handle);
+void nz_context_unload_lib(struct nz_context * context_p, struct nz_lib * lib_handle);
 
 // ------------------------------------
 // -------------- GRAPH ---------------

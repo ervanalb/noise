@@ -3,9 +3,6 @@
 
 #include "libnoise.h"
 
-nz_rc nz_types_init(struct nz_context * context);
-nz_rc nz_blocks_init(struct nz_context * context_p);
-
 // TYPES
 extern const struct nz_typeclass nz_int_typeclass;
 extern const struct nz_typeclass nz_long_typeclass;

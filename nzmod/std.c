@@ -1,37 +1,34 @@
-#include "libnoise.h"
 #include "std.h"
 
-nz_rc nz_blocks_init(struct nz_context * context_p) {
-    nz_rc rc;
-    rc = nz_context_register_blockclass(context_p, &nz_constant_blockclass); if(rc != NZ_SUCCESS) return rc;
-    rc = nz_context_register_blockclass(context_p, &nz_debug_blockclass); if(rc != NZ_SUCCESS) return rc;
-    rc = nz_context_register_blockclass(context_p, &nz_accumulator_blockclass); if(rc != NZ_SUCCESS) return rc;
-    rc = nz_context_register_blockclass(context_p, &nz_tee_blockclass); if(rc != NZ_SUCCESS) return rc;
-    rc = nz_context_register_blockclass(context_p, &nz_sum_blockclass); if(rc != NZ_SUCCESS) return rc;
-    rc = nz_context_register_blockclass(context_p, &nz_diff_blockclass); if(rc != NZ_SUCCESS) return rc;
-    rc = nz_context_register_blockclass(context_p, &nz_mul_blockclass); if(rc != NZ_SUCCESS) return rc;
-    rc = nz_context_register_blockclass(context_p, &nz_div_blockclass); if(rc != NZ_SUCCESS) return rc;
-    rc = nz_context_register_blockclass(context_p, &nz_mod_blockclass); if(rc != NZ_SUCCESS) return rc;
-    rc = nz_context_register_blockclass(context_p, &nz_pa_blockclass); if(rc != NZ_SUCCESS) return rc;
-    rc = nz_context_register_blockclass(context_p, &nz_mixer_blockclass); if(rc != NZ_SUCCESS) return rc;
-    rc = nz_context_register_blockclass(context_p, &nz_wave_blockclass); if(rc != NZ_SUCCESS) return rc;
-    rc = nz_context_register_blockclass(context_p, &nz_midireader_blockclass); if(rc != NZ_SUCCESS) return rc;
-    rc = nz_context_register_blockclass(context_p, &nz_midimelody_blockclass); if(rc != NZ_SUCCESS) return rc;
-    rc = nz_context_register_blockclass(context_p, &nz_mididrums_blockclass); if(rc != NZ_SUCCESS) return rc;
-    rc = nz_context_register_blockclass(context_p, &nz_wavfileout_blockclass); if(rc != NZ_SUCCESS) return rc;
-    rc = nz_context_register_blockclass(context_p, &nz_envelope_blockclass); if(rc != NZ_SUCCESS) return rc;
-    rc = nz_context_register_blockclass(context_p, &nz_lpf_blockclass); if(rc != NZ_SUCCESS) return rc;
-    return NZ_SUCCESS;
-}
+const struct nz_typeclass const * nz_typeclass_p_array[] = {
+    &nz_int_typeclass,
+    &nz_long_typeclass,
+    &nz_real_typeclass,
+    &nz_chunk_typeclass,
+    &nz_string_typeclass,
+    &nz_array_typeclass,
+    &nz_midiev_typeclass,
+    NULL
+};
 
-nz_rc nz_types_init(struct nz_context * context_p) {
-    nz_rc rc;
-    rc = nz_context_register_typeclass(context_p, &nz_int_typeclass); if(rc != NZ_SUCCESS) return rc;
-    rc = nz_context_register_typeclass(context_p, &nz_long_typeclass); if(rc != NZ_SUCCESS) return rc;
-    rc = nz_context_register_typeclass(context_p, &nz_real_typeclass); if(rc != NZ_SUCCESS) return rc;
-    rc = nz_context_register_typeclass(context_p, &nz_chunk_typeclass); if(rc != NZ_SUCCESS) return rc;
-    rc = nz_context_register_typeclass(context_p, &nz_string_typeclass); if(rc != NZ_SUCCESS) return rc;
-    rc = nz_context_register_typeclass(context_p, &nz_array_typeclass); if(rc != NZ_SUCCESS) return rc;
-    rc = nz_context_register_typeclass(context_p, &nz_midiev_typeclass); if(rc != NZ_SUCCESS) return rc;
-    return NZ_SUCCESS;
-}
+const struct nz_blockclass const * nz_blockclass_p_array[] = {
+    &nz_constant_blockclass,
+    &nz_debug_blockclass,
+    &nz_accumulator_blockclass,
+    &nz_tee_blockclass,
+    &nz_sum_blockclass,
+    &nz_diff_blockclass,
+    &nz_mul_blockclass,
+    &nz_div_blockclass,
+    &nz_mod_blockclass,
+    &nz_pa_blockclass,
+    &nz_mixer_blockclass,
+    &nz_wave_blockclass,
+    &nz_midireader_blockclass,
+    &nz_midimelody_blockclass,
+    &nz_mididrums_blockclass,
+    &nz_wavfileout_blockclass,
+    &nz_envelope_blockclass,
+    &nz_lpf_blockclass,
+    NULL
+};

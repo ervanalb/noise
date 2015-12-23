@@ -1,5 +1,7 @@
-#include "noise.h"
-#include "core/argparse.h"
+#include <stdlib.h>
+#include <stdio.h>
+
+#include "libnoise.h"
 
 nz_rc run() {
     nz_rc result;

@@ -1,9 +1,11 @@
-#include "noise.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <portaudio.h>
 #include <stddef.h>
 #include <mcheck.h>
+
+#include "noise.h"
+#include "nzmod/std.h"
 
 nz_rc run()
 {

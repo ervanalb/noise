@@ -10,15 +10,15 @@ C_SRC = \
 
 OBJECTS = $(C_SRC:%.c=src/%.o)
 
-APP_OBJECTS = \
+APP_SRC = \
 		test_types.c \
 		test_block.c \
 		test_graph.c \
 		test_argparse.c \
 		test_midi_new.c
 
-APP_TARGETS = $(APP_OBJECTS:%.c=noise_%)
-APP_OBJECTS = $(OBJECTS:%.c=app/%.o)
+APP_TARGETS = $(APP_SRC:%.c=noise_%)
+APP_OBJECTS = $(APP_SRC:%.c=app/%.o)
 
 TARGET = libnoise.so
 
@@ -38,6 +38,8 @@ DEPS = $(OBJECTS:.o=.d) $(APP_OBJECTS:.o=.d)
 # Assembler, compiler, and linker flags
 override CFLAGS += $(INC) -O0 -g -Wall -Wextra -Werror -Wno-unused-parameter -Wno-unused -Wwrite-strings -std=c99 -fPIC
 override LFLAGS += $(LIB) $(CFLAGS)
+LIBS = -ldl
+APP_LIBS = -lnoise nzmod/libstd.so
 
 # Targets
 .PHONY: clean all
@@ -47,7 +49,7 @@ clean:
 	-rm -f $(OBJECTS) $(APP_OBJECTS) $(APP_TARGETS) $(DEPS)
 
 $(TARGET): $(OBJECTS)
-	$(CC) -shared -Wl,-soname,$@ -o $@ $^
+	$(CC) -shared -Wl,-soname,$@ -o $@ $^ $(LIBS)
 
-noise_%: build/app/%.o $(OBJECTS)
-	$(CC) $(LFLAGS) -o $@ $^ $(LIBS) -lnoise -L.
+noise_%: app/%.o $(TARGET)
+	$(CC) $(LFLAGS) -o $@ $^ -L. $(APP_LIBS)

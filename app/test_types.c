@@ -1,4 +1,4 @@
-#include "nzmod.h"
+#include "libnoise.h"
 #include <stdio.h>
 #include <stdlib.h>
 
