@@ -1,6 +1,7 @@
-#include "noise.h"
 #include <stdio.h>
 #include <stdlib.h>
+
+#include "nzmod.h"
 
 nz_rc run()
 {

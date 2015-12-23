@@ -4,7 +4,6 @@
 #include <portaudio.h>
 #include <stddef.h>
 #include <mcheck.h>
-#include "blocks/blocks.h"
 
 nz_rc run()
 {
