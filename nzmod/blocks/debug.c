@@ -69,7 +69,7 @@ nz_rc debug_block_create(const struct nz_context * context_p, const char * strin
     const struct nz_typeclass * typeclass_p;
     nz_type * type_p;
 
-    rc = nz_type_create(context_p, &typeclass_p, &type_p, type_str);
+    rc = nz_context_create_type(context_p, &typeclass_p, &type_p, type_str);
     free(type_str);
     if(rc != NZ_SUCCESS) return rc;
 

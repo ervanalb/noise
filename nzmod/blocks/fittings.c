@@ -93,7 +93,7 @@ nz_rc tee_block_create(const struct nz_context * context_p, const char * string,
         NZ_RETURN_ERR_MSG(NZ_ARG_VALUE, rsprintf("%ld", n_outputs));
     }
 
-    rc = nz_type_create(context_p, &typeclass_p, &type_p, type_str);
+    rc = nz_context_create_type(context_p, &typeclass_p, &type_p, type_str);
     free(type_str);
     if(rc != NZ_SUCCESS) return rc;
 
@@ -191,7 +191,7 @@ nz_rc wye_block_create(const struct nz_context * context_p, const char * string,
         NZ_RETURN_ERR_MSG(NZ_ARG_VALUE, rsprintf("%ld", n_inputs));
     }
 
-    rc = nz_type_create(context_p, &typeclass_p, &type_p, type_str);
+    rc = nz_context_create_type(context_p, &typeclass_p, &type_p, type_str);
     free(type_str);
     if(rc != NZ_SUCCESS) return rc;
 

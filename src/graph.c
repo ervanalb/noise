@@ -87,7 +87,7 @@ nz_rc nz_graph_add_block(
         NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
     }
 
-    rc = nz_block_create(graph_p->graph_context_p, &node_p->blockclass_p, &node_p->block.block_state_p, &node_p->block_info, block);
+    rc = nz_context_create_block(graph_p->graph_context_p, &node_p->blockclass_p, &node_p->block.block_state_p, &node_p->block_info, block);
     if(rc != NZ_SUCCESS) {
         free(node_p->node_id);
         free(node_p);

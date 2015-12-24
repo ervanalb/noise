@@ -54,7 +54,7 @@ nz_rc constant_block_create(const struct nz_context * context_p, const char * st
     nz_type * type_p;
     nz_obj * obj_p;
 
-    rc = nz_type_create(context_p, &typeclass_p, &type_p, type_str);
+    rc = nz_context_create_type(context_p, &typeclass_p, &type_p, type_str);
     if(rc != NZ_SUCCESS) {
         free(type_str);
         free(value_str);

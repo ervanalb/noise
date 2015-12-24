@@ -44,9 +44,6 @@ struct nz_typeclass {
 int nz_types_are_equal(const struct nz_typeclass * typeclass_p,       const nz_type * type_p,
                        const struct nz_typeclass * other_typeclass_p, const nz_type * other_type_p);
 
-nz_rc nz_type_create(const struct nz_context * context_p, const struct nz_typeclass ** typeclass_pp, nz_type ** type_pp, const char * string);
-void nz_type_destroy(const struct nz_typeclass * typeclass_p, nz_type * type_p);
-
 #define NZ_NULL_STR "NULL"
 
 #define GEN_SIMPLE_TYPE_FNS(NAME) \
@@ -125,8 +122,6 @@ struct nz_blockclass {
 
 #define NZ_PULL(SELF,INPUT,OBJ_P) ((SELF).block_upstream_pull_fn_p_array[(INPUT)]((SELF).block_upstream_block_array[(INPUT)], (SELF).block_upstream_output_index_array[(INPUT)], (OBJ_P)))
 
-nz_rc nz_block_create(const struct nz_context * context, const struct nz_blockclass ** blockclass_pp, nz_block_state ** state_pp, struct nz_block_info * info_p, const char * string);
-
 void block_info_term(struct nz_block_info * info_p);
 
 #define DECLARE_BLOCKCLASS(NAME) \
@@ -143,22 +138,6 @@ const struct nz_blockclass nz_ ## NAME ## _blockclass = { \
 nz_rc block_info_set_n_io(struct nz_block_info * info_p, size_t n_inputs, size_t n_outputs);
 nz_rc block_info_set_input(struct nz_block_info * info_p, size_t input_index, char * name, const struct nz_typeclass * typeclass_p, nz_type * type_p);
 nz_rc block_info_set_output(struct nz_block_info * info_p, size_t input_index, char * name, const struct nz_typeclass * typeclass_p, nz_type * type_p, nz_pull_fn * pull_fn_p);
-
-// ------------------------------------
-// ------------- CONTEXT --------------
-// ------------------------------------
-
-struct nz_context {
-    // Typeclasses
-    struct nz_typeclass const ** context_typeclasses;
-    size_t context_n_typeclasses;
-    size_t context_typeclass_capacity;
-
-    // Blockclasses
-    struct nz_blockclass const ** context_blockclasses;
-    size_t context_n_blockclasses;
-    size_t context_blockclass_capacity;
-};
 
 // ------------------------------------
 // -------------- UTIL ----------------

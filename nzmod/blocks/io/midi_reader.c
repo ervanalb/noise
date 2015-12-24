@@ -80,7 +80,7 @@ static nz_rc midireader_block_create_args(nz_block_state ** state_pp, struct nz_
 
     const struct nz_typeclass * midiev_array_typeclass;
     nz_type * midiev_array_type;
-    rc = nz_type_create(context_p, &midiev_array_typeclass, &midiev_array_type, "array<" STRINGIFY(NZ_N_MIDIEVS) ",midiev>");
+    rc = nz_context_create_type(context_p, &midiev_array_typeclass, &midiev_array_type, "array<" STRINGIFY(NZ_N_MIDIEVS) ",midiev>");
     if (rc != NZ_SUCCESS) goto fail;
 
     rc = block_info_set_n_io(info_p, 1, 1);

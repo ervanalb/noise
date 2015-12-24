@@ -40,7 +40,9 @@ typedef double nz_real;
     DECLARE_ERROR(NZ_TYPE_MISMATCH) \
     DECLARE_ERROR(NZ_PORTS_NOT_CONNECTED) \
     DECLARE_ERROR(NZ_INTERNAL_ERROR) \
-    DECLARE_ERROR(NZ_CANT_LOAD_LIBRARY)
+    DECLARE_ERROR(NZ_CANT_LOAD_LIBRARY) \
+    DECLARE_ERROR(NZ_DUPLICATE_TYPE) \
+    DECLARE_ERROR(NZ_DUPLICATE_BLOCK)
 
 // Errors are passed through this return code object:
 #define DECLARE_ERROR(X) X ,
@@ -113,14 +115,19 @@ struct nz_lib;
 nz_rc nz_context_create(struct nz_context ** context_pp);
 void nz_context_destroy(struct nz_context * context_p);
 
-nz_rc nz_context_register_blockclass(struct nz_context * context_p, struct nz_blockclass const * blockclass_p);
-nz_rc nz_context_register_typeclass(struct nz_context * context_p, struct nz_typeclass const * typeclass_p);
-
-nz_rc nz_block_list(struct nz_context * context_p, char const *** blockclass_string_array_p);
-nz_rc nz_type_list(struct nz_context * context_p, char const *** typeclass_string_array_p);
 
 nz_rc nz_context_load_lib(struct nz_context * context_p, const char * lib_name, struct nz_lib ** lib_handle);
 void nz_context_unload_lib(struct nz_context * context_p, struct nz_lib * lib_handle);
+
+// Types
+nz_rc nz_context_create_type(const struct nz_context * context_p, const struct nz_typeclass ** typeclass_pp, nz_type ** type_pp, const char * string);
+nz_rc nz_context_type_list(struct nz_context * context_p, char const *** typeclass_string_array_p);
+void nz_context_free_type_list(char const ** typeclass_string_array);
+
+// Blocks
+nz_rc nz_context_create_block(const struct nz_context * context, const struct nz_blockclass ** blockclass_pp, nz_block_state ** state_pp, struct nz_block_info * info_p, const char * string);
+nz_rc nz_context_block_list(struct nz_context * context_p, char const *** blockclass_string_array_p);
+void nz_context_free_block_list(char const ** blockclass_string_array);
 
 // ------------------------------------
 // -------------- GRAPH ---------------

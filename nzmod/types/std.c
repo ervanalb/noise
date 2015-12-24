@@ -163,7 +163,7 @@ static nz_rc array_type_create(const struct nz_context * context_p, nz_type ** t
         NZ_RETURN_ERR_MSG(NZ_ARG_VALUE, rsprintf("%ld", n));
     }
 
-    rc = nz_type_create(context_p, &element_typeclass_p, &element_type_p, element_type_str);
+    rc = nz_context_create_type(context_p, &element_typeclass_p, &element_type_p, element_type_str);
     free(element_type_str);
     if(rc != NZ_SUCCESS) return rc;
 

@@ -17,7 +17,7 @@ nz_rc run()
     if((rc = nz_context_create(&context)) == NZ_SUCCESS)
     {
         // Create a block
-        if((rc = nz_block_create(context, &my_blockclass, &my_block.block_state_p, &my_block_info, "constant(int,10)")) == NZ_SUCCESS)
+        if((rc = nz_context_create_block(context, &my_blockclass, &my_block.block_state_p, &my_block_info, "constant(int,10)")) == NZ_SUCCESS)
         {
             pull_result = my_block_info.block_pull_fns[0](my_block, 0, (nz_obj*)&a);
             if(pull_result == NULL) {
