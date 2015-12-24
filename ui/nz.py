@@ -7,7 +7,6 @@ SUCCESS = 0
 
 NZRC = c_int
 CONTEXT_POINTER = c_void_p
-BLOCKCLASS_POINTER = c_void_p
 BLOCK_POINTER = c_void_p
 TYPE_POINTER = c_void_p
 OBJ_POINTER = c_void_p
@@ -40,6 +39,13 @@ class BLOCK_INFO(Structure):
                 ('block_output_port_array', POINTER(PORT_INFO)),
                 ('block_pull_fns', POINTER(PULL_FN_P))]
 
+class BLOCKCLASS(Structure):
+    _fields_ = [('block_id', c_char_p),
+                ('block_create', CFUNCTYPE(NZRC, CONTEXT_POINTER, c_char_p, POINTER(BLOCK_POINTER), POINTER(BLOCK_INFO))),
+                ('block_destroy', CFUNCTYPE(None, BLOCK_POINTER, POINTER(BLOCK_INFO)))]
+
+BLOCKCLASS_POINTER = POINTER(BLOCKCLASS)
+
 class NoiseError(Exception):
     def __init__(self, code, filename, linenum, extra = None, *args, **kwargs):
         self.code = code
@@ -60,8 +66,9 @@ def handle_nzrc(rc):
         if c_char_p.in_dll(nz, 'nz_error_string').value == None:
             raise NoiseError(rc, filename, linenum)
         else:
-            extra = str(c_char_p.in_dll(nz, 'nz_error_string').value, encoding = 'latin-1')
-            nz.nz_error_string_free()
+            err_str = c_char_p.in_dll(nz, 'nz_error_string')
+            extra = str(err_str.value, encoding = 'latin-1')
+            nz.nz_free_str(err_str)
             raise NoiseError(rc, filename, linenum, extra)
 
 class Context(object):
@@ -136,11 +143,15 @@ class Type(object):
     def __str__(self):
         result = POINTER(c_char)()
         handle_nzrc(self.typeclass.contents.type_str(self.state, byref(result)))
-        result = string_at(result)
-        return str(result, encoding = 'latin-1')
+        str_result = string_at(result)
+        nz.nz_free_str(result)
+        return str(str_result, encoding = 'latin-1')
 
     def __repr__(self):
         return "{}({})".format(type(self).__name__, self.__str__())
+
+    def __del__(self):
+        self.typeclass.contents.type_destroy(self.state)
 
 class Block(object):
     def __init__(self, blockclass, state, info):
@@ -161,51 +172,14 @@ class Block(object):
                             Type(port.block_port_typeclass_p, port.block_port_type_p)))
         self.outputs = outputs
 
-class Graph(object):
-    def __init__(self, context):
-        self.graph_created = False
-        self.context = context
-        self.gp = GRAPH_POINTER()
-        handle_nzrc(nz.nz_graph_create(self.context.cp, byref(self.gp)))
-        self.graph_created = True
+    def __str__(self):
+        return str(self.blockclass.contents.block_id, encoding = 'latin-1')
+
+    def __repr__(self):
+        return "{}({})".format(type(self).__name__, self.__str__())
 
     def __del__(self):
-        if self.graph_created:
-            nz.nz_graph_destroy(self.gp)
-
-    def add_block(self, name, constructor):
-        handle_nzrc(nz.nz_graph_add_block(self.gp, bytes(name, encoding = 'latin-1'), bytes(constructor, encoding = 'latin-1')))
-
-    def block_info(self, name):
-        block_info_p = POINTER(BLOCK_INFO)()
-        handle_nzrc(nz.nz_graph_block_info(self.gp, bytes(name, encoding = 'latin-1'), byref(block_info_p)))
-        return BlockInfo(block_info_p)
-
-    def block_handle(self, name):
-        block_handle = BLOCK_HANDLE()
-        handle_nzrc(nz.nz_graph_block_handle(self.gp, bytes(name, encoding = 'latin-1'), byref(block_handle)))
-        return block_handle
-
-    def del_block(self, name):
-        handle_nzrc(nz.nz_graph_del_block(self.gp, bytes(name, encoding = 'latin-1')))
-
-    def connect(self, output_block, output_port, input_block, input_port):
-        handle_nzrc(nz.nz_graph_connect(
-            self.gp,
-            bytes(output_block, encoding = 'latin-1'),
-            bytes(output_port, encoding = 'latin-1'),
-            bytes(input_block, encoding = 'latin-1'),
-            bytes(input_port, encoding = 'latin-1')
-        ))
-
-    def disconnect(self, output_block, output_port, input_block, input_port):
-        handle_nzrc(nz.nz_graph_disconnect(
-            self.gp,
-            bytes(output_block, encoding = 'latin-1'),
-            bytes(output_port, encoding = 'latin-1'),
-            bytes(input_block, encoding = 'latin-1'),
-            bytes(input_port, encoding = 'latin-1')
-        ))
+        self.blockclass.contents.block_destroy(self.state, self.info)
 
 class _PortAudio:
     def __enter__(self):
@@ -226,4 +200,5 @@ if __name__ == '__main__':
     c = Context()
     c.load_lib("libstd.so")
     b = c.create_block("constant(int,3)")
-    print(b.inputs, b.outputs)
+    print(repr(b))
+    print(b.outputs)
