@@ -84,14 +84,14 @@ static nz_rc mididrums_block_create_args(nz_block_state ** state_pp, struct nz_b
     rc = nz_context_create_type(context_p, &midiev_array_typeclass, &midiev_array_type, "array<" STRINGIFY(NZ_N_MIDIEVS) ",midiev>");
     if (rc != NZ_SUCCESS) goto fail;
 
-    rc = block_info_set_n_io(info_p, 1, 128);
+    rc = nz_block_info_set_n_io(info_p, 1, 128);
     if (rc != NZ_SUCCESS) goto fail;
 
-    rc = block_info_set_input(info_p, 0, strdup("in"), midiev_array_typeclass, midiev_array_type);
+    rc = nz_block_info_set_input(info_p, 0, strdup("in"), midiev_array_typeclass, midiev_array_type);
     if (rc != NZ_SUCCESS) goto fail;
 
     for (int i = 0; i < 128; i++) {
-        rc = block_info_set_output(info_p, i, rsprintf("out %d", i), &nz_real_typeclass, NULL, mididrums_pull_fn);
+        rc = nz_block_info_set_output(info_p, i, rsprintf("out %d", i), &nz_real_typeclass, NULL, mididrums_pull_fn);
         if (rc != NZ_SUCCESS) goto fail;
         
         state->velocities[i].needs_pull = 1;
@@ -101,7 +101,7 @@ static nz_rc mididrums_block_create_args(nz_block_state ** state_pp, struct nz_b
     return NZ_SUCCESS;
 
 fail:
-    block_info_term(info_p);
+    nz_block_info_term(info_p);
     free(state);
     return rc;
 }
@@ -116,8 +116,8 @@ static nz_rc mididrums_block_create(const struct nz_context * context_p, const c
 }
 
 static void mididrums_block_destroy(nz_block_state * state_p, struct nz_block_info * info_p) {
-    block_info_term(info_p);
+    nz_block_info_term(info_p);
     free(state_p);
 }
 
-DECLARE_BLOCKCLASS(mididrums)
+NZ_DECLARE_BLOCKCLASS(mididrums)

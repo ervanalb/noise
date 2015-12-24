@@ -41,10 +41,10 @@ static nz_rc wave_block_create_args(nz_pull_fn * pull_fn, nz_block_state ** stat
     if(state_p == NULL) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
 
     nz_rc rc;
-    if((rc = block_info_set_n_io(info_p, 1, 1)) != NZ_SUCCESS ||
-       (rc = block_info_set_input(info_p, 0, strdup("freq"), &nz_real_typeclass, NULL)) != NZ_SUCCESS ||
-       (rc = block_info_set_output(info_p, 0, strdup("out"), &nz_chunk_typeclass, NULL, pull_fn)) != NZ_SUCCESS) {
-        block_info_term(info_p);
+    if((rc = nz_block_info_set_n_io(info_p, 1, 1)) != NZ_SUCCESS ||
+       (rc = nz_block_info_set_input(info_p, 0, strdup("freq"), &nz_real_typeclass, NULL)) != NZ_SUCCESS ||
+       (rc = nz_block_info_set_output(info_p, 0, strdup("out"), &nz_chunk_typeclass, NULL, pull_fn)) != NZ_SUCCESS) {
+        nz_block_info_term(info_p);
         free(state_p);
         return rc;
     }
@@ -54,7 +54,7 @@ static nz_rc wave_block_create_args(nz_pull_fn * pull_fn, nz_block_state ** stat
 }
 
 void wave_block_destroy(nz_block_state * state_p, struct nz_block_info * info_p) {
-    block_info_term(info_p);
+    nz_block_info_term(info_p);
     free(state_p);
 }
 
@@ -80,4 +80,4 @@ nz_rc wave_block_create(const struct nz_context * context_p, const char * string
     return wave_block_create_args(pull_fn, state_pp, info_p);
 }
 
-DECLARE_BLOCKCLASS(wave)
+NZ_DECLARE_BLOCKCLASS(wave)

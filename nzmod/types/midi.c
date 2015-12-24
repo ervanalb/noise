@@ -35,8 +35,9 @@ static nz_rc midiev_type_str_obj (const nz_type * type_p, const nz_obj * obj_p, 
     return NZ_SUCCESS;
 }
 
-GEN_SIMPLE_TYPE_FNS(midiev)
-GEN_STATIC_OBJ_FNS(midiev, sizeof(struct nz_midiev))
-GEN_SHALLOW_COPY_FN(midiev, sizeof(struct nz_midiev))
-DECLARE_TYPECLASS(midiev)
+NZ_DECLARE_TYPE_ID(midiev)
+NZ_GEN_SIMPLE_TYPE_FNS(midiev)
+NZ_GEN_STATIC_OBJ_FNS(midiev, sizeof(struct nz_midiev))
+NZ_GEN_SHALLOW_COPY_FN(midiev, sizeof(struct nz_midiev))
+NZ_DECLARE_TYPECLASS(midiev)
 

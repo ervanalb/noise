@@ -37,17 +37,17 @@ static nz_rc mixer_block_create_args(size_t n_channels, nz_block_state ** state_
     }
 
     nz_rc rc;
-    if((rc = block_info_set_n_io(info_p, 2 * n_channels, 1)) == NZ_SUCCESS &&
-       (rc = block_info_set_output(info_p, 0, strdup("out"), &nz_chunk_typeclass, NULL, &mixer_pull_fn)) == NZ_SUCCESS) {
+    if((rc = nz_block_info_set_n_io(info_p, 2 * n_channels, 1)) == NZ_SUCCESS &&
+       (rc = nz_block_info_set_output(info_p, 0, strdup("out"), &nz_chunk_typeclass, NULL, &mixer_pull_fn)) == NZ_SUCCESS) {
 
         for(size_t i = 0; i < n_channels; i++) {
-           if((rc = block_info_set_input(info_p, i * 2, rsprintf("in %lu", i + 1), &nz_chunk_typeclass, NULL)) != NZ_SUCCESS ||
-              (rc = block_info_set_input(info_p, i * 2 + 1, rsprintf("gain %lu", i + 1), &nz_real_typeclass, NULL)) != NZ_SUCCESS) break;
+           if((rc = nz_block_info_set_input(info_p, i * 2, rsprintf("in %lu", i + 1), &nz_chunk_typeclass, NULL)) != NZ_SUCCESS ||
+              (rc = nz_block_info_set_input(info_p, i * 2 + 1, rsprintf("gain %lu", i + 1), &nz_real_typeclass, NULL)) != NZ_SUCCESS) break;
         }
     }
 
     if(rc != NZ_SUCCESS) {
-        block_info_term(info_p);
+        nz_block_info_term(info_p);
         free(state_p->in_chunk_p);
         free(state_p);
         return rc;
@@ -59,7 +59,7 @@ static nz_rc mixer_block_create_args(size_t n_channels, nz_block_state ** state_
 
 void mixer_block_destroy(nz_block_state * state_p, struct nz_block_info * info_p) {
     struct mixer_block_state * mixer_block_state_p = (struct mixer_block_state *)state_p;
-    block_info_term(info_p);
+    nz_block_info_term(info_p);
     free(mixer_block_state_p->in_chunk_p);
     free(mixer_block_state_p);
 }
@@ -77,4 +77,4 @@ nz_rc mixer_block_create(const struct nz_context * context_p, const char * strin
 }
 
 
-DECLARE_BLOCKCLASS(mixer)
+NZ_DECLARE_BLOCKCLASS(mixer)

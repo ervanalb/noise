@@ -9,7 +9,7 @@ nz_obj * nz_null_pull_fn(struct nz_block self, size_t index, nz_obj * obj_p) {
 
 // --
 
-void block_info_term(struct nz_block_info * info_p) {
+void nz_block_info_term(struct nz_block_info * info_p) {
     if(info_p->block_input_port_array != NULL) {
         for(size_t i = 0; i < info_p->block_n_inputs; i++) free(info_p->block_input_port_array[i].block_port_name);
         free(info_p->block_input_port_array);
@@ -24,7 +24,7 @@ void block_info_term(struct nz_block_info * info_p) {
     info_p->block_pull_fns = NULL;
 }
 
-nz_rc block_info_set_n_io(struct nz_block_info * info_p, size_t n_inputs, size_t n_outputs) {
+nz_rc nz_block_info_set_n_io(struct nz_block_info * info_p, size_t n_inputs, size_t n_outputs) {
     if(info_p == NULL) return NZ_SUCCESS;
     info_p->block_n_inputs = n_inputs;
     info_p->block_n_outputs = n_outputs;
@@ -47,7 +47,7 @@ nz_rc block_info_set_n_io(struct nz_block_info * info_p, size_t n_inputs, size_t
     return NZ_SUCCESS;
 }
 
-nz_rc block_info_set_input(struct nz_block_info * info_p, size_t input_index, char * name, const struct nz_typeclass * typeclass_p, nz_type * type_p) {
+nz_rc nz_block_info_set_input(struct nz_block_info * info_p, size_t input_index, char * name, const struct nz_typeclass * typeclass_p, nz_type * type_p) {
     if(info_p == NULL) return NZ_SUCCESS;
     if(name == NULL) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
     info_p->block_input_port_array[input_index].block_port_name = name;
@@ -56,7 +56,7 @@ nz_rc block_info_set_input(struct nz_block_info * info_p, size_t input_index, ch
     return NZ_SUCCESS;
 }
 
-nz_rc block_info_set_output(struct nz_block_info * info_p, size_t output_index, char * name, const struct nz_typeclass * typeclass_p, nz_type * type_p, nz_pull_fn * pull_fn_p) {
+nz_rc nz_block_info_set_output(struct nz_block_info * info_p, size_t output_index, char * name, const struct nz_typeclass * typeclass_p, nz_type * type_p, nz_pull_fn * pull_fn_p) {
     if(info_p == NULL) return NZ_SUCCESS;
     if(name == NULL) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
     info_p->block_output_port_array[output_index].block_port_name = name;

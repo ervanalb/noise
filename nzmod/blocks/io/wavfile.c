@@ -35,10 +35,10 @@ static nz_rc wavefileout_block_create_args(nz_block_state ** state_pp, struct nz
 
     nz_rc rc;
 
-    rc = block_info_set_n_io(info_p, 1, 0);
+    rc = nz_block_info_set_n_io(info_p, 1, 0);
     if (rc != NZ_SUCCESS) goto fail;
 
-    rc = block_info_set_input(info_p, 0, strdup("in"), &nz_chunk_typeclass, NULL);
+    rc = nz_block_info_set_input(info_p, 0, strdup("in"), &nz_chunk_typeclass, NULL);
     if (rc != NZ_SUCCESS) goto fail;
 
     SF_INFO fdata = {
@@ -60,7 +60,7 @@ static nz_rc wavefileout_block_create_args(nz_block_state ** state_pp, struct nz
     return NZ_SUCCESS;
 
 fail:
-    block_info_term(info_p);
+    nz_block_info_term(info_p);
     free(state);
     return rc;
 
@@ -84,8 +84,8 @@ static void wavfileout_block_destroy(nz_block_state * state_p, struct nz_block_i
     sf_write_sync(state->file);
     sf_close(state->file);
 
-    block_info_term(info_p);
+    nz_block_info_term(info_p);
     free(state);
 }
 
-DECLARE_BLOCKCLASS(wavfileout)
+NZ_DECLARE_BLOCKCLASS(wavfileout)

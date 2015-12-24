@@ -46,7 +46,7 @@ int nz_types_are_equal(const struct nz_typeclass * typeclass_p,       const nz_t
 
 #define NZ_NULL_STR "NULL"
 
-#define GEN_SIMPLE_TYPE_FNS(NAME) \
+#define NZ_GEN_SIMPLE_TYPE_FNS(NAME) \
 static nz_rc NAME ## _type_create (const struct nz_context * context_p, nz_type ** type_pp, const char * string) {\
     nz_rc result = arg_parse(NULL, string, NULL); \
     if(result != NZ_SUCCESS) return result; \
@@ -56,9 +56,14 @@ static nz_rc NAME ## _type_create (const struct nz_context * context_p, nz_type 
 static void NAME ## _type_destroy (nz_type * type_p) {}\
 static int NAME ## _type_is_equal (const nz_type * type_p, const nz_type * other_type_p) { \
     return 1; \
+} \
+static nz_rc NAME ## _type_str (const nz_type * type_p, char ** string) {\
+    *string = strdup(NAME ## _type_id);\
+    if(*string == NULL) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY); \
+    return NZ_SUCCESS;\
 }
 
-#define GEN_STATIC_OBJ_FNS(NAME, SIZE) \
+#define NZ_GEN_STATIC_OBJ_FNS(NAME, SIZE) \
 static nz_rc NAME ## _type_create_obj (const nz_type * type_p, nz_obj * * obj_pp) { \
     *obj_pp = calloc(1, SIZE); \
     if(*obj_pp == NULL) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY); \
@@ -68,13 +73,13 @@ static void NAME ## _type_destroy_obj (const nz_type * type_p, nz_obj * obj_p) {
     free(obj_p); \
 } \
 
-#define GEN_SHALLOW_COPY_FN(NAME, SIZE) \
+#define NZ_GEN_SHALLOW_COPY_FN(NAME, SIZE) \
 static nz_rc NAME ## _type_copy_obj (const nz_type * type_p, nz_obj * dst_p, const nz_obj * src_p) { \
     memcpy(dst_p, src_p, SIZE); \
     return NZ_SUCCESS; \
 }
 
-#define GEN_PRIMITIVE_STRING_FNS(NAME, CTYPE, FORMAT_STR) \
+#define NZ_GEN_PRIMITIVE_OBJ_STRING_FNS(NAME, CTYPE, FORMAT_STR) \
 static nz_rc NAME ## _type_init_obj (const nz_type * type_p, nz_obj * obj_p, const char * string) { \
     CTYPE a; \
     int n; \
@@ -85,17 +90,20 @@ static nz_rc NAME ## _type_init_obj (const nz_type * type_p, nz_obj * obj_p, con
 } \
 static nz_rc NAME ## _type_str_obj (const nz_type * type_p, const nz_obj * obj_p, char ** string) { \
     *string = rsprintf(FORMAT_STR, *(CTYPE *)obj_p); \
-    if(*string == 0) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY); \
+    if(*string == NULL) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY); \
     return NZ_SUCCESS; \
 }
 
-#define DECLARE_TYPECLASS(NAME) \
+#define NZ_DECLARE_TYPE_ID(NAME) \
 static const char NAME ## _type_id[] = #NAME; \
+
+#define NZ_DECLARE_TYPECLASS(NAME) \
 const struct nz_typeclass nz_ ## NAME ## _typeclass = { \
     .type_id = NAME ## _type_id, \
     .type_create = & NAME ## _type_create, \
     .type_destroy = & NAME ## _type_destroy, \
     .type_is_equal = & NAME ## _type_is_equal, \
+    .type_str = & NAME ## _type_str, \
     .type_create_obj = & NAME ## _type_create_obj, \
     .type_init_obj = & NAME ## _type_init_obj, \
     .type_destroy_obj = & NAME ## _type_destroy_obj, \
@@ -103,12 +111,13 @@ const struct nz_typeclass nz_ ## NAME ## _typeclass = { \
     .type_str_obj = & NAME ## _type_str_obj, \
 };
 
-#define DECLARE_PRIMITIVE_TYPECLASS(NAME, CTYPE, FORMAT_STR) \
-GEN_SIMPLE_TYPE_FNS(NAME) \
-GEN_STATIC_OBJ_FNS(NAME, sizeof(CTYPE)) \
-GEN_SHALLOW_COPY_FN(NAME, sizeof(CTYPE)) \
-GEN_PRIMITIVE_STRING_FNS(NAME, CTYPE, FORMAT_STR) \
-DECLARE_TYPECLASS(NAME) \
+#define NZ_DECLARE_PRIMITIVE_TYPECLASS(NAME, CTYPE, FORMAT_STR) \
+NZ_DECLARE_TYPE_ID(NAME) \
+NZ_GEN_SIMPLE_TYPE_FNS(NAME) \
+NZ_GEN_STATIC_OBJ_FNS(NAME, sizeof(CTYPE)) \
+NZ_GEN_SHALLOW_COPY_FN(NAME, sizeof(CTYPE)) \
+NZ_GEN_PRIMITIVE_OBJ_STRING_FNS(NAME, CTYPE, FORMAT_STR) \
+NZ_DECLARE_TYPECLASS(NAME) \
 
 // ------------------------------------
 // ------------- BLOCKS ---------------
@@ -122,9 +131,7 @@ struct nz_blockclass {
 
 #define NZ_PULL(SELF,INPUT,OBJ_P) ((SELF).block_upstream_pull_fn_p_array[(INPUT)]((SELF).block_upstream_block_array[(INPUT)], (SELF).block_upstream_output_index_array[(INPUT)], (OBJ_P)))
 
-void block_info_term(struct nz_block_info * info_p);
-
-#define DECLARE_BLOCKCLASS(NAME) \
+#define NZ_DECLARE_BLOCKCLASS(NAME) \
 static const char NAME ## _block_id[] = #NAME; \
 const struct nz_blockclass nz_ ## NAME ## _blockclass = { \
     .block_id = NAME ## _block_id, \
@@ -135,9 +142,10 @@ const struct nz_blockclass nz_ ## NAME ## _blockclass = { \
 // --
 // block_info helper functions
 
-nz_rc block_info_set_n_io(struct nz_block_info * info_p, size_t n_inputs, size_t n_outputs);
-nz_rc block_info_set_input(struct nz_block_info * info_p, size_t input_index, char * name, const struct nz_typeclass * typeclass_p, nz_type * type_p);
-nz_rc block_info_set_output(struct nz_block_info * info_p, size_t input_index, char * name, const struct nz_typeclass * typeclass_p, nz_type * type_p, nz_pull_fn * pull_fn_p);
+void nz_block_info_term(struct nz_block_info * info_p);
+nz_rc nz_block_info_set_n_io(struct nz_block_info * info_p, size_t n_inputs, size_t n_outputs);
+nz_rc nz_block_info_set_input(struct nz_block_info * info_p, size_t input_index, char * name, const struct nz_typeclass * typeclass_p, nz_type * type_p);
+nz_rc nz_block_info_set_output(struct nz_block_info * info_p, size_t input_index, char * name, const struct nz_typeclass * typeclass_p, nz_type * type_p, nz_pull_fn * pull_fn_p);
 
 // ------------------------------------
 // -------------- UTIL ----------------

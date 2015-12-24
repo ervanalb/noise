@@ -22,10 +22,10 @@ static nz_rc accumulator_block_create_args(nz_block_state ** state_pp, struct nz
     if(state_p == NULL) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
 
     nz_rc rc;
-    if((rc = block_info_set_n_io(info_p, 1, 1)) != NZ_SUCCESS ||
-       (rc = block_info_set_input(info_p, 0, strdup("in"), &nz_real_typeclass, NULL)) != NZ_SUCCESS ||
-       (rc = block_info_set_output(info_p, 0, strdup("out"), &nz_real_typeclass, NULL, accumulator_pull_fn)) != NZ_SUCCESS) {
-        block_info_term(info_p);
+    if((rc = nz_block_info_set_n_io(info_p, 1, 1)) != NZ_SUCCESS ||
+       (rc = nz_block_info_set_input(info_p, 0, strdup("in"), &nz_real_typeclass, NULL)) != NZ_SUCCESS ||
+       (rc = nz_block_info_set_output(info_p, 0, strdup("out"), &nz_real_typeclass, NULL, accumulator_pull_fn)) != NZ_SUCCESS) {
+        nz_block_info_term(info_p);
         free(state_p);
         return rc;
     }
@@ -41,8 +41,8 @@ nz_rc accumulator_block_create(const struct nz_context * context_p, const char *
 }
 
 void accumulator_block_destroy(nz_block_state * state_p, struct nz_block_info * info_p) {
-    block_info_term(info_p);
+    nz_block_info_term(info_p);
     free(state_p);
 }
 
-DECLARE_BLOCKCLASS(accumulator)
+NZ_DECLARE_BLOCKCLASS(accumulator)

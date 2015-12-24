@@ -5,6 +5,10 @@
 
 #include "libnoise.h"
 
+void nz_free_str(char * str) {
+    free(str);
+}
+
 // --
 // strbuf
 

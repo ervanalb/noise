@@ -30,9 +30,9 @@ static nz_rc constant_block_create_args(const struct nz_typeclass * typeclass_p,
     state_p->obj_p = obj_p;
 
     nz_rc rc;
-    if((rc = block_info_set_n_io(info_p, 0, 1)) != NZ_SUCCESS ||
-       (rc = block_info_set_output(info_p, 0, strdup("out"), typeclass_p, type_p, constant_pull_fn)) != NZ_SUCCESS) {
-        block_info_term(info_p);
+    if((rc = nz_block_info_set_n_io(info_p, 0, 1)) != NZ_SUCCESS ||
+       (rc = nz_block_info_set_output(info_p, 0, strdup("out"), typeclass_p, type_p, constant_pull_fn)) != NZ_SUCCESS) {
+        nz_block_info_term(info_p);
         typeclass_p->type_destroy_obj(type_p, obj_p);
         typeclass_p->type_destroy(type_p);
         free(state_p);
@@ -87,10 +87,10 @@ nz_rc constant_block_create(const struct nz_context * context_p, const char * st
 void constant_block_destroy(nz_block_state * state_p, struct nz_block_info * info_p) {
     struct constant_block_state * constant_block_state_p = (struct constant_block_state *)state_p;
 
-    block_info_term(info_p);
+    nz_block_info_term(info_p);
     constant_block_state_p->typeclass_p->type_destroy_obj(constant_block_state_p->type_p, constant_block_state_p->obj_p);
     constant_block_state_p->typeclass_p->type_destroy(constant_block_state_p->type_p);
     free(constant_block_state_p);
 }
 
-DECLARE_BLOCKCLASS(constant)
+NZ_DECLARE_BLOCKCLASS(constant)

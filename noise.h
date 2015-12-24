@@ -19,6 +19,8 @@ typedef float nz_real;
 typedef double nz_real;
 #endif
 
+void nz_free_str(char * str);
+
 // ------------------------------------
 // ---------- ERROR HANDLING ----------
 // ------------------------------------
@@ -81,8 +83,6 @@ typedef void nz_block_state;
 struct nz_block;
 typedef nz_obj * nz_pull_fn(struct nz_block self, size_t index, nz_obj * obj_p);
 
-nz_obj * nz_null_pull_fn(struct nz_block self, size_t index, nz_obj * obj_p);
-
 struct nz_block {
     nz_block_state *  block_state_p;
     nz_pull_fn **     block_upstream_pull_fn_p_array;
@@ -105,6 +105,8 @@ struct nz_block_info {
     nz_pull_fn **         block_pull_fns;
 };
 
+nz_obj * nz_null_pull_fn(struct nz_block self, size_t index, nz_obj * obj_p);
+
 // ------------------------------------
 // ------------ CONTEXT ---------------
 // ------------------------------------
@@ -114,7 +116,6 @@ struct nz_lib;
 
 nz_rc nz_context_create(struct nz_context ** context_pp);
 void nz_context_destroy(struct nz_context * context_p);
-
 
 nz_rc nz_context_load_lib(struct nz_context * context_p, const char * lib_name, struct nz_lib ** lib_handle);
 void nz_context_unload_lib(struct nz_context * context_p, struct nz_lib * lib_handle);

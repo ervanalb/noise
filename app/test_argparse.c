@@ -28,7 +28,7 @@ int main()
         fprintf(stderr, "File: %s line %d\n", nz_error_file, nz_error_line);
         if(nz_error_string) {
             fprintf(stderr, "%s\n", nz_error_string);
-            nz_error_string_free();
+            nz_free_str(nz_error_string);
         }
         return 1;
     }

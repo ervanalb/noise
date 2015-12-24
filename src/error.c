@@ -17,7 +17,3 @@ const char * nz_error_rc_str(nz_rc rc)
     }
 }
 #undef DECLARE_ERROR
-
-void nz_error_string_free() {
-    free(nz_error_string);
-}

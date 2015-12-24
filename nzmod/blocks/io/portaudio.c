@@ -199,9 +199,9 @@ static nz_rc pa_block_create_args(PaDeviceIndex device, nz_block_state ** state_
     }
 
     nz_rc rc;
-    if((rc = block_info_set_n_io(info_p, 1, 0)) != NZ_SUCCESS ||
-       (rc = block_info_set_input(info_p, 0, strdup("in"), &nz_chunk_typeclass, NULL)) != NZ_SUCCESS) {
-        block_info_term(info_p);
+    if((rc = nz_block_info_set_n_io(info_p, 1, 0)) != NZ_SUCCESS ||
+       (rc = nz_block_info_set_input(info_p, 0, strdup("in"), &nz_chunk_typeclass, NULL)) != NZ_SUCCESS) {
+        nz_block_info_term(info_p);
         Pa_CloseStream(state_p->stream);
         free(state_p->chunk_p);
         free(state_p->buffer_p);
@@ -232,11 +232,11 @@ nz_rc pa_block_create(const struct nz_context * context_p, const char * string, 
 void pa_block_destroy(nz_block_state * state_p, struct nz_block_info * info_p) {
     struct pa_block_state * pa_block_state_p = (struct pa_block_state *)state_p;
 
-    block_info_term(info_p);
+    nz_block_info_term(info_p);
     Pa_CloseStream(&pa_block_state_p->stream);
     free(pa_block_state_p->chunk_p);
     free(pa_block_state_p->buffer_p);
     free(pa_block_state_p);
 }
 
-DECLARE_BLOCKCLASS(pa)
+NZ_DECLARE_BLOCKCLASS(pa)

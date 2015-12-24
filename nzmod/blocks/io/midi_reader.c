@@ -83,13 +83,13 @@ static nz_rc midireader_block_create_args(nz_block_state ** state_pp, struct nz_
     rc = nz_context_create_type(context_p, &midiev_array_typeclass, &midiev_array_type, "array<" STRINGIFY(NZ_N_MIDIEVS) ",midiev>");
     if (rc != NZ_SUCCESS) goto fail;
 
-    rc = block_info_set_n_io(info_p, 1, 1);
+    rc = nz_block_info_set_n_io(info_p, 1, 1);
     if (rc != NZ_SUCCESS) goto fail;
 
-    rc = block_info_set_input(info_p, 0, strdup("in"), &nz_real_typeclass, NULL);
+    rc = nz_block_info_set_input(info_p, 0, strdup("in"), &nz_real_typeclass, NULL);
     if (rc != NZ_SUCCESS) goto fail;
 
-    rc = block_info_set_output(info_p, 0, strdup("out"), 
+    rc = nz_block_info_set_output(info_p, 0, strdup("out"), 
             midiev_array_typeclass, midiev_array_type,
             midireader_pull_fn);
     if (rc != NZ_SUCCESS) goto fail;
@@ -142,7 +142,7 @@ static nz_rc midireader_block_create_args(nz_block_state ** state_pp, struct nz_
     return NZ_SUCCESS;
 
 fail:
-    block_info_term(info_p);
+    nz_block_info_term(info_p);
     free(state);
     return rc;
 }
@@ -167,8 +167,8 @@ void midireader_block_destroy(nz_block_state * state_p, struct nz_block_info * i
     free(state->header);
     free(state->track);
 
-    block_info_term(info_p);
+    nz_block_info_term(info_p);
     free(state_p);
 }
 
-DECLARE_BLOCKCLASS(midireader)
+NZ_DECLARE_BLOCKCLASS(midireader)

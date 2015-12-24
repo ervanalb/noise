@@ -119,16 +119,16 @@ static nz_rc midimelody_block_create_args(nz_block_state ** state_pp, struct nz_
     rc = nz_context_create_type(context_p, &midiev_array_typeclass, &midiev_array_type, "array<" STRINGIFY(NZ_N_MIDIEVS) ",midiev>");
     if (rc != NZ_SUCCESS) goto fail;
 
-    rc = block_info_set_n_io(info_p, 1, 2);
+    rc = nz_block_info_set_n_io(info_p, 1, 2);
     if (rc != NZ_SUCCESS) goto fail;
 
-    rc = block_info_set_input(info_p, 0, strdup("in"), midiev_array_typeclass, midiev_array_type);
+    rc = nz_block_info_set_input(info_p, 0, strdup("in"), midiev_array_typeclass, midiev_array_type);
     if (rc != NZ_SUCCESS) goto fail;
 
-    rc = block_info_set_output(info_p, 0, strdup("pitch out"), &nz_real_typeclass, NULL, midimelody_pitch_pull_fn);
+    rc = nz_block_info_set_output(info_p, 0, strdup("pitch out"), &nz_real_typeclass, NULL, midimelody_pitch_pull_fn);
     if (rc != NZ_SUCCESS) goto fail;
 
-    rc = block_info_set_output(info_p, 1, strdup("velocity out"), &nz_real_typeclass, NULL, midimelody_velocity_pull_fn);
+    rc = nz_block_info_set_output(info_p, 1, strdup("velocity out"), &nz_real_typeclass, NULL, midimelody_velocity_pull_fn);
     if (rc != NZ_SUCCESS) goto fail;
 
     // Open & read header of file
@@ -140,7 +140,7 @@ static nz_rc midimelody_block_create_args(nz_block_state ** state_pp, struct nz_
     return NZ_SUCCESS;
 
 fail:
-    block_info_term(info_p);
+    nz_block_info_term(info_p);
     free(state);
     return rc;
 }
@@ -155,8 +155,8 @@ nz_rc midimelody_block_create(const struct nz_context * context_p, const char * 
 }
 
 void midimelody_block_destroy(nz_block_state * state_p, struct nz_block_info * info_p) {
-    block_info_term(info_p);
+    nz_block_info_term(info_p);
     free(state_p);
 }
 
-DECLARE_BLOCKCLASS(midimelody)
+NZ_DECLARE_BLOCKCLASS(midimelody)

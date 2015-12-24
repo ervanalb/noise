@@ -54,7 +54,7 @@ static void unregister_typeclass(struct nz_context * context_p, struct nz_typecl
     for(entry_p = &context_p->context_typeclasses_head;
         entry_p->next_p != NULL;
         entry_p = entry_p->next_p) {
-        if(entry_p->typeclass_p == typeclass_p) {
+        if(entry_p->next_p->typeclass_p == typeclass_p) {
             break;
         }
     }
@@ -89,7 +89,7 @@ static void unregister_blockclass(struct nz_context * context_p, struct nz_block
     for(entry_p = &context_p->context_blockclasses_head;
         entry_p->next_p != NULL;
         entry_p = entry_p->next_p) {
-        if(entry_p->blockclass_p == blockclass_p) {
+        if(entry_p->next_p->blockclass_p == blockclass_p) {
             break;
         }
     }

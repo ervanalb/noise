@@ -102,16 +102,16 @@ nz_rc envelope_block_create(const struct nz_context * context_p, const char * st
     if(state == NULL) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
 
     nz_rc rc;
-    rc = block_info_set_n_io(info_p, 2, 1);
+    rc = nz_block_info_set_n_io(info_p, 2, 1);
     if (rc != NZ_SUCCESS) goto fail;
 
-    rc = block_info_set_input(info_p, 0, strdup("chunk in"), &nz_chunk_typeclass, NULL);
+    rc = nz_block_info_set_input(info_p, 0, strdup("chunk in"), &nz_chunk_typeclass, NULL);
     if (rc != NZ_SUCCESS) goto fail;
 
-    rc = block_info_set_input(info_p, 1, strdup("velocity in"), &nz_real_typeclass, NULL);
+    rc = nz_block_info_set_input(info_p, 1, strdup("velocity in"), &nz_real_typeclass, NULL);
     if (rc != NZ_SUCCESS) goto fail;
 
-    rc = block_info_set_output(info_p, 0, strdup("out"), &nz_chunk_typeclass, NULL, envelope_pull_fn);
+    rc = nz_block_info_set_output(info_p, 0, strdup("out"), &nz_chunk_typeclass, NULL, envelope_pull_fn);
     if (rc != NZ_SUCCESS) goto fail;
 
     state->attack = 0.01;
@@ -123,15 +123,15 @@ nz_rc envelope_block_create(const struct nz_context * context_p, const char * st
     return NZ_SUCCESS;
 
 fail:
-    block_info_term(info_p);
+    nz_block_info_term(info_p);
     free(state);
     return rc;
 }
 
 void envelope_block_destroy(nz_block_state * state_p, struct nz_block_info * info_p) {
     struct state * state = (struct state *)state_p;
-    block_info_term(info_p);
+    nz_block_info_term(info_p);
     free(state);
 }
 
-DECLARE_BLOCKCLASS(envelope);
+NZ_DECLARE_BLOCKCLASS(envelope);
