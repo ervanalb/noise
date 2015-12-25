@@ -1,13 +1,15 @@
 from ctypes import *
 
 nz = cdll.LoadLibrary("libnoise.so")
+nzstd = cdll.LoadLibrary("libstd.so")
+
 nz.nz_error_rc_str.restype = c_char_p
 
 SUCCESS = 0
 
 NZRC = c_int
 CONTEXT_POINTER = c_void_p
-BLOCK_POINTER = c_void_p
+BLOCK_STATE_POINTER = c_void_p
 TYPE_POINTER = c_void_p
 OBJ_POINTER = c_void_p
 PULL_FN_P = c_void_p
@@ -41,8 +43,16 @@ class BLOCK_INFO(Structure):
 
 class BLOCKCLASS(Structure):
     _fields_ = [('block_id', c_char_p),
-                ('block_create', CFUNCTYPE(NZRC, CONTEXT_POINTER, c_char_p, POINTER(BLOCK_POINTER), POINTER(BLOCK_INFO))),
-                ('block_destroy', CFUNCTYPE(None, BLOCK_POINTER, POINTER(BLOCK_INFO)))]
+                ('block_create', CFUNCTYPE(NZRC, CONTEXT_POINTER, c_char_p, POINTER(BLOCK_STATE_POINTER), POINTER(BLOCK_INFO))),
+                ('block_destroy', CFUNCTYPE(None, BLOCK_STATE_POINTER, POINTER(BLOCK_INFO)))]
+
+class BLOCK(Structure):
+    pass
+
+BLOCK._fields_ = [('block_state_p', BLOCK_STATE_POINTER),
+                  ('block_upstream_pull_fn_p_array', POINTER(PULL_FN_P)),
+                  ('block_upstream_block_array', POINTER(BLOCK)),
+                  ('block_upstream_output_index_array', POINTER(c_size_t))]
 
 BLOCKCLASS_POINTER = POINTER(BLOCKCLASS)
 
@@ -130,10 +140,10 @@ class Context(object):
 
     def create_block(self, string):
         blockclass = BLOCKCLASS_POINTER()
-        blockstate = BLOCK_POINTER()
+        block = BLOCK()
         blockinfo = BLOCK_INFO()
-        handle_nzrc(nz.nz_context_create_block(self.cp, byref(blockclass), byref(blockstate), byref(blockinfo), bytes(string, encoding = 'latin-1')))
-        return Block(blockclass, blockstate, blockinfo)
+        handle_nzrc(nz.nz_context_create_block(self.cp, byref(blockclass), byref(block), byref(blockinfo), bytes(string, encoding = 'latin-1')))
+        return Block(blockclass, block, blockinfo)
 
 class Type(object):
     def __init__(self, typeclass, state):
@@ -160,9 +170,9 @@ class Type(object):
         self.typeclass.contents.type_destroy(self.state)
 
 class Block(object):
-    def __init__(self, blockclass, state, info):
+    def __init__(self, blockclass, block, info):
         self.blockclass = blockclass
-        self.state = state
+        self.block = block
         self.info = info
 
         inputs = []
@@ -178,8 +188,8 @@ class Block(object):
                             Type(port.block_port_typeclass_p, port.block_port_type_p)))
         self.outputs = outputs
 
-        self.output_connections = []
-        self.input_connections = []
+        self.input_connections = [None] * len(inputs)
+        self.output_connections = [None] * len(outputs)
 
     def __str__(self):
         return str(self.blockclass.contents.block_id, encoding = 'latin-1')
@@ -188,40 +198,71 @@ class Block(object):
         return "{}({})".format(type(self).__name__, self.__str__())
 
     def __del__(self):
-        self.blockclass.contents.block_destroy(self.state, self.info)
+        nz.nz_context_destroy_block(self.blockclass, byref(self.block), byref(self.info))
 
 def connect(upstream_block, out_name, downstream_block, in_name):
     out_index = dict(zip(upstream_block.outputs[0], range(len(upstream_block.outputs))))[out_name]
     in_index = dict(zip(downstream_block.inputs[0], range(len(downstream_block.inputs))))[in_name]
 
+    assert upstream_block.output_connections[out_index] is None
+    assert downstream_block.input_connections[in_index] is None
+
     out_type = upstream_block.outputs[out_index][1]
     in_type = downstream_block.inputs[in_index][1]
     assert out_type == in_type
 
-    downstream_block.state.block_upstream_pull_fn_p_array[in_index] = upstream_block.info.block_pull_fns[out_index]
-    downstream_block.state.block_upstream_block_array[in_index] = upstream_block.block
-    downstream_block.state.block_upstream_output_index_array[in_index] = out_index
+    nz.nz_block_set_upstream(byref(downstream_block.block),
+                             in_index,
+                             byref(upstream_block.block),
+                             byref(upstream_block.info),
+                             out_index)
+
+    upstream_block.output_connections[out_index] = (downstream_block, in_index)
+    downstream_block.input_connections[in_index] = (upstream_block, out_index)
+
+def disconnect(upstream_block, out_name, downstream_block, in_name):
+    out_index = dict(zip(upstream_block.outputs[0], range(len(upstream_block.outputs))))[out_name]
+    in_index = dict(zip(downstream_block.inputs[0], range(len(downstream_block.inputs))))[in_name]
+    assert upstream_block.output_connections[out_index] == (downstream_block, in_index)
+    assert downstream_block.input_connections[in_index] == (upstream_block, out_index)
+
+    nz.nz_block_clear_upstream(byref(downstream_block.block), in_index)
+
+    upstream_block.output_connections[out_index] = None
+    downstream_block.input_connections[in_index] = None
 
 class _PortAudio:
     def __enter__(self):
-        handle_nzrc(nz.pa_init())
+        handle_nzrc(nzstd.pa_init())
 
     def __exit__(self, type, value, tb):
-        nz.pa_term()
+        nzstd.pa_term()
 
     def start(self, blockhandle):
-        handle_nzrc(nz.pa_start(blockhandle))
+        handle_nzrc(nzstd.pa_start(blockhandle))
 
     def stop(self, blockhandle):
-        handle_nzrc(nz.pa_stop(blockhandle))
+        handle_nzrc(nzstd.pa_stop(blockhandle))
 
 pa = _PortAudio()
 
 if __name__ == '__main__':
+    import time
+
     c = Context()
     c.load_lib("libstd.so")
-    b = c.create_block("constant(int,3)")
-    print(repr(b))
-    print(b.outputs)
-    del b
-    del c
+
+    with pa:
+        b1 = c.create_block("constant(real,440)")
+        b2 = c.create_block("wave(saw)")
+        b3 = c.create_block("pa")
+        connect(b1, "out", b2, "freq")
+        connect(b2, "out", b3, "in")
+        handle_nzrc(nzstd.pa_start(byref(b3.block)))
+        time.sleep(2)
+        handle_nzrc(nzstd.pa_stop(byref(b3.block)))
+        del b1
+        del b2
+        del b3
+        del c
+
