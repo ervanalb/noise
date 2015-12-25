@@ -1,8 +1,11 @@
 #include <stdlib.h>
 #include <dlfcn.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "libnoise.h"
+
+#define PATH_MAX 4096
 
 // TODO put these in a more reasonable spot
 const size_t nz_chunk_size = 128;
@@ -108,10 +111,33 @@ nz_rc nz_context_create(struct nz_context ** context_pp) {
 }
 
 nz_rc nz_context_load_lib(struct nz_context * context_p, const char * lib_name, struct nz_lib ** lib_pp) {
-    struct nz_lib * lib_p = calloc(sizeof(struct nz_lib), 1);
-    if(lib_p == NULL) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
 
-    void * handle = dlopen(lib_name, RTLD_NOW);
+    char * abs_lib_path;
+
+    if(lib_name[0] == '/') {
+        abs_lib_path = strdup(lib_name);
+    } else {
+        char * path = calloc(PATH_MAX, sizeof(char));
+        if(path == NULL) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
+        char * cwd = getcwd(path, PATH_MAX);
+        if(cwd == NULL) {
+            free(path);
+            NZ_RETURN_ERR(NZ_INTERNAL_ERROR);
+        }
+
+        abs_lib_path = rsprintf("%s/%s", path, lib_name);
+        free(path);
+    }
+    if(abs_lib_path == NULL) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
+
+    struct nz_lib * lib_p = calloc(sizeof(struct nz_lib), 1);
+    if(lib_p == NULL) {
+        free(abs_lib_path);
+        NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
+    }
+
+    void * handle = dlopen(abs_lib_path, RTLD_NOW);
+    free(abs_lib_path);
     if(handle == NULL) {
         free(lib_p);
         NZ_RETURN_ERR_MSG(NZ_CANT_LOAD_LIBRARY, strdup(dlerror()));

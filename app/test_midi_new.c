@@ -5,7 +5,7 @@
 #include <mcheck.h>
 
 #include "noise.h"
-#include "nzmod/std.h"
+#include "nzlib/std.h"
 
 nz_rc run()
 {

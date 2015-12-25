@@ -1,7 +1,8 @@
 from ctypes import *
+import os
+import importlib
 
 nz = cdll.LoadLibrary("libnoise.so")
-nzstd = cdll.LoadLibrary("libstd.so")
 
 nz.nz_error_rc_str.restype = c_char_p
 
@@ -81,6 +82,24 @@ def handle_nzrc(rc):
             nz.nz_free_str(err_str)
             raise NoiseError(rc, filename, linenum, extra)
 
+class Library(object):
+    def __init__(self, context, handle, pyhandle):
+        self.context = context
+        self.handle = handle
+        self.pyhandle = pyhandle
+
+    def __getattr__(self, attr):
+        if self.pyhandle is not None:
+            return getattr(self.pyhandle, attr)
+
+    def __del__(self):
+        nz.nz_context_unload_lib(self.context.cp, self.handle)
+        if self.pyhandle is not None:
+            if hasattr(self.pyhandle, 'nzhooks'):
+                self.context.del_hooks(self.pyhandle.nzhooks)
+            if hasattr(self.pyhandle, 'deinit'):
+                self.pyhandle.deinit()
+
 class Context(object):
     STRING_ARRAY = POINTER(c_char_p)
 
@@ -88,25 +107,44 @@ class Context(object):
         self.context_created = False
         self.cp = CONTEXT_POINTER()
         handle_nzrc(nz.nz_context_create(byref(self.cp)))
-        self.libs = []
         self.context_created = True
+        self.hooks = {}
 
     def __del__(self):
         if self.context_created:
-            for lib in self.libs:
-                self.unload_lib(lib)
             nz.nz_context_destroy(self.cp)
 
-    def load_lib(self, lib_filename):
-        lib_handle = LIB_HANDLE()
-        handle_nzrc(nz.nz_context_load_lib(self.cp, bytes(lib_filename, encoding = 'latin-1'), byref(lib_handle)))
-        self.libs.append(lib_handle)
-        return lib_handle
+    def add_hooks(self, hook_list):
+        for (k, v) in hook_list:
+            hk = nzhash(k)
+            assert hk not in self.hooks
+            self.hooks[hk] = v
 
-    def unload_lib(self, lib):
-        assert lib in self.libs
-        nz.nz_context_unload_lib(self.cp, lib)
-        self.libs.remove(lib)
+    def del_hooks(self, hook_list):
+        for (k, v) in hook_list:
+            hk = nzhash(k)
+            del self.hooks[hk]
+
+    def load_lib(self, lib_filename, py_filename = None):
+        handle = LIB_HANDLE()
+        handle_nzrc(nz.nz_context_load_lib(self.cp, bytes(lib_filename, encoding = 'latin-1'), byref(handle)))
+        pyhandle = None
+        if py_filename:
+            if lib_filename.startswith("/"):
+                abs_lib = lib_filename
+            else:
+                abs_lib = os.path.join(os.getcwd(), lib_filename)
+            lib = cdll.LoadLibrary(abs_lib)
+
+            pyhandle = importlib.import_module(py_filename)
+            pyhandle.nzlib = lib
+            pyhandle.context = self
+            if hasattr(pyhandle, 'init'):
+                pyhandle.init()
+            if hasattr(pyhandle, 'nzhooks'):
+                self.add_hooks(pyhandle.nzhooks)
+
+        return Library(self, handle, pyhandle)
 
     @property
     def blocks(self):
@@ -143,7 +181,11 @@ class Context(object):
         block = BLOCK()
         blockinfo = BLOCK_INFO()
         handle_nzrc(nz.nz_context_create_block(self.cp, byref(blockclass), byref(block), byref(blockinfo), bytes(string, encoding = 'latin-1')))
-        return Block(blockclass, block, blockinfo)
+        if nzhash(blockclass) in self.hooks:
+            B = self.hooks[nzhash(blockclass)]
+        else:
+            B = Block
+        return B(blockclass, block, blockinfo)
 
 class Type(object):
     def __init__(self, typeclass, state):
@@ -231,38 +273,27 @@ def disconnect(upstream_block, out_name, downstream_block, in_name):
     upstream_block.output_connections[out_index] = None
     downstream_block.input_connections[in_index] = None
 
-class _PortAudio:
-    def __enter__(self):
-        handle_nzrc(nzstd.pa_init())
-
-    def __exit__(self, type, value, tb):
-        nzstd.pa_term()
-
-    def start(self, blockhandle):
-        handle_nzrc(nzstd.pa_start(blockhandle))
-
-    def stop(self, blockhandle):
-        handle_nzrc(nzstd.pa_stop(blockhandle))
-
-pa = _PortAudio()
+def nzhash(funcptr):
+    return cast(funcptr, c_void_p).value
 
 if __name__ == '__main__':
     import time
 
     c = Context()
-    c.load_lib("libstd.so")
+    l = c.load_lib("../nzlib/nzstd.so", "nzlib.std")
 
-    with pa:
+    with l.PortAudio:
         b1 = c.create_block("constant(real,440)")
         b2 = c.create_block("wave(saw)")
         b3 = c.create_block("pa")
         connect(b1, "out", b2, "freq")
         connect(b2, "out", b3, "in")
-        handle_nzrc(nzstd.pa_start(byref(b3.block)))
+        b3.start()
         time.sleep(2)
-        handle_nzrc(nzstd.pa_stop(byref(b3.block)))
+        b3.stop()
         del b1
         del b2
         del b3
-        del c
 
+    del l
+    del c
