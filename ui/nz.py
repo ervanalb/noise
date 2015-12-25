@@ -72,19 +72,18 @@ class NoiseError(Exception):
 
 def handle_nzrc(rc):
     if rc != SUCCESS:
-        filename = str(c_char_p.in_dll(nz, 'nz_error_file').value, encoding = 'latin-1')
+        filename = str(c_char_p.in_dll(nz, 'nz_error_file'), encoding = 'latin-1')
         linenum = int(c_int.in_dll(nz, 'nz_error_line').value)
-        if c_char_p.in_dll(nz, 'nz_error_string').value == None:
+        if c_char_p.in_dll(nz, 'nz_error_string') == None:
             raise NoiseError(rc, filename, linenum)
         else:
             err_str = c_char_p.in_dll(nz, 'nz_error_string')
-            extra = str(err_str.value, encoding = 'latin-1')
+            extra = str(err_str, encoding = 'latin-1')
             nz.nz_free_str(err_str)
             raise NoiseError(rc, filename, linenum, extra)
 
 class Library(object):
-    def __init__(self, context, handle, pyhandle):
-        self.context = context
+    def __init__(self, handle, pyhandle):
         self.handle = handle
         self.pyhandle = pyhandle
 
@@ -92,27 +91,27 @@ class Library(object):
         if self.pyhandle is not None:
             return getattr(self.pyhandle, attr)
 
-    def __del__(self):
-        nz.nz_context_unload_lib(self.context.cp, self.handle)
-        if self.pyhandle is not None:
-            if hasattr(self.pyhandle, 'nzhooks'):
-                self.context.del_hooks(self.pyhandle.nzhooks)
-            if hasattr(self.pyhandle, 'deinit'):
-                self.pyhandle.deinit()
-
 class Context(object):
     STRING_ARRAY = POINTER(c_char_p)
 
     def __init__(self):
-        self.context_created = False
+        pass
+
+    def __enter__(self):
         self.cp = CONTEXT_POINTER()
         handle_nzrc(nz.nz_context_create(byref(self.cp)))
         self.context_created = True
         self.hooks = {}
+        self.libs = []
+        self.blocklist = []
+        return self
 
-    def __del__(self):
-        if self.context_created:
-            nz.nz_context_destroy(self.cp)
+    def __exit__(self, type, value, tb):
+        while self.blocklist:
+            self.destroy_block(self.blocklist[-1])
+        while self.libs:
+            self.unload_lib(self.libs[-1])
+        nz.nz_context_destroy(self.cp)
 
     def add_hooks(self, hook_list):
         for (k, v) in hook_list:
@@ -144,7 +143,19 @@ class Context(object):
             if hasattr(pyhandle, 'nzhooks'):
                 self.add_hooks(pyhandle.nzhooks)
 
-        return Library(self, handle, pyhandle)
+        lib = Library(handle, pyhandle)
+        self.libs.append(lib)
+        return lib
+
+    def unload_lib(self, lib):
+        assert lib in self.libs
+        if lib.pyhandle is not None:
+            if hasattr(lib.pyhandle, 'nzhooks'):
+                self.del_hooks(lib.pyhandle.nzhooks)
+            if hasattr(lib.pyhandle, 'deinit'):
+                lib.pyhandle.deinit()
+        nz.nz_context_unload_lib(self.cp, lib.handle)
+        self.libs.remove(lib)
 
     @property
     def blocks(self):
@@ -185,7 +196,14 @@ class Context(object):
             B = self.hooks[nzhash(blockclass)]
         else:
             B = Block
-        return B(blockclass, block, blockinfo)
+        block = B(blockclass, block, blockinfo)
+        self.blocklist.append(block)
+        return block
+
+    def destroy_block(self, block):
+        assert block in self.blocklist
+        nz.nz_context_destroy_block(block.blockclass, byref(block.block), byref(block.info))
+        self.blocklist.remove(block)
 
 class Type(object):
     def __init__(self, typeclass, state):
@@ -207,9 +225,6 @@ class Type(object):
 
     def __neq__(self, other):
         return not self.__eq__(other)
-
-    def __del__(self):
-        self.typeclass.contents.type_destroy(self.state)
 
 class Block(object):
     def __init__(self, blockclass, block, info):
@@ -238,9 +253,6 @@ class Block(object):
 
     def __repr__(self):
         return "{}({})".format(type(self).__name__, self.__str__())
-
-    def __del__(self):
-        nz.nz_context_destroy_block(self.blockclass, byref(self.block), byref(self.info))
 
 def connect(upstream_block, out_name, downstream_block, in_name):
     out_index = dict(zip(upstream_block.outputs[0], range(len(upstream_block.outputs))))[out_name]
@@ -279,21 +291,15 @@ def nzhash(funcptr):
 if __name__ == '__main__':
     import time
 
-    c = Context()
-    l = c.load_lib("../nzlib/nzstd.so", "nzlib.std")
+    with Context() as c:
+        l = c.load_lib("../nzlib/nzstd.so", "nzlib.std")
 
-    with l.PortAudio:
-        b1 = c.create_block("constant(real,440)")
-        b2 = c.create_block("wave(saw)")
-        b3 = c.create_block("pa")
-        connect(b1, "out", b2, "freq")
-        connect(b2, "out", b3, "in")
-        b3.start()
-        time.sleep(2)
-        b3.stop()
-        del b1
-        del b2
-        del b3
-
-    del l
-    del c
+        with l.PortAudio:
+            b1 = c.create_block("constant(real,440)")
+            b2 = c.create_block("wave(saw)")
+            b3 = c.create_block("pa")
+            connect(b1, "out", b2, "freq")
+            connect(b2, "out", b3, "in")
+            b3.start()
+            time.sleep(0.5)
+            b3.stop()
