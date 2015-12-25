@@ -202,6 +202,19 @@ class Context(object):
 
     def destroy_block(self, block):
         assert block in self.blocklist
+
+        for (port, connection) in zip(range(len(block.input_connections)), block.input_connections):
+            if connection != None:
+                nz.nz_block_clear_upstream(byref(block.block), port)
+                connection[0].output_connections[connection[1]] = None
+                block.input_connections[port] = None
+
+        for (port, connection) in zip(range(len(block.output_connections)), block.output_connections):
+            if connection != None:
+                nz.nz_block_clear_upstream(byref(connection[0].block), connection[1])
+                connection[0].input_connections[connection[1]] = None
+                block.output_connections[port] = None
+
         nz.nz_context_destroy_block(block.blockclass, byref(block.block), byref(block.info))
         self.blocklist.remove(block)
 
@@ -277,6 +290,7 @@ def connect(upstream_block, out_name, downstream_block, in_name):
 def disconnect(upstream_block, out_name, downstream_block, in_name):
     out_index = dict(zip(upstream_block.outputs[0], range(len(upstream_block.outputs))))[out_name]
     in_index = dict(zip(downstream_block.inputs[0], range(len(downstream_block.inputs))))[in_name]
+
     assert upstream_block.output_connections[out_index] == (downstream_block, in_index)
     assert downstream_block.input_connections[in_index] == (upstream_block, out_index)
 
