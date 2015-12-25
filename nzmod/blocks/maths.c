@@ -72,7 +72,6 @@ static nz_rc math_block_create_args(nz_pull_fn * pull_fn, nz_block_state ** stat
        (rc = nz_block_info_set_input(info_p, 0, strdup("a"), &nz_real_typeclass, NULL)) != NZ_SUCCESS ||
        (rc = nz_block_info_set_input(info_p, 1, strdup("b"), &nz_real_typeclass, NULL)) != NZ_SUCCESS ||
        (rc = nz_block_info_set_output(info_p, 0, strdup("out"), &nz_real_typeclass, NULL, pull_fn)) != NZ_SUCCESS) {
-        nz_block_info_term(info_p);
         free(state_p);
         return rc;
     }
@@ -111,16 +110,15 @@ nz_rc mod_block_create(const struct nz_context * context_p, const char * string,
     return math_block_create_args(mod_pull_fn, state_pp, info_p);
 }
 
-void math_block_destroy(nz_block_state * state_p, struct nz_block_info * info_p) {
-    nz_block_info_term(info_p);
+void math_block_destroy(nz_block_state * state_p) {
     free(state_p);
 }
 
-void sum_block_destroy(nz_block_state * state_p, struct nz_block_info * info_p) {math_block_destroy(state_p, info_p);}
-void diff_block_destroy(nz_block_state * state_p, struct nz_block_info * info_p) {math_block_destroy(state_p, info_p);}
-void mul_block_destroy(nz_block_state * state_p, struct nz_block_info * info_p) {math_block_destroy(state_p, info_p);}
-void div_block_destroy(nz_block_state * state_p, struct nz_block_info * info_p) {math_block_destroy(state_p, info_p);}
-void mod_block_destroy(nz_block_state * state_p, struct nz_block_info * info_p) {math_block_destroy(state_p, info_p);}
+void sum_block_destroy(nz_block_state * state_p) {math_block_destroy(state_p);}
+void diff_block_destroy(nz_block_state * state_p) {math_block_destroy(state_p);}
+void mul_block_destroy(nz_block_state * state_p) {math_block_destroy(state_p);}
+void div_block_destroy(nz_block_state * state_p) {math_block_destroy(state_p);}
+void mod_block_destroy(nz_block_state * state_p) {math_block_destroy(state_p);}
 
 NZ_DECLARE_BLOCKCLASS(sum)
 NZ_DECLARE_BLOCKCLASS(diff)

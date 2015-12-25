@@ -60,7 +60,6 @@ static nz_rc wavefileout_block_create_args(nz_block_state ** state_pp, struct nz
     return NZ_SUCCESS;
 
 fail:
-    nz_block_info_term(info_p);
     free(state);
     return rc;
 
@@ -78,13 +77,12 @@ static nz_rc wavfileout_block_create(const struct nz_context * context_p, const 
     return rc;
 }
 
-static void wavfileout_block_destroy(nz_block_state * state_p, struct nz_block_info * info_p) {
+static void wavfileout_block_destroy(nz_block_state * state_p) {
     struct state * state = (struct state *)state_p;
 
     sf_write_sync(state->file);
     sf_close(state->file);
 
-    nz_block_info_term(info_p);
     free(state);
 }
 

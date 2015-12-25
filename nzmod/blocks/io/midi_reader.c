@@ -142,7 +142,6 @@ static nz_rc midireader_block_create_args(nz_block_state ** state_pp, struct nz_
     return NZ_SUCCESS;
 
 fail:
-    nz_block_info_term(info_p);
     free(state);
     return rc;
 }
@@ -159,7 +158,7 @@ nz_rc midireader_block_create(const struct nz_context * context_p, const char * 
     return rc;
 }
 
-void midireader_block_destroy(nz_block_state * state_p, struct nz_block_info * info_p) {
+void midireader_block_destroy(nz_block_state * state_p) {
     struct state * state = state_p;
 
     //assert(fclose(state->smf_file) == 0); TODO
@@ -167,7 +166,6 @@ void midireader_block_destroy(nz_block_state * state_p, struct nz_block_info * i
     free(state->header);
     free(state->track);
 
-    nz_block_info_term(info_p);
     free(state_p);
 }
 

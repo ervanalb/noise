@@ -7,7 +7,7 @@ nz_rc run()
 {
     nz_rc rc = NZ_SUCCESS;
     struct nz_context * context;
-    const struct nz_blockclass * my_blockclass;
+    const struct nz_blockclass * my_blockclass_p;
     struct nz_block my_block;
     struct nz_block_info my_block_info;
     int a;
@@ -17,7 +17,7 @@ nz_rc run()
     if((rc = nz_context_create(&context)) == NZ_SUCCESS)
     {
         // Create a block
-        if((rc = nz_context_create_block(context, &my_blockclass, &my_block.block_state_p, &my_block_info, "constant(int,10)")) == NZ_SUCCESS)
+        if((rc = nz_context_create_block(context, &my_blockclass_p, &my_block, &my_block_info, "constant(int,10)")) == NZ_SUCCESS)
         {
             pull_result = my_block_info.block_pull_fns[0](my_block, 0, (nz_obj*)&a);
             if(pull_result == NULL) {
@@ -25,7 +25,7 @@ nz_rc run()
             } else {
                 printf("pulled %d\n", a);
             }
-            my_blockclass->block_destroy(my_block.block_state_p, &my_block_info);
+            nz_context_destroy_block(my_blockclass_p, &my_block, &my_block_info);
         }
     }
     nz_context_destroy(context);

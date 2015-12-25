@@ -140,7 +140,6 @@ static nz_rc midimelody_block_create_args(nz_block_state ** state_pp, struct nz_
     return NZ_SUCCESS;
 
 fail:
-    nz_block_info_term(info_p);
     free(state);
     return rc;
 }
@@ -154,8 +153,7 @@ nz_rc midimelody_block_create(const struct nz_context * context_p, const char * 
     return rc;
 }
 
-void midimelody_block_destroy(nz_block_state * state_p, struct nz_block_info * info_p) {
-    nz_block_info_term(info_p);
+void midimelody_block_destroy(nz_block_state * state_p) {
     free(state_p);
 }
 

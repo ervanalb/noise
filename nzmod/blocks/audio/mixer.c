@@ -47,7 +47,6 @@ static nz_rc mixer_block_create_args(size_t n_channels, nz_block_state ** state_
     }
 
     if(rc != NZ_SUCCESS) {
-        nz_block_info_term(info_p);
         free(state_p->in_chunk_p);
         free(state_p);
         return rc;
@@ -57,9 +56,8 @@ static nz_rc mixer_block_create_args(size_t n_channels, nz_block_state ** state_
     return NZ_SUCCESS;
 }
 
-void mixer_block_destroy(nz_block_state * state_p, struct nz_block_info * info_p) {
+void mixer_block_destroy(nz_block_state * state_p) {
     struct mixer_block_state * mixer_block_state_p = (struct mixer_block_state *)state_p;
-    nz_block_info_term(info_p);
     free(mixer_block_state_p->in_chunk_p);
     free(mixer_block_state_p);
 }

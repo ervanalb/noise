@@ -66,7 +66,6 @@ static nz_rc tee_block_create_args(size_t n_outputs, const struct nz_typeclass *
     }
 
     if(rc != NZ_SUCCESS) {
-        nz_block_info_term(info_p);
         typeclass_p->type_destroy_obj(type_p, obj_p);
         typeclass_p->type_destroy(type_p);
         free(state_p);
@@ -100,9 +99,8 @@ nz_rc tee_block_create(const struct nz_context * context_p, const char * string,
     return tee_block_create_args(n_outputs, typeclass_p, type_p, state_pp, info_p);
 }
 
-void tee_block_destroy(nz_block_state * state_p, struct nz_block_info * info_p) {
+void tee_block_destroy(nz_block_state * state_p) {
     struct tee_block_state * tee_block_state_p = (struct tee_block_state *)state_p;
-    nz_block_info_term(info_p);
     tee_block_state_p->typeclass_p->type_destroy_obj(tee_block_state_p->type_p, tee_block_state_p->obj_p);
     tee_block_state_p->typeclass_p->type_destroy(tee_block_state_p->type_p);
     free(state_p);
@@ -164,7 +162,6 @@ static nz_rc wye_block_create_args(size_t n_inputs, const struct nz_typeclass * 
     }
 
     if(rc != NZ_SUCCESS) {
-        nz_block_info_term(info_p);
         typeclass_p->type_destroy_obj(type_p, obj_p);
         typeclass_p->type_destroy(type_p);
         free(state_p);
@@ -198,9 +195,8 @@ nz_rc wye_block_create(const struct nz_context * context_p, const char * string,
     return tee_block_create_args(n_inputs, typeclass_p, type_p, state_pp, info_p);
 }
 
-void wye_block_destroy(nz_block_state * state_p, struct nz_block_info * info_p) {
+void wye_block_destroy(nz_block_state * state_p) {
     struct wye_block_state * wye_block_state_p = (struct wye_block_state *)state_p;
-    nz_block_info_term(info_p);
     wye_block_state_p->typeclass_p->type_destroy_obj(wye_block_state_p->type_p, wye_block_state_p->obj_p);
     wye_block_state_p->typeclass_p->type_destroy(wye_block_state_p->type_p);
     free(state_p);

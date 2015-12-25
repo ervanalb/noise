@@ -44,7 +44,6 @@ static nz_rc wave_block_create_args(nz_pull_fn * pull_fn, nz_block_state ** stat
     if((rc = nz_block_info_set_n_io(info_p, 1, 1)) != NZ_SUCCESS ||
        (rc = nz_block_info_set_input(info_p, 0, strdup("freq"), &nz_real_typeclass, NULL)) != NZ_SUCCESS ||
        (rc = nz_block_info_set_output(info_p, 0, strdup("out"), &nz_chunk_typeclass, NULL, pull_fn)) != NZ_SUCCESS) {
-        nz_block_info_term(info_p);
         free(state_p);
         return rc;
     }
@@ -53,8 +52,7 @@ static nz_rc wave_block_create_args(nz_pull_fn * pull_fn, nz_block_state ** stat
     return NZ_SUCCESS;
 }
 
-void wave_block_destroy(nz_block_state * state_p, struct nz_block_info * info_p) {
-    nz_block_info_term(info_p);
+void wave_block_destroy(nz_block_state * state_p) {
     free(state_p);
 }
 

@@ -3,7 +3,7 @@
 
 #include "libnoise.h"
 
-nz_obj * nz_null_pull_fn(struct nz_block self, size_t index, nz_obj * obj_p) {
+static nz_obj * null_pull_fn(struct nz_block self, size_t index, nz_obj * obj_p) {
     return NULL;
 }
 
@@ -66,3 +66,12 @@ nz_rc nz_block_info_set_output(struct nz_block_info * info_p, size_t output_inde
     return NZ_SUCCESS;
 }
 
+void nz_block_set_upstream(struct nz_block * block_p, size_t input_index, const struct nz_block * upstream_block_p, const struct nz_block_info * upstream_info_p, size_t upstream_output_index) {
+    block_p->block_upstream_pull_fn_p_array[input_index] = upstream_info_p->block_pull_fns[upstream_output_index];
+    block_p->block_upstream_block_array[input_index] = *upstream_block_p;
+    block_p->block_upstream_output_index_array[input_index] = upstream_output_index;
+}
+
+void nz_block_clear_upstream(struct nz_block * block_p, size_t input_index) {
+    block_p->block_upstream_pull_fn_p_array[input_index] = null_pull_fn;
+}

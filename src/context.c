@@ -261,15 +261,18 @@ void nz_context_free_type_list(char const ** typeclass_string_array) {
 
 // --
 
-nz_rc nz_context_create_block(const struct nz_context * context_p, const struct nz_blockclass ** blockclass, nz_block_state ** state, struct nz_block_info * block_info, const char * string) {
+nz_rc nz_context_create_block(const struct nz_context * context_p, const struct nz_blockclass ** blockclass_pp, struct nz_block * block_p, struct nz_block_info * block_info_p, const char * string) {
     // Create a block from a spec `string`
     // `struct nz_context * context_p`: input nz_context, which contains all registered blockclasses
     // `char * string`: input like "tee(2)" or "accumulator"
-    // `struct nz_blockclass ** blockclass`: output blockclass for newly created block
-    // `nz_block_state ** state`: output block state for newly created block
-    // `struct nz_block_info * block_info`: output block info for newly created block, already allocated
+    // `struct nz_blockclass ** blockclass_pp`: output blockclass for newly created block
+    // `struct nz_block * block_p`: output newly created block state and context, already allocated
+    // `struct nz_block_info * block_info_p`: output block info for newly created block, already allocated
 
     struct blockclass_entry * entry_p;
+    const struct nz_blockclass * blockclass_p;
+    nz_block_state * state_p;
+
     for(entry_p = context_p->context_blockclasses_head.next_p;
         entry_p != NULL;
         entry_p = entry_p->next_p) {
@@ -277,21 +280,25 @@ nz_rc nz_context_create_block(const struct nz_context * context_p, const struct 
         size_t c = 0;
         const char * block_id = entry_p->blockclass_p->block_id;
         size_t len = strlen(string);
+        nz_rc rc;
 
         for(;;) {
             if(block_id[c] == '\0') {
                 if(string[c] == '\0') {
                     // Match, no args
-                    *blockclass = entry_p->blockclass_p;
-                    return (*blockclass)->block_create(context_p, NULL, state, block_info);
+                    blockclass_p = entry_p->blockclass_p;
+                    rc = blockclass_p->block_create(context_p, NULL, &state_p, block_info_p);
+                    if(rc != NZ_SUCCESS) return rc;
+                    goto block_created;
                 } else if(string[c] == '(' && string[len - 1] == ')') {
                     // Match, args
                     char * args = strndup(&(string[c + 1]), len - 2 - c);
                     if(args == NULL) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
-                    *blockclass = entry_p->blockclass_p;
-                    nz_rc rc = (*blockclass)->block_create(context_p, args, state, block_info);
+                    blockclass_p = entry_p->blockclass_p;
+                    rc = blockclass_p->block_create(context_p, args, &state_p, block_info_p);
                     free(args);
-                    return rc;
+                    if(rc != NZ_SUCCESS) return rc;
+                    goto block_created;
                 } else {
                     break; // No match, block ended early
                 }
@@ -306,6 +313,37 @@ nz_rc nz_context_create_block(const struct nz_context * context_p, const struct 
     }
 
     NZ_RETURN_ERR_MSG(NZ_BLOCK_NOT_FOUND, strdup(string));
+
+    block_created:
+
+    *blockclass_pp = blockclass_p;
+    block_p->block_state_p = state_p;
+
+    block_p->block_upstream_pull_fn_p_array = calloc(block_info_p->block_n_inputs, sizeof(nz_pull_fn *));
+    block_p->block_upstream_block_array = calloc(block_info_p->block_n_inputs, sizeof(struct nz_block));
+    block_p->block_upstream_output_index_array = calloc(block_info_p->block_n_inputs, sizeof(size_t));
+
+    if(block_p->block_upstream_pull_fn_p_array == NULL ||
+       block_p->block_upstream_block_array == NULL ||
+       block_p->block_upstream_output_index_array == NULL) {
+
+        free(block_p->block_upstream_pull_fn_p_array);
+        free(block_p->block_upstream_block_array);
+        free(block_p->block_upstream_output_index_array);
+        NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
+    }
+    for(size_t i = 0; i < block_info_p->block_n_inputs; i++) {
+        nz_block_clear_upstream(block_p, i);
+    }
+    return NZ_SUCCESS;
+}
+
+void nz_context_destroy_block(const struct nz_blockclass * blockclass_p, struct nz_block * block_p, struct nz_block_info * block_info_p) {
+    blockclass_p->block_destroy(block_p->block_state_p);
+    nz_block_info_term(block_info_p);
+    free(block_p->block_upstream_pull_fn_p_array);
+    free(block_p->block_upstream_block_array);
+    free(block_p->block_upstream_output_index_array);
 }
 
 nz_rc nz_context_list_blocks(struct nz_context * context_p, char const *** blockclass_string_array_p) {
@@ -334,5 +372,3 @@ nz_rc nz_context_list_blocks(struct nz_context * context_p, char const *** block
 void nz_context_free_block_list(char const ** blockclass_string_array) {
     free(blockclass_string_array);
 }
-
-

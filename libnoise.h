@@ -126,7 +126,7 @@ NZ_DECLARE_TYPECLASS(NAME) \
 struct nz_blockclass {
     const char * block_id;
     nz_rc (*block_create) (const struct nz_context * context, const char * string, nz_block_state ** state, struct nz_block_info * info);
-    void (*block_destroy) (nz_block_state * state, struct nz_block_info * info);
+    void (*block_destroy) (nz_block_state * state);
 };
 
 #define NZ_PULL(SELF,INPUT,OBJ_P) ((SELF).block_upstream_pull_fn_p_array[(INPUT)]((SELF).block_upstream_block_array[(INPUT)], (SELF).block_upstream_output_index_array[(INPUT)], (OBJ_P)))
@@ -139,6 +139,13 @@ const struct nz_blockclass nz_ ## NAME ## _blockclass = { \
     .block_destroy = & NAME ## _block_destroy, \
 };
 
+struct nz_block {
+    nz_block_state *  block_state_p;
+    nz_pull_fn **     block_upstream_pull_fn_p_array;
+    struct nz_block * block_upstream_block_array;
+    size_t *          block_upstream_output_index_array;
+};
+
 // --
 // block_info helper functions
 
@@ -146,6 +153,12 @@ void nz_block_info_term(struct nz_block_info * info_p);
 nz_rc nz_block_info_set_n_io(struct nz_block_info * info_p, size_t n_inputs, size_t n_outputs);
 nz_rc nz_block_info_set_input(struct nz_block_info * info_p, size_t input_index, char * name, const struct nz_typeclass * typeclass_p, nz_type * type_p);
 nz_rc nz_block_info_set_output(struct nz_block_info * info_p, size_t input_index, char * name, const struct nz_typeclass * typeclass_p, nz_type * type_p, nz_pull_fn * pull_fn_p);
+
+// ------------------------------------
+// ------------- CONTEXT --------------
+// ------------------------------------
+
+nz_rc nz_context_create_type(const struct nz_context * context_p, const struct nz_typeclass ** typeclass_pp, nz_type ** type_pp, const char * string);
 
 // ------------------------------------
 // -------------- UTIL ----------------

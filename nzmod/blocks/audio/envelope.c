@@ -123,14 +123,12 @@ nz_rc envelope_block_create(const struct nz_context * context_p, const char * st
     return NZ_SUCCESS;
 
 fail:
-    nz_block_info_term(info_p);
     free(state);
     return rc;
 }
 
-void envelope_block_destroy(nz_block_state * state_p, struct nz_block_info * info_p) {
+void envelope_block_destroy(nz_block_state * state_p) {
     struct state * state = (struct state *)state_p;
-    nz_block_info_term(info_p);
     free(state);
 }
 

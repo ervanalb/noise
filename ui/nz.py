@@ -150,6 +150,12 @@ class Type(object):
     def __repr__(self):
         return "{}({})".format(type(self).__name__, self.__str__())
 
+    def __eq__(self, other):
+        return nz.nz_types_are_equal(self.typeclass, self.state, other.typeclass, other.state)
+
+    def __neq__(self, other):
+        return not self.__eq__(other)
+
     def __del__(self):
         self.typeclass.contents.type_destroy(self.state)
 
@@ -172,6 +178,9 @@ class Block(object):
                             Type(port.block_port_typeclass_p, port.block_port_type_p)))
         self.outputs = outputs
 
+        self.output_connections = []
+        self.input_connections = []
+
     def __str__(self):
         return str(self.blockclass.contents.block_id, encoding = 'latin-1')
 
@@ -180,6 +189,18 @@ class Block(object):
 
     def __del__(self):
         self.blockclass.contents.block_destroy(self.state, self.info)
+
+def connect(upstream_block, out_name, downstream_block, in_name):
+    out_index = dict(zip(upstream_block.outputs[0], range(len(upstream_block.outputs))))[out_name]
+    in_index = dict(zip(downstream_block.inputs[0], range(len(downstream_block.inputs))))[in_name]
+
+    out_type = upstream_block.outputs[out_index][1]
+    in_type = downstream_block.inputs[in_index][1]
+    assert out_type == in_type
+
+    downstream_block.state.block_upstream_pull_fn_p_array[in_index] = upstream_block.info.block_pull_fns[out_index]
+    downstream_block.state.block_upstream_block_array[in_index] = upstream_block.block
+    downstream_block.state.block_upstream_output_index_array[in_index] = out_index
 
 class _PortAudio:
     def __enter__(self):
@@ -202,3 +223,5 @@ if __name__ == '__main__':
     b = c.create_block("constant(int,3)")
     print(repr(b))
     print(b.outputs)
+    del b
+    del c

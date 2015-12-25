@@ -81,14 +81,8 @@ struct nz_typeclass;
 struct nz_blockclass;
 typedef void nz_block_state;
 struct nz_block;
-typedef nz_obj * nz_pull_fn(struct nz_block self, size_t index, nz_obj * obj_p);
 
-struct nz_block {
-    nz_block_state *  block_state_p;
-    nz_pull_fn **     block_upstream_pull_fn_p_array;
-    struct nz_block * block_upstream_block_array;
-    size_t *          block_upstream_output_index_array;
-};
+typedef nz_obj * nz_pull_fn(struct nz_block self, size_t index, nz_obj * obj_p);
 
 struct nz_port_info {
     char *                      block_port_name;
@@ -105,8 +99,9 @@ struct nz_block_info {
     nz_pull_fn **         block_pull_fns;
 };
 
-nz_obj * nz_null_pull_fn(struct nz_block self, size_t index, nz_obj * obj_p);
-
+void nz_block_set_upstream(struct nz_block * block_p, size_t input_index, const struct nz_block * upstream_block_p, const struct nz_block_info * upstream_info_p, size_t upstream_output_index);
+void nz_block_clear_upstream(struct nz_block * block_p, size_t input_index);
+ 
 // ------------------------------------
 // ------------ CONTEXT ---------------
 // ------------------------------------
@@ -121,12 +116,13 @@ nz_rc nz_context_load_lib(struct nz_context * context_p, const char * lib_name, 
 void nz_context_unload_lib(struct nz_context * context_p, struct nz_lib * lib_handle);
 
 // Types
-nz_rc nz_context_create_type(const struct nz_context * context_p, const struct nz_typeclass ** typeclass_pp, nz_type ** type_pp, const char * string);
 nz_rc nz_context_type_list(struct nz_context * context_p, char const *** typeclass_string_array_p);
 void nz_context_free_type_list(char const ** typeclass_string_array);
 
 // Blocks
-nz_rc nz_context_create_block(const struct nz_context * context, const struct nz_blockclass ** blockclass_pp, nz_block_state ** state_pp, struct nz_block_info * info_p, const char * string);
+nz_rc nz_context_create_block(const struct nz_context * context_p, const struct nz_blockclass ** blockclass_pp, struct nz_block * block_p, struct nz_block_info * block_info_p, const char * string);
+void nz_context_destroy_block(const struct nz_blockclass * blockclass_p, struct nz_block * block_p, struct nz_block_info * block_info_p);
+
 nz_rc nz_context_block_list(struct nz_context * context_p, char const *** blockclass_string_array_p);
 void nz_context_free_block_list(char const ** blockclass_string_array);
 

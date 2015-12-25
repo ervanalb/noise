@@ -49,13 +49,9 @@ void nz_graph_destroy(struct nz_graph * graph_p) {
     while(node_p != NULL) {
         next_node_p = node_p->next;
 
+        nz_context_destroy_block(node_p->blockclass_p, &node_p->block, &node_p->block_info);
+
         free(node_p->node_id);
-
-        node_p->blockclass_p->block_destroy(node_p->block.block_state_p, &node_p->block_info);
-
-        free(node_p->block.block_upstream_pull_fn_p_array);
-        free(node_p->block.block_upstream_block_array);
-
         free(node_p->upstream_node_p_array);
         free(node_p->downstream_node_p_array);
 
@@ -87,48 +83,16 @@ nz_rc nz_graph_add_block(
         NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
     }
 
-    rc = nz_context_create_block(graph_p->graph_context_p, &node_p->blockclass_p, &node_p->block.block_state_p, &node_p->block_info, block);
+    rc = nz_context_create_block(graph_p->graph_context_p, &node_p->blockclass_p, &node_p->block, &node_p->block_info, block);
     if(rc != NZ_SUCCESS) {
         free(node_p->node_id);
         free(node_p);
         return rc;
     }
 
-    node_p->block.block_upstream_pull_fn_p_array = calloc(node_p->block_info.block_n_inputs, sizeof(nz_pull_fn *));
-    if(node_p->block.block_upstream_pull_fn_p_array == NULL) {
-        free(node_p->node_id);
-        free(node_p);
-        NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
-    }
-    for(size_t i = 0; i < node_p->block_info.block_n_inputs; i++) {
-        node_p->block.block_upstream_pull_fn_p_array[i] = nz_null_pull_fn;
-    }
-
-    node_p->block.block_upstream_block_array = calloc(node_p->block_info.block_n_inputs, sizeof(struct nz_block));
-    if(node_p->block.block_upstream_block_array == NULL) {
-        free(node_p->block.block_upstream_pull_fn_p_array);
-        node_p->blockclass_p->block_destroy(node_p->block.block_state_p, &node_p->block_info);
-        free(node_p->node_id);
-        free(node_p);
-        NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
-    }
-
-    node_p->block.block_upstream_output_index_array = calloc(node_p->block_info.block_n_inputs, sizeof(size_t));
-    if(node_p->block.block_upstream_block_array == NULL) {
-        free(node_p->block.block_upstream_block_array);
-        free(node_p->block.block_upstream_pull_fn_p_array);
-        node_p->blockclass_p->block_destroy(node_p->block.block_state_p, &node_p->block_info);
-        free(node_p->node_id);
-        free(node_p);
-        NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
-    }
-
     node_p->upstream_node_p_array = calloc(node_p->block_info.block_n_inputs, sizeof(struct nz_node *));
     if(node_p->upstream_node_p_array == NULL) {
-        free(node_p->block.block_upstream_output_index_array);
-        free(node_p->block.block_upstream_block_array);
-        free(node_p->block.block_upstream_pull_fn_p_array);
-        node_p->blockclass_p->block_destroy(node_p->block.block_state_p, &node_p->block_info);
+        nz_context_destroy_block(node_p->blockclass_p, &node_p->block, &node_p->block_info);
         free(node_p->node_id);
         free(node_p);
         NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
@@ -136,11 +100,8 @@ nz_rc nz_graph_add_block(
 
     node_p->downstream_node_p_array = calloc(node_p->block_info.block_n_outputs, sizeof(struct nz_node *));
     if(node_p->downstream_node_p_array == NULL) {
+        nz_context_destroy_block(node_p->blockclass_p, &node_p->block, &node_p->block_info);
         free(node_p->upstream_node_p_array);
-        free(node_p->block.block_upstream_output_index_array);
-        free(node_p->block.block_upstream_block_array);
-        free(node_p->block.block_upstream_pull_fn_p_array);
-        node_p->blockclass_p->block_destroy(node_p->block.block_state_p, &node_p->block_info);
         free(node_p->node_id);
         free(node_p);
         NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
@@ -154,6 +115,8 @@ nz_rc nz_graph_add_block(
 }
 
 nz_rc nz_graph_del_block(struct nz_graph * graph_p, const char * id) {
+    // TODO disconnect
+
     struct nz_node * prev_p;
     for(prev_p = graph_p->graph_node_head_p; prev_p->next != NULL && strcmp(prev_p->next->node_id, id) != 0; prev_p = prev_p->next);
 
@@ -164,10 +127,8 @@ nz_rc nz_graph_del_block(struct nz_graph * graph_p, const char * id) {
     prev_p->next = node_p->next;
 
     // Free
+    nz_context_destroy_block(node_p->blockclass_p, &node_p->block, &node_p->block_info);
     free(node_p->node_id);
-    node_p->blockclass_p->block_destroy(node_p->block.block_state_p, &node_p->block_info);
-    free(node_p->block.block_upstream_pull_fn_p_array);
-    free(node_p->block.block_upstream_block_array);
     free(node_p->upstream_node_p_array);
     free(node_p->downstream_node_p_array);
     free(node_p);
@@ -208,8 +169,6 @@ nz_rc nz_graph_connect(
     if(upstream_p->downstream_node_p_array[output_index] != NULL) NZ_RETURN_ERR(NZ_PORT_ALREADY_CONNECTED);
     if(downstream_p->upstream_node_p_array[input_index] != NULL) NZ_RETURN_ERR(NZ_PORT_ALREADY_CONNECTED);
 
-int nz_types_are_equal(const struct nz_typeclass * typeclass_p,       const nz_type * type_p,
-                       const struct nz_typeclass * other_typeclass_p, const nz_type * other_type_p);
     if(!nz_types_are_equal(upstream_p->block_info.block_output_port_array[output_index].block_port_typeclass_p,
                            upstream_p->block_info.block_output_port_array[output_index].block_port_type_p,
                            downstream_p->block_info.block_input_port_array[input_index].block_port_typeclass_p,
@@ -261,7 +220,7 @@ nz_rc nz_graph_disconnect(
 
     upstream_p->downstream_node_p_array[output_index] = NULL;
     downstream_p->upstream_node_p_array[input_index] = NULL;
-    downstream_p->block.block_upstream_pull_fn_p_array[input_index] = nz_null_pull_fn;
+    nz_block_clear_upstream(&downstream_p->block, input_index);
 
     return NZ_SUCCESS;
 }
