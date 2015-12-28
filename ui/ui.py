@@ -40,7 +40,6 @@ class Graph(Gtk.DrawingArea):
         self.blocks = []
         self.connections = []
 
-        self.nz_graph = nz.Graph(nz_context)
         self.block_counter = 1
 
     def conv_screen_coords(self, x, y):
@@ -341,7 +340,7 @@ class Block(object):
     TERM_SPACING = 60
 
     def __init__(self, parent, name, constructor, x = 0, y = 0):
-        parent.nz_graph.add_block(name, constructor)
+        parent.nzcontext.create_block(name, constructor)
 
         info = parent.nz_graph.block_info(name)
 
