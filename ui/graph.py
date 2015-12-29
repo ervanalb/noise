@@ -10,6 +10,8 @@ class Graph(Gtk.DrawingArea):
     ZOOM_SPEED = 0.1
     LINE_WIDTH = 5
     BG_COLOR = (200, 200, 200)
+    MULTI_SELECT_KEYS = (Gdk.KEY_Control_L, Gdk.KEY_Control_R,
+                         Gdk.KEY_Shift_L, Gdk.KEY_Shift_R)
 
     def __init__(self):
         super().__init__()
@@ -40,6 +42,8 @@ class Graph(Gtk.DrawingArea):
         self.panning = False
         self.dragging = False
         self.mouse_owner = None
+        self.window_select = None
+        self.multi_select = set()
 
         self.context = nz.Context()
 
@@ -58,9 +62,12 @@ class Graph(Gtk.DrawingArea):
         width = rect.width
         height = rect.height
 
-        #ctx.rectangle(0.0, 0.0, width, height)
-        #ctx.set_source_rgb(*self.BG_COLOR)
-        #ctx.fill()
+        if self.window_select:
+            ctx.rectangle(*self.window_select)
+            ctx.set_source_rgb(0, 0, 0)
+            ctx.set_dash([5], 0)
+            ctx.stroke()
+            ctx.set_dash([], 0)
 
         ctx.translate(self.cx, self.cy)
         ctx.scale(self.scale, self.scale)
@@ -78,11 +85,6 @@ class Graph(Gtk.DrawingArea):
         self.cy = (self.cy - event.y) * factor + event.y
         self.queue_draw()
 
-    def get_child(self, x, y):
-        for child in self.children:
-            if child.hit_test(x - child.x, y - child.y):
-                return child
-
     def button_down_event(self, da, event):
         # Debounce (why?)
         if event.button not in self.held_buttons:
@@ -91,16 +93,21 @@ class Graph(Gtk.DrawingArea):
             return
 
         if event.button == 1:
-            self.selected = []
             (ctx_x, ctx_y) = self.conv_screen_pt(event.x, event.y)
             hit_child = self.get_child(ctx_x, ctx_y)
             if hit_child is not None:
-                self.selected = [hit_child]
+                if hit_child not in self.selected:
+                    if not self.multi_select:
+                        self.selected = []
+                    self.selected.append(hit_child)
                 if hit_child.button_down(ctx_x - hit_child.x,
                                          ctx_y - hit_child.y):
                     self.mouse_owner = hit_child
                 else:
                     self.dragging = True
+            else:
+                self.window_select = (event.x, event.y, 0, 0)
+                self.update_window_selection()
             self.queue_draw()
         elif event.button == 3:
             self.panning = True
@@ -124,6 +131,11 @@ class Graph(Gtk.DrawingArea):
                 child.x += ctx_dx
                 child.y += ctx_dy
             self.queue_draw()
+        elif self.window_select is not None:
+            (x, y, w, h) = self.window_select
+            self.window_select = (x, y, event.x - x, event.y - y)
+            self.update_window_selection()
+            self.queue_draw()
 
         self.lx = event.x
         self.ly = event.y
@@ -138,9 +150,11 @@ class Graph(Gtk.DrawingArea):
         if event.button == 1:
             self.dragging = False
             self.mouse_owner = None
+            self.window_select = None
+            self.queue_draw()
         elif event.button == 3:
             self.panning = False
-            redraw = True
+            self.queue_draw()
 
     def key_down_event(self, da, event):
         if event.keyval == Gdk.KEY_Delete:
@@ -151,14 +165,44 @@ class Graph(Gtk.DrawingArea):
             self.queue_draw()
         elif event.keyval == Gdk.KEY_a:
             self.add_block()
+        elif event.keyval in self.MULTI_SELECT_KEYS:
+            self.multi_select.add(event.keyval)
         else:
             for child in self.selected:
                 child.key_down(event.keyval)
 
     def key_up_event(self, da, event):
-        pass
+        if event.keyval in self.MULTI_SELECT_KEYS:
+            self.multi_select.remove(event.keyval)
 
     ## Useful things
+
+    def get_child(self, x, y):
+        for child in self.children:
+            if child.hit_test(x - child.x, y - child.y):
+                return child
+
+    def update_window_selection(self):
+        (x, y, w, h) = self.window_select
+        if w < 0:
+            x += w
+            w = -w
+        if h < 0:
+            y += h
+            h = -h
+
+        def rect_test(child, x, y, w, h):
+            (ctx_x, ctx_y) = self.conv_screen_pt(x, y)
+            (ctx_w, ctx_h) = self.conv_screen_vec(w, h)
+            return child.rect_test(ctx_x - child.x, ctx_y - child.y, ctx_w, ctx_h)
+
+        window_selected = [child for child in self.children if rect_test(child, x, y, w, h)]
+        if not self.multi_select:
+            self.selected = window_selected
+        else:
+            for child in window_selected:
+                if child not in self.selected:
+                    self.selected.append(child)
 
     def add_block(self):
         constructor = self.dialog("Block:")

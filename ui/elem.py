@@ -36,6 +36,10 @@ class Block(Element):
     def hit_test(self, x, y):
         return abs(x) < self.width / 2 and abs(y) < self.height / 2
 
+    def rect_test(self, x, y, w, h):
+        # test if center is in rect
+        return x < 0 and y < 0 and x + w > 0 and y + h > 0
+
     def init_graphics(self):
         ctx = self.parent.stored_ctx
         ctx.select_font_face("Helvetica", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
