@@ -261,8 +261,10 @@ class Block(object):
         self.input_connections = [None] * len(inputs)
         self.output_connections = [None] * len(outputs)
 
+        self.id = str(self.blockclass.contents.block_id, encoding = 'latin-1')
+    
     def __str__(self):
-        return str(self.blockclass.contents.block_id, encoding = 'latin-1')
+        return self.id
 
     def __repr__(self):
         return "{}({})".format(type(self).__name__, self.__str__())
