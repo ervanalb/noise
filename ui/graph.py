@@ -21,6 +21,7 @@ class Graph(Gtk.DrawingArea):
                      | Gdk.EventMask.SMOOTH_SCROLL_MASK
                      | Gdk.EventMask.KEY_RELEASE_MASK
                      | Gdk.EventMask.KEY_PRESS_MASK)
+        self.set_can_focus(True)
 
         self.connect('draw', self.draw_event)
         self.connect('scroll-event', self.scroll_event)
@@ -37,7 +38,8 @@ class Graph(Gtk.DrawingArea):
         self.selected = []
         self.held_buttons = set()
         self.panning = False
-        self.set_can_focus(True)
+        self.dragging = False
+        self.mouse_owner = None
 
         self.context = nz.Context()
 
@@ -66,7 +68,7 @@ class Graph(Gtk.DrawingArea):
         for child in self.children:
             ctx.save()
             ctx.translate(child.x, child.y)
-            child.draw(ctx)
+            child.draw(ctx, selected = child in self.selected)
             ctx.restore()
 
     def scroll_event(self, da, event):
@@ -76,9 +78,9 @@ class Graph(Gtk.DrawingArea):
         self.cy = (self.cy - event.y) * factor + event.y
         self.queue_draw()
 
-    def get_child(self, da, event):
+    def get_child(self, x, y):
         for child in self.children:
-            if child.mouse_hit(event):
+            if child.hit_test(x - child.x, y - child.y):
                 return child
 
     def button_down_event(self, da, event):
@@ -89,7 +91,17 @@ class Graph(Gtk.DrawingArea):
             return
 
         if event.button == 1:
-            pass
+            self.selected = []
+            (ctx_x, ctx_y) = self.conv_screen_pt(event.x, event.y)
+            hit_child = self.get_child(ctx_x, ctx_y)
+            if hit_child is not None:
+                self.selected = [hit_child]
+                if hit_child.button_down(ctx_x - hit_child.x,
+                                         ctx_y - hit_child.y):
+                    self.mouse_owner = hit_child
+                else:
+                    self.dragging = True
+            self.queue_draw()
         elif event.button == 3:
             self.panning = True
 
@@ -97,9 +109,20 @@ class Graph(Gtk.DrawingArea):
         self.ly = event.y
 
     def motion_event(self, da, event):
-        if self.panning:
+        (ctx_x, ctx_y) = self.conv_screen_pt(event.x, event.y)
+        if self.mouse_owner is not None:
+            self.mouse_owner.mouse_move(self, ctx_x - mouse_owner.x,
+                                        ctx_y - mouse_owner.y)
+        elif self.panning:
             self.cx += event.x - self.lx
             self.cy += event.y - self.ly
+            self.queue_draw()
+        elif self.dragging:
+            (ctx_dx, ctx_dy) = self.conv_screen_vec(event.x - self.lx,
+                                                    event.y - self.ly)
+            for child in self.selected:
+                child.x += ctx_dx
+                child.y += ctx_dy
             self.queue_draw()
 
         self.lx = event.x
@@ -113,7 +136,8 @@ class Graph(Gtk.DrawingArea):
             return
 
         if event.button == 1:
-            pass
+            self.dragging = False
+            self.mouse_owner = None
         elif event.button == 3:
             self.panning = False
             redraw = True
@@ -129,7 +153,7 @@ class Graph(Gtk.DrawingArea):
             self.add_block()
         else:
             for child in self.selected:
-                child.key_down_event(event)
+                child.key_down(event.keyval)
 
     def key_up_event(self, da, event):
         pass
@@ -148,6 +172,12 @@ class Graph(Gtk.DrawingArea):
             self.msg(str(e))
 
     ## UTIL
+
+    def conv_screen_pt(self, x, y):
+        return ((x - self.cx) / self.scale, (y - self.cy) / self.scale)
+
+    def conv_screen_vec(self, dx, dy):
+        return (dx / self.scale, dy / self.scale)
 
     def dialog(self, prompt):
         dialogWindow = Gtk.MessageDialog(None,
@@ -183,4 +213,3 @@ class Graph(Gtk.DrawingArea):
         dialogWindow.show_all()
         response = dialogWindow.run()
         dialogWindow.destroy()
-

@@ -6,6 +6,15 @@ class Element():
         self.x = 0
         self.y = 0
 
+    def button_down(self, x, y):
+        return False
+
+    def mouse_move(self, x, y):
+        pass
+
+    def key_down(self, key):
+        return False
+
 class Block(Element):
     TERM_WIDTH = 20
     TERM_HEIGHT = 20
@@ -24,6 +33,9 @@ class Block(Element):
         output_slots = float(self.n_outputs - 1)
         self.output_locations = [(self.width / 2, -(output_index - output_slots / 2) * self.TERM_SPACING) for output_index in range(self.n_outputs)]
 
+    def hit_test(self, x, y):
+        return abs(x) < self.width / 2 and abs(y) < self.height / 2
+
     def init_graphics(self):
         ctx = self.parent.stored_ctx
         ctx.select_font_face("Helvetica", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
@@ -39,12 +51,8 @@ class Block(Element):
         ctx.set_line_width(self.parent.LINE_WIDTH)
         ctx.set_line_join(cairo.LINE_JOIN_ROUND)
 
-        ctx.new_path()
-        ctx.move_to(self.x - self.width / 2, self.y - self.height / 2)
-        ctx.rel_line_to(self.width, 0)
-        ctx.rel_line_to(0, self.height)
-        ctx.rel_line_to(-self.width, 0)
-        ctx.close_path()
+        ctx.rectangle(-self.width / 2, -self.height / 2,
+                      self.width, self.height)
 
         ctx.set_source_rgb(200, 200, 200)
         ctx.fill_preserve()
@@ -57,7 +65,7 @@ class Block(Element):
 
         ctx.select_font_face("Helvetica", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
         ctx.set_font_size(60)
-        ctx.move_to(self.x - self.text_width / 2 - self.text_x, self.y - self.text_height / 2 - self.text_y)
+        ctx.move_to(-self.text_width / 2 - self.text_x, -self.text_height / 2 - self.text_y)
         ctx.set_source_rgb(0, 0, 0)
         ctx.show_text(self.text)
 
