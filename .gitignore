@@ -5,3 +5,5 @@ noise.so
 *.swn
 *.pyc
 *.d
+noise_test*
+*.wav

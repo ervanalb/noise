@@ -23,6 +23,7 @@ const struct nz_blockclass nz_lpf_blockclass;
 
 //audio
 const struct nz_blockclass nz_envelope_blockclass;
+const struct nz_blockclass nz_drum_blockclass;
 
 //io
 const struct nz_blockclass nz_wavfileout_blockclass;

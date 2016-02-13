@@ -42,7 +42,7 @@ nz_obj * midireader_pull_fn(struct nz_block self, size_t index, nz_obj * obj_p) 
     struct nz_midiev * output = (struct nz_midiev *) obj_p;
     memset(output, 0, sizeof(*output) * NZ_N_MIDIEVS);
 
-    for (size_t i = 0; i < NZ_N_MIDIEVS && state->last_t <= t; i++) {
+    for (size_t i = 0; i < NZ_N_MIDIEVS && state->last_t <= t;) {
         nz_real delta_t = t - state->last_t;
         struct smf_event * smf_ev = &state->track->track_events[state->last_idx];
         nz_real event_delta_t = smf_ev->event_deltatime / (nz_real) state->header->header_division;
@@ -58,13 +58,13 @@ nz_obj * midireader_pull_fn(struct nz_block self, size_t index, nz_obj * obj_p) 
             if ((smf_ev->event_data[0] & 0xF0) == 0xF0) continue;
 
             // Emit event
-            output[i] = (struct nz_midiev) {
+            output[i++] = (struct nz_midiev) {
                 .midiev_status = smf_ev->event_data[0],
                 .midiev_data1 = smf_ev->event_data[1],
                 .midiev_data2 = smf_ev->event_length >= 2 ? smf_ev->event_data[2] : 0,
             };
 
-            //printf("Put event %#2x %#2x %#2x\n", output[i].midiev_status, output[i].midiev_data1, output[i].midiev_data2);
+            printf("Put event %#2x %#2x %#2x\n", output[i].midiev_status, output[i].midiev_data1, output[i].midiev_data2);
 
             //printf("adding ev 0x%02x %u %u %ld\n", midi_ev.midiev_status, midi_ev.midiev_data1, midi_ev.midiev_data2, nz_vector_get_size(port->port_value));
         } else {

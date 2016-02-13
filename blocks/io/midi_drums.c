@@ -13,9 +13,9 @@
 
 struct state {
     struct { 
-        int needs_pull : 1;
-        int is_null : 1;
-        int value : 8;
+        unsigned int needs_pull : 1;
+        unsigned int is_null : 1;
+        unsigned int value : 8;
     } velocities [128];
 };
 
@@ -31,23 +31,25 @@ static nz_rc pull_upstream(struct nz_block self) {
         for (int i = 0; i < 128; i++) {
             state->velocities[i].is_null = 1;
         }
+        printf("drum upstream null\n");
         return NZ_SUCCESS;
     }
 
     for (size_t i = 0; i < NZ_N_MIDIEVS; i++) {
         struct nz_midiev * ev = &midievs[i];
         if (ev->midiev_status == 0) break;
-        //printf("Got event %#2x %#2x %#2x\n", ev->midiev_status, ev->midiev_data1, ev->midiev_data2);
+        printf("drum Got event %#2x %#2x %#2x\n", ev->midiev_status, ev->midiev_data1, ev->midiev_data2);
         switch( ev->midiev_status & 0xF0 ) {
             case 0x90: ; // Note on
                 if (ev->midiev_data1 >= 128) break;
                 state->velocities[ev->midiev_data1].value = ev->midiev_data2;
                 state->velocities[ev->midiev_data1].is_null = 0;
-                //printf("Note on! %d\n", state->note);
+                printf("Drum note on  %d %d\n", ev->midiev_data1, ev->midiev_data2);
                 break;
             case 0x80: ; // Note off
                 if (ev->midiev_data1 >= 128) break;
                 state->velocities[ev->midiev_data1].is_null = 1;
+                printf("Drum note off %d\n", ev->midiev_data1);
                 break;
             //TODO: Aftertouch
             default:
@@ -62,7 +64,9 @@ static nz_rc pull_upstream(struct nz_block self) {
 static nz_obj * mididrums_pull_fn(struct nz_block self, size_t index, nz_obj * obj_p) {
     struct state * state = (struct state *) self.block_state_p;
 
+    printf("needs pull %ld %d\n" ,index, state->velocities[index].needs_pull);
     if (state->velocities[index].needs_pull) {
+        printf("pulling...\n");
         nz_rc rc = pull_upstream(self);
         if (rc != NZ_SUCCESS) return NULL;
     }
@@ -70,8 +74,10 @@ static nz_obj * mididrums_pull_fn(struct nz_block self, size_t index, nz_obj * o
     state->velocities[index].needs_pull = 1;
 
     if (state->velocities[index].is_null) {
+        printf("drum isnull %ld\n", index);
         return NULL;
     }
+    printf("drum on %ld\n", index);
 
     *(nz_real *) obj_p = (nz_real) state->velocities[index].value / 127.0;
 
@@ -100,6 +106,7 @@ static nz_rc mididrums_block_create_args(nz_block_state ** state_pp, struct nz_b
         if (rc != NZ_SUCCESS) goto fail;
         
         state->velocities[i].needs_pull = 1;
+        state->velocities[i].is_null = 1;
     }
 
     *(struct state **)(state_pp) = state;

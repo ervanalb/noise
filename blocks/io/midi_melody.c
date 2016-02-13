@@ -37,7 +37,7 @@ static nz_rc pull_upstream(struct nz_block self) {
     for (size_t i = 0; i < NZ_N_MIDIEVS; i++) {
         struct nz_midiev * ev = &midievs[i];
         if (ev->midiev_status == 0) break;
-        //printf("Got event %#2x %#2x %#2x\n", ev->midiev_status, ev->midiev_data1, ev->midiev_data2);
+        printf("Got event %#2x %#2x %#2x\n", ev->midiev_status, ev->midiev_data1, ev->midiev_data2);
         switch( ev->midiev_status & 0xF0 ) {
             case 0x90: ; // Note on
                 state->note = ev->midiev_data1;

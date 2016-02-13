@@ -24,6 +24,7 @@ OBJECTS = \
 		blocks/io/midi_drums.o \
 		blocks/io/wavfile.o \
 		blocks/blocks.o \
+		blocks/audio/drum.o \
 		blocks/audio/envelope.o \
 		blocks/audio/mixer.o \
 		blocks/audio/wave.o \
@@ -82,6 +83,7 @@ LIBS = -lm -lportaudio -lsndfile -lpthread
 .PHONY: clean all python
 .DEFAULT_GOAL = all
 all: $(TARGET) $(APP_TARGETS)
+
 clean:
 	-rm -f $(OBJECTS) $(APP_OBJECTS:.o=.d) $(OUTPUT) $(DEPS) $(PYTHONLIB) python/build
 
