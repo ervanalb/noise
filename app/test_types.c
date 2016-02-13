@@ -1,4 +1,4 @@
-#include "noise.h"
+#include "libnoise.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -14,7 +14,7 @@ nz_rc run()
     if((rc = nz_context_create(&context)) == NZ_SUCCESS)
     {
         // Create a type
-        if((rc = nz_type_create(context, &my_typeclass, &my_type, "array<10,int>")) == NZ_SUCCESS)
+        if((rc = nz_context_create_type(context, &my_typeclass, &my_type, "array<10,int>")) == NZ_SUCCESS)
         {
             // Instantiate it
             if((rc = my_typeclass->type_create_obj(my_type, &my_obj)) == NZ_SUCCESS)

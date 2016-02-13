@@ -1,62 +1,24 @@
 # Files to include
-#C_SRC  = $(wildcard *.c)
-#OBJECTS := $(patsubst %.c,%.o,$(C_SRC))
-OBJECTS = \
-		core/util.o \
-		core/error.o \
-		core/context.o \
-		core/ntype.o \
-		core/block.o \
-		core/graph.o \
-		core/argparse.o \
-		types/ntypes.o \
-		types/midi.o \
-		blocks/constant.o \
-		blocks/debug.o \
-		blocks/accumulator.o \
-		blocks/fittings.o \
-		blocks/maths.o \
-		blocks/lpf.o \
-		blocks/io/portaudio.o \
-		blocks/io/midi_reader.o \
-		blocks/io/midi_smf.o \
-		blocks/io/midi_melody.o \
-		blocks/io/midi_drums.o \
-		blocks/io/wavfile.o \
-		blocks/blocks.o \
-		blocks/audio/drum.o \
-		blocks/audio/envelope.o \
-		blocks/audio/mixer.o \
-		blocks/audio/wave.o \
-#		core/note.o \
-#		blocks/audio/compressor.o \
-#		blocks/audio/function_gen.o \
-#		blocks/audio/impulse.o \
-#		blocks/audio/lpf.o \
-#		blocks/audio/recorder.o \
-#		blocks/audio/sample.o \
-#		blocks/io/midi_integrator.o \
-#		blocks/io/midi_writer.o \
-#		blocks/io/portaudio.o \
-#		blocks/instruments/instrument.o \
-#		blocks/instruments/saw.o \
-#		blocks/instruments/sine.o \
-#		blocks/instruments/snare.o \
-#		blocks/sequencer.o \
-#		samples/drum.o \
+C_SRC = \
+		util.c \
+		error.c \
+		context.c \
+		ntype.c \
+		block.c \
+		graph.c \
+		argparse.c
 
-APP_OBJECTS = \
-		app/test_types.o \
-		app/test_block.o \
-		app/test_graph.o \
-		app/test_argparse.o \
-		app/test_midi_new.o
-#				app/test.o \
-#				app/test_midi.o \
-#				app/test_synth.o \
-#				app/test_sample.o \
+OBJECTS = $(C_SRC:%.c=src/%.o)
 
-APP_TARGETS = $(APP_OBJECTS:app/%.o=noise_%)
+APP_SRC = \
+		test_types.c \
+		test_block.c \
+		test_graph.c \
+		test_argparse.c \
+		test_midi_new.c
+
+APP_TARGETS = $(APP_SRC:%.c=noise_%)
+APP_OBJECTS = $(APP_SRC:%.c=app/%.o)
 
 TARGET = libnoise.so
 
@@ -75,27 +37,20 @@ DEPS = $(OBJECTS:.o=.d) $(APP_OBJECTS:.o=.d)
 
 # Assembler, compiler, and linker flags
 override CFLAGS += $(INC) -O0 -g -Wall -Wextra -Werror -Wno-unused-parameter -Wno-unused -Wwrite-strings -std=c99 -fPIC
-#override CFLAGS += $(INC) -O3 -g -Wall -Wextra -Werror -Wno-unused-parameter -Wno-unused -Wwrite-strings -std=c99 
 override LFLAGS += $(LIB) $(CFLAGS)
-LIBS = -lm -lportaudio -lsndfile -lpthread
+LIBS = -ldl
+APP_LIBS = -lnoise nzlib/nzstd.so
 
 # Targets
-.PHONY: clean all python
+.PHONY: clean all
 .DEFAULT_GOAL = all
 all: $(TARGET) $(APP_TARGETS)
 
 clean:
-	-rm -f $(OBJECTS) $(APP_OBJECTS:.o=.d) $(OUTPUT) $(DEPS) $(PYTHONLIB) python/build
+	-rm -f $(OBJECTS) $(APP_OBJECTS) $(APP_TARGETS) $(DEPS)
 
 $(TARGET): $(OBJECTS)
 	$(CC) -shared -Wl,-soname,$@ -o $@ $^ $(LIBS)
 
-noise_%: app/%.o $(OBJECTS)
-	$(CC) $(LFLAGS) -o $@ $^ $(LIBS) -lnoise -L.
-
-PYTHONLIB = python/_noise.so
-
-$(PYTHONLIB): $(TARGET)
-	cd python; python setup.py build_ext --inplace
-
-python: $(PYTHONLIB)
+noise_%: app/%.o $(TARGET)
+	$(CC) $(LFLAGS) -o $@ $^ -L. $(APP_LIBS)
