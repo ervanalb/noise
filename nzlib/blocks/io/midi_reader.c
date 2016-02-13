@@ -12,6 +12,7 @@
 struct state {
     FILE * smf_file;
     nz_real last_t;
+    char continuation;
     size_t last_idx;
     struct smf_header * header;
     struct smf_track * track; // Only 1 track for now
@@ -21,55 +22,63 @@ nz_obj * midireader_pull_fn(struct nz_block self, size_t index, nz_obj * obj_p) 
     struct state * state = (struct state *) self.block_state_p;
     nz_real t;
 
-    if(NZ_PULL(self, 0, &t) == NULL) {
-        state->last_idx = 0;
-        state->last_t = 0;
-        return NULL;
+    if (!state->continuation) {
+        if(NZ_PULL(self, 0, &t) == NULL) {
+            state->last_idx = 0;
+            state->last_t = 0;
+            return NULL;
+        }
+        //printf("time t %f\n", t);
+
+        if (t < state->last_t) {
+            state->last_idx = 0;
+            state->last_t = 0;
+        }
+
+        if (state->last_idx >= state->track->track_nevents) return NULL;
     }
-    //printf("time t %f\n", t);
 
-    if (t < state->last_t) {
-        state->last_idx = 0;
-        state->last_t = 0;
-    }
-
-    if (state->last_idx >= state->track->track_nevents) return NULL;
-
-    // Has NZ_N_MIDIEVS elements
+    state->continuation = 0;
     struct nz_midiev * output = (struct nz_midiev *) obj_p;
-    memset(output, 0, sizeof(*output) * NZ_N_MIDIEVS);
 
-    for (size_t i = 0; i < NZ_N_MIDIEVS && state->last_t <= t;) {
+    while (state->last_t <= t) {
         nz_real delta_t = t - state->last_t;
         struct smf_event * smf_ev = &state->track->track_events[state->last_idx];
         nz_real event_delta_t = smf_ev->event_deltatime / (nz_real) state->header->header_division;
         //printf("event_delta_t %f delta_t %f\n", event_delta_t, delta_t);
 
-        if (delta_t >= event_delta_t) {
-            state->last_t += event_delta_t;
-            state->last_idx++;
+        if (delta_t < event_delta_t) return NULL;
 
-            if (state->last_idx >= state->track->track_nevents) return obj_p;
+        state->last_t += event_delta_t;
+        state->last_idx++;
 
-            // Skip 'meta/sysex' events
-            if ((smf_ev->event_data[0] & 0xF0) == 0xF0) continue;
+        if (state->last_idx >= state->track->track_nevents) return NULL;
 
-            // Emit event
-            output[i++] = (struct nz_midiev) {
-                .midiev_status = smf_ev->event_data[0],
-                .midiev_data1 = smf_ev->event_data[1],
-                .midiev_data2 = smf_ev->event_length >= 2 ? smf_ev->event_data[2] : 0,
-            };
+        // Skip 'meta/sysex' events
+        if ((smf_ev->event_data[0] & 0xF0) == 0xF0) continue;
 
-            printf("Put event %#2x %#2x %#2x\n", output[i].midiev_status, output[i].midiev_data1, output[i].midiev_data2);
+        // Emit event
+        *output = (struct nz_midiev) {
+            .midiev_status = smf_ev->event_data[0],
+            .midiev_data1 = smf_ev->event_data[1],
+            .midiev_data2 = smf_ev->event_length >= 2 ? smf_ev->event_data[2] : 0,
+        };
+        state->continuation = 1;
 
-            //printf("adding ev 0x%02x %u %u %ld\n", midi_ev.midiev_status, midi_ev.midiev_data1, midi_ev.midiev_data2, nz_vector_get_size(port->port_value));
+        /*
+        char * midiev_str = NULL;
+        if (nz_midiev_typeclass.type_str_obj(NULL, output, &midiev_str) == NZ_SUCCESS) {
+            printf("Put event %s\n", midiev_str);
+            free(midiev_str);
         } else {
-            break;
+            printf("Put event (unprintable)\n");
         }
+        */
+
+        return obj_p;
     }
 
-    return obj_p;
+    return NULL;
 }
 
 static nz_rc midireader_block_create_args(nz_block_state ** state_pp, struct nz_block_info * info_p, const struct nz_context * context_p, char * filename) {
@@ -78,20 +87,13 @@ static nz_rc midireader_block_create_args(nz_block_state ** state_pp, struct nz_
 
     nz_rc rc;
 
-    const struct nz_typeclass * midiev_array_typeclass;
-    nz_type * midiev_array_type;
-    rc = nz_context_create_type(context_p, &midiev_array_typeclass, &midiev_array_type, "array<" STRINGIFY(NZ_N_MIDIEVS) ",midiev>");
-    if (rc != NZ_SUCCESS) goto fail;
-
     rc = nz_block_info_set_n_io(info_p, 1, 1);
     if (rc != NZ_SUCCESS) goto fail;
 
     rc = nz_block_info_set_input(info_p, 0, strdup("in"), &nz_real_typeclass, NULL);
     if (rc != NZ_SUCCESS) goto fail;
 
-    rc = nz_block_info_set_output(info_p, 0, strdup("out"), 
-            midiev_array_typeclass, midiev_array_type,
-            midireader_pull_fn);
+    rc = nz_block_info_set_output(info_p, 0, strdup("out"), &nz_midiev_typeclass, NULL, midireader_pull_fn); 
     if (rc != NZ_SUCCESS) goto fail;
 
     // Open & read header of file

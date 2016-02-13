@@ -59,6 +59,4 @@ struct nz_midiev {
 
 extern const struct nz_typeclass nz_midiev_typeclass;
 
-#define NZ_N_MIDIEVS 128
-
 #endif

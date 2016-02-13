@@ -154,7 +154,7 @@ static nz_rc wye_block_create_args(size_t n_inputs, const struct nz_typeclass * 
     state_p->obj_p = obj_p;
 
     if((rc = nz_block_info_set_n_io(info_p, n_inputs, 1)) == NZ_SUCCESS &&
-       (rc = nz_block_info_set_output(info_p, 1, strdup("out"), typeclass_p, type_p, wye_pull_fn)) == NZ_SUCCESS &&
+       (rc = nz_block_info_set_output(info_p, 0, strdup("out"), typeclass_p, type_p, wye_pull_fn)) == NZ_SUCCESS &&
        (rc = nz_block_info_set_input(info_p, n_inputs - 1, strdup("main"), typeclass_p, type_p)) == NZ_SUCCESS) {
         for(size_t i = 0; i < n_inputs - 1; i++) {
             if((rc = nz_block_info_set_input(info_p, i, rsprintf("aux %lu", i + 1), typeclass_p, type_p)) != NZ_SUCCESS) break;
@@ -192,7 +192,7 @@ nz_rc wye_block_create(const struct nz_context * context_p, const char * string,
     free(type_str);
     if(rc != NZ_SUCCESS) return rc;
 
-    return tee_block_create_args(n_inputs, typeclass_p, type_p, state_pp, info_p);
+    return wye_block_create_args(n_inputs, typeclass_p, type_p, state_pp, info_p);
 }
 
 void wye_block_destroy(nz_block_state * state_p) {

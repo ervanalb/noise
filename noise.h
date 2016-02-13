@@ -2,6 +2,7 @@
 #define __NOISE_H__
 
 #include <stddef.h>
+#include <stdio.h>
 
 // All symbols included in this file should be prefixed with `nz_`
 // This is intended to be the library API

@@ -16,33 +16,31 @@ struct state {
 
 static nz_rc pull_upstream(struct nz_block self) {
     struct state * state = (struct state *) self.block_state_p;
-    struct nz_midiev midievs[NZ_N_MIDIEVS];
+    struct nz_midiev ev;
 
     for (int i = 0; i < 128; i++) {
         state->velocities[i].needs_pull = 0;
     }
 
-    if(NZ_PULL(self, 0, &midievs) == NULL) {
-        for (int i = 0; i < 128; i++) {
-            state->velocities[i].is_null = 1;
+    while (NZ_PULL(self, 0, &ev) != NULL) {
+        /*
+        char * midiev_str = NULL;
+        if (nz_midiev_typeclass.type_str_obj(NULL, &ev, &midiev_str) == NZ_SUCCESS) {
+            printf("Got event %s\n", midiev_str);
+            free(midiev_str);
         }
-        return NZ_SUCCESS;
-    }
-
-    for (size_t i = 0; i < NZ_N_MIDIEVS; i++) {
-        struct nz_midiev * ev = &midievs[i];
-        if (ev->midiev_status == 0) break;
+        */
         //printf("drum Got event %#2x %#2x %#2x\n", ev->midiev_status, ev->midiev_data1, ev->midiev_data2);
-        switch( ev->midiev_status & 0xF0 ) {
+        switch( ev.midiev_status & 0xF0 ) {
             case 0x90: ; // Note on
-                if (ev->midiev_data1 >= 128) break;
-                state->velocities[ev->midiev_data1].value = ev->midiev_data2;
-                state->velocities[ev->midiev_data1].is_null = 0;
+                if (ev.midiev_data1 >= 128) break;
+                state->velocities[ev.midiev_data1].value = ev.midiev_data2;
+                state->velocities[ev.midiev_data1].is_null = 0;
                 //printf("Drum note on  %d %d\n", ev->midiev_data1, ev->midiev_data2);
                 break;
             case 0x80: ; // Note off
-                if (ev->midiev_data1 >= 128) break;
-                state->velocities[ev->midiev_data1].is_null = 1;
+                if (ev.midiev_data1 >= 128) break;
+                state->velocities[ev.midiev_data1].is_null = 1;
                 //printf("Drum note off %d\n", ev->midiev_data1);
                 break;
             //TODO: Aftertouch
@@ -84,15 +82,10 @@ static nz_rc mididrums_block_create_args(nz_block_state ** state_pp, struct nz_b
 
     nz_rc rc;
 
-    const struct nz_typeclass * midiev_array_typeclass;
-    nz_type * midiev_array_type;
-    rc = nz_context_create_type(context_p, &midiev_array_typeclass, &midiev_array_type, "array<" STRINGIFY(NZ_N_MIDIEVS) ",midiev>");
-    if (rc != NZ_SUCCESS) goto fail;
-
     rc = nz_block_info_set_n_io(info_p, 1, 128);
     if (rc != NZ_SUCCESS) goto fail;
 
-    rc = nz_block_info_set_input(info_p, 0, strdup("in"), midiev_array_typeclass, midiev_array_type);
+    rc = nz_block_info_set_input(info_p, 0, strdup("in"), &nz_midiev_typeclass, NULL);
     if (rc != NZ_SUCCESS) goto fail;
 
     for (int i = 0; i < 128; i++) {

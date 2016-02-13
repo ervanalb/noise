@@ -21,30 +21,29 @@ struct state {
 
 static nz_rc pull_upstream(struct nz_block self) {
     struct state * state = (struct state *) self.block_state_p;
-    struct nz_midiev midievs[NZ_N_MIDIEVS];
+    struct nz_midiev ev;
 
     state->pulls = PULL_NONE;
 
-    if(NZ_PULL(self, 0, &midievs) == NULL) {
-        state->note = -1;
-        state->velocity -1;
-        return NZ_SUCCESS;
-    }
+    while(NZ_PULL(self, 0, &ev) != NULL) {
+        /*
+        char * midiev_str = NULL;
+        if (nz_midiev_typeclass.type_str_obj(NULL, &ev, &midiev_str) == NZ_SUCCESS) {
+            printf("Got event %s\n", midiev_str);
+            free(midiev_str);
+        }
+        */
 
-    for (size_t i = 0; i < NZ_N_MIDIEVS; i++) {
-        struct nz_midiev * ev = &midievs[i];
-        if (ev->midiev_status == 0) break;
-        printf("Got event %#2x %#2x %#2x\n", ev->midiev_status, ev->midiev_data1, ev->midiev_data2);
-        switch( ev->midiev_status & 0xF0 ) {
+        switch( ev.midiev_status & 0xF0 ) {
             case 0x90: ; // Note on
-                state->note = ev->midiev_data1;
-                state->velocity = ev->midiev_data2;
-                //printf("Note on! %d\n", state->note);
+                state->note = ev.midiev_data1;
+                state->velocity = ev.midiev_data2;
+                //printf("Note on! %d\n", state.note);
                 break;
             case 0x80: ; // Note off
-                if (state->note == ev->midiev_data1) {
+                if (state->note == ev.midiev_data1) {
                     // Sustain notes
-                    //state->note = -1; 
+                    //state.note = -1; 
                     state->velocity = -1;
                 }
                 break;
@@ -76,7 +75,7 @@ static nz_obj * midimelody_pitch_pull_fn(struct nz_block self, size_t index, nz_
     i++;
 
     if (state->note == -1) {
-        printf("null pitch %d\n", i);
+        //printf("null pitch %d\n", i);
         return NULL;
     }
 
@@ -112,17 +111,11 @@ static nz_rc midimelody_block_create_args(nz_block_state ** state_pp, struct nz_
     if(state == NULL) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
 
     nz_rc rc;
-    printf("array " STRINGIFY(NZ_N_MIDIEVS) "\n");
-
-    const struct nz_typeclass * midiev_array_typeclass;
-    nz_type * midiev_array_type;
-    rc = nz_context_create_type(context_p, &midiev_array_typeclass, &midiev_array_type, "array<" STRINGIFY(NZ_N_MIDIEVS) ",midiev>");
-    if (rc != NZ_SUCCESS) goto fail;
 
     rc = nz_block_info_set_n_io(info_p, 1, 2);
     if (rc != NZ_SUCCESS) goto fail;
 
-    rc = nz_block_info_set_input(info_p, 0, strdup("in"), midiev_array_typeclass, midiev_array_type);
+    rc = nz_block_info_set_input(info_p, 0, strdup("in"), &nz_midiev_typeclass, NULL);
     if (rc != NZ_SUCCESS) goto fail;
 
     rc = nz_block_info_set_output(info_p, 0, strdup("pitch out"), &nz_real_typeclass, NULL, midimelody_pitch_pull_fn);
