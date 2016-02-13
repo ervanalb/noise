@@ -63,7 +63,12 @@ nz_obj * midireader_pull_fn(struct nz_block self, size_t index, nz_obj * obj_p) 
             return midireader_next(state, CONT_REMAINING, obj_p);
         }
     } else if (state->continuation == CONT_NONE) {
-        if(NZ_PULL(self, 0, &t) == NULL) t = -1;
+        if(NZ_PULL(self, 0, &t) == NULL) {
+            state->last_idx = 0;
+            state->last_t = 0;
+            return NULL;
+        }
+
         if (t < state->last_t) {
             if (state->last_idx > 0 && state->last_idx < state->track->track_nevents) {
                 //printf("triggering cont remaining %lf %lf\n", t, state->last_t);
