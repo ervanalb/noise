@@ -12,70 +12,84 @@
 struct state {
     FILE * smf_file;
     nz_real last_t;
-    char continuation;
+    enum midi_continuation {
+        CONT_NONE,
+        CONT_TIMED,
+        CONT_REMAINING
+    } continuation;
     size_t last_idx;
     struct smf_header * header;
     struct smf_track * track; // Only 1 track for now
 };
 
+nz_obj * midireader_next(struct state * state, enum midi_continuation cont, nz_obj * obj_p) {
+    struct nz_midiev * output = (struct nz_midiev *) obj_p;
+    struct smf_event * smf_ev;
+    do {
+        if (state->last_idx >= state->track->track_nevents) return NULL;
+        smf_ev = &state->track->track_events[state->last_idx];
+        state->last_idx++;
+
+        // Skip 'meta/sysex' events
+    } while ((smf_ev->event_data[0] & 0xF0) == 0xF0);
+
+    // Emit event
+    *output = (struct nz_midiev) {
+        .midiev_status = smf_ev->event_data[0],
+        .midiev_data1 = smf_ev->event_data[1],
+        .midiev_data2 = smf_ev->event_length >= 2 ? smf_ev->event_data[2] : 0,
+    };
+    state->continuation = cont;
+
+    /*
+    char * midiev_str = NULL;
+    if (nz_midiev_typeclass.type_str_obj(NULL, output, &midiev_str) == NZ_SUCCESS) {
+        printf("Put event %s %lf\n", midiev_str, state->last_t);
+        free(midiev_str);
+    } else {
+        printf("Put event (unprintable)\n");
+    }
+    */
+
+    return obj_p;
+}
+
 nz_obj * midireader_pull_fn(struct nz_block self, size_t index, nz_obj * obj_p) {
     struct state * state = (struct state *) self.block_state_p;
     nz_real t;
 
-    if (!state->continuation) {
-        if(NZ_PULL(self, 0, &t) == NULL) {
-            state->last_idx = 0;
-            state->last_t = 0;
-            return NULL;
+    if (state->continuation == CONT_REMAINING) {
+        if (state->last_idx < state->track->track_nevents) {
+            return midireader_next(state, CONT_REMAINING, obj_p);
         }
-        //printf("time t %f\n", t);
-
+    } else if (state->continuation == CONT_NONE) {
+        if(NZ_PULL(self, 0, &t) == NULL) t = -1;
         if (t < state->last_t) {
+            if (state->last_idx > 0 && state->last_idx < state->track->track_nevents) {
+                //printf("triggering cont remaining %lf %lf\n", t, state->last_t);
+                return midireader_next(state, CONT_REMAINING, obj_p);
+            }
             state->last_idx = 0;
             state->last_t = 0;
         }
-
-        if (state->last_idx >= state->track->track_nevents) return NULL;
     }
 
-    state->continuation = 0;
-    struct nz_midiev * output = (struct nz_midiev *) obj_p;
+    state->continuation = CONT_NONE;
 
     while (state->last_t <= t) {
         nz_real delta_t = t - state->last_t;
         struct smf_event * smf_ev = &state->track->track_events[state->last_idx];
         nz_real event_delta_t = smf_ev->event_deltatime / (nz_real) state->header->header_division;
-        //printf("event_delta_t %f delta_t %f\n", event_delta_t, delta_t);
 
         if (delta_t < event_delta_t) return NULL;
-
         state->last_t += event_delta_t;
-        state->last_idx++;
 
-        if (state->last_idx >= state->track->track_nevents) return NULL;
-
-        // Skip 'meta/sysex' events
-        if ((smf_ev->event_data[0] & 0xF0) == 0xF0) continue;
-
-        // Emit event
-        *output = (struct nz_midiev) {
-            .midiev_status = smf_ev->event_data[0],
-            .midiev_data1 = smf_ev->event_data[1],
-            .midiev_data2 = smf_ev->event_length >= 2 ? smf_ev->event_data[2] : 0,
-        };
-        state->continuation = 1;
-
-        /*
-        char * midiev_str = NULL;
-        if (nz_midiev_typeclass.type_str_obj(NULL, output, &midiev_str) == NZ_SUCCESS) {
-            printf("Put event %s\n", midiev_str);
-            free(midiev_str);
+        if ((smf_ev->event_data[0] & 0xF0) == 0xF0) {
+            // Skip sysex events
+            state->last_idx++;
         } else {
-            printf("Put event (unprintable)\n");
+            return midireader_next(state, CONT_TIMED, obj_p);
         }
-        */
-
-        return obj_p;
     }
 
     return NULL;
@@ -99,6 +113,7 @@ static nz_rc midireader_block_create_args(nz_block_state ** state_pp, struct nz_
     // Open & read header of file
     state->last_t = 0;
     state->last_idx = 0;
+    state->continuation = CONT_NONE;
 
     state->smf_file = fopen(filename, "r");
     if (state->smf_file == NULL) {

@@ -24,7 +24,8 @@ nz_rc run()
     if((rc = nz_graph_create(context, &graph)) != NZ_SUCCESS) goto fail_graph;
 
     rc = nz_graph_add_block(graph, "time", "accumulator"); if(rc != NZ_SUCCESS) goto err;
-    rc = nz_graph_add_block(graph, "delta_time", "constant(real,0.0135)"); if(rc != NZ_SUCCESS) goto err;
+    rc = nz_graph_add_block(graph, "delta_time", "constant(real,0.0116)"); if(rc != NZ_SUCCESS) goto err;
+    //rc = nz_graph_add_block(graph, "delta_time", "constant(real,0.0135)"); if(rc != NZ_SUCCESS) goto err;
     rc = nz_graph_add_block(graph, "time_tee", "tee(4,real)"); if(rc != NZ_SUCCESS) goto err;
     rc = nz_graph_add_block(graph, "n_beats_in_melody", "constant(real,32.0)"); if(rc != NZ_SUCCESS) goto err;
     rc = nz_graph_add_block(graph, "beat_in_melody", "mod"); if(rc != NZ_SUCCESS) goto err;

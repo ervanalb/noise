@@ -26,7 +26,7 @@ static nz_rc midiev_type_init_obj (const nz_type * type_p, nz_obj * obj_p, const
 static nz_rc midiev_type_str_obj (const nz_type * type_p, const nz_obj * obj_p, char ** string) {
     struct nz_midiev * midiev_p  = (struct nz_midiev *) obj_p;
 
-    *string = rsprintf("MIDI Event (%#02X, %#02X, %02X)", 
+    *string = rsprintf("MIDI Event (%#02x, %3d, %3d)", 
             midiev_p->midiev_status,
             midiev_p->midiev_data1,
             midiev_p->midiev_data2);
