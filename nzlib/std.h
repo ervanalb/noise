@@ -28,8 +28,9 @@ extern const struct nz_blockclass nz_wave_blockclass;
 extern const struct nz_blockclass nz_lpf_blockclass;
 
 //audio
-const struct nz_blockclass nz_envelope_blockclass;
+const struct nz_blockclass nz_compressor_blockclass;
 const struct nz_blockclass nz_drum_blockclass;
+const struct nz_blockclass nz_envelope_blockclass;
 
 //io
 const struct nz_blockclass nz_wavfileout_blockclass;

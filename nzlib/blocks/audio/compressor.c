@@ -1,36 +1,29 @@
-#include <math.h>
 #include <stdlib.h>
+#include <math.h>
 
-#include "noise.h"
-#include "blocks/audio/blocks.h"
-#include "core/util.h"
+#include "std.h"
 
 struct state {
     double envelope;
     double env_decay;
-
+    nz_real input[0];
 };
 
-static enum nz_pull_rc compressor_pull(struct nz_port * port) {
-    struct nz_node * node = port->port_node;
+static nz_obj * compressor_pull_fn(struct nz_block self, size_t index, nz_obj * obj_p) {
+    struct state * state = (struct state *) self.block_state_p;
 
-    nz_obj_p inp_chunk = NZ_NODE_PULL(node, 0);
+    nz_real * output = (nz_real *) obj_p;
 
-    struct state * state = (struct state *) node->node_state;
-
-	if (inp_chunk == NULL) {
+    if (NZ_PULL(self, 0, state->input) == NULL) {
         state->envelope = 0.;
-        return NZ_PULL_RC_NULL;
-	}
-
-    double * input = &(*(double*)inp_chunk);
-    double * output = &(*(double*)port->port_value);
+        return NULL;
+    }
 
     double chunk_max = 0.;
     size_t max_idx = nz_chunk_size - 1;
     for (size_t i = 0; i < nz_chunk_size; i++) {
-        if (fabs(input[i]) > chunk_max) {
-            chunk_max = fabs(input[i]);
+        if (fabs(state->input[i]) > chunk_max) {
+            chunk_max = fabs(state->input[i]);
             max_idx = i;
         }
     }
@@ -53,9 +46,9 @@ static enum nz_pull_rc compressor_pull(struct nz_port * port) {
             env = start_envelope + (end_envelope - start_envelope) * ((double) i / (double) max_idx);
         }
         if (env < 1.0) {
-            output[i] = input[i];
+            output[i] = state->input[i];
         } else {
-            output[i] = input[i] / env;
+            output[i] = state->input[i] / env;
         }
         // Clip
         if (output[i] > 1.0) output[i] = 1.0;
@@ -64,46 +57,45 @@ static enum nz_pull_rc compressor_pull(struct nz_port * port) {
 
     state->envelope = end_envelope;
 
-    return NZ_PULL_RC_OBJECT;
+    return output;
 }
 
-int nz_compressor_init(struct nz_node * node) {
-    //TODO: more inputs as paramters
-    int rc = nz_node_alloc_ports(node, 1, 1);
-    if (rc != 0) return rc;
-
-    node->node_term = &nz_node_term_generic;
-    node->node_name = strdup("Compressor");
-
-    // Define inputs
-    node->node_inputs[0] = (struct nz_inport) {
-        .inport_type = nz_chunk_type,
-        .inport_name = strdup("chunk in"),
-    };
-    
-    // Define outputs
-    node->node_outputs[0] = (struct nz_port) {
-        .port_node = node,
-        .port_name = strdup("out"),
-        .port_pull = &compressor_pull,
-        .port_type = nz_chunk_type,
-        .port_value = nz_obj_create(nz_chunk_type),
-    };
-
-    if (node->node_outputs[0].port_value == NULL)
-        return (nz_node_term(node), -1);
-
-    // Initialize state
-    node->node_state = calloc(1, sizeof(struct state));
-    struct state * state = (struct state *) node->node_state;
-    if (state == NULL) 
-        return (nz_node_term(node), -1);
-    
-    // Params
-    state->env_decay = 0.01;
-
-    // State
-    state->envelope = 0.;
-
-    return 0;
+void compressor_block_destroy(nz_block_state * state) {
+    free(state);
 }
+
+static nz_rc compressor_block_create_args(nz_real env_decay, nz_block_state ** state_pp, struct nz_block_info * info_p) {
+    struct state * state = calloc(1, sizeof(*state) + nz_chunk_size * sizeof(nz_real));
+    if (state == NULL) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
+
+    nz_rc rc = NZ_SUCCESS;
+    rc = nz_block_info_set_n_io(info_p, 1, 1);
+    if (rc != NZ_SUCCESS) goto fail;
+
+    rc = nz_block_info_set_output(info_p, 0, strdup("out"), &nz_chunk_typeclass, NULL, &compressor_pull_fn);
+    if (rc != NZ_SUCCESS) goto fail;
+
+    rc = nz_block_info_set_input(info_p, 0, strdup("in"), &nz_chunk_typeclass, NULL);
+    if (rc != NZ_SUCCESS) goto fail;
+
+    state->envelope = 0;
+    state->env_decay = env_decay;
+
+    *(struct state **)(state_pp) = state;
+    return NZ_SUCCESS;
+fail:
+    free(state);
+    return rc;
+}
+
+nz_rc compressor_block_create(const struct nz_context * context_p, const char * string, nz_block_state ** state_pp, struct nz_block_info * info_p) {
+    nz_arg * args[1];
+    nz_rc rc = arg_parse("required real env_decay", string, args);
+    if(rc != NZ_SUCCESS) return rc;
+    nz_real env_decay = *(nz_real *)args[0];
+    free(args[0]);
+
+    return compressor_block_create_args(env_decay, state_pp, info_p);
+}
+
+NZ_DECLARE_BLOCKCLASS(compressor);

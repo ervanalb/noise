@@ -29,6 +29,7 @@ const struct nz_blockclass const * nz_blockclass_p_array[] = {
     &nz_midimelody_blockclass,
     &nz_mididrums_blockclass,
     &nz_wavfileout_blockclass,
+    &nz_compressor_blockclass,
     &nz_drum_blockclass,
     &nz_envelope_blockclass,
     &nz_lpf_blockclass,

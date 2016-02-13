@@ -15,6 +15,7 @@ C_SRC = \
 		blocks/io/midi_melody.c \
 		blocks/io/midi_drums.c \
 		blocks/io/wavfile.c \
+		blocks/audio/compressor.c \
 		blocks/audio/drum.c \
 		blocks/audio/envelope.c \
 		blocks/audio/mixer.c \

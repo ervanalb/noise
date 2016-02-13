@@ -46,11 +46,12 @@ nz_rc run()
     rc = nz_graph_add_block(graph, "kick_drum", "drum(kick)"); if(rc != NZ_SUCCESS) goto err;
     rc = nz_graph_add_block(graph, "snare_drum", "drum(snare)"); if(rc != NZ_SUCCESS) goto err;
 
-    rc = nz_graph_add_block(graph, "vol1", "constant(real,0.2)"); if(rc != NZ_SUCCESS) goto err;
+    rc = nz_graph_add_block(graph, "vol1", "constant(real,0.9)"); if(rc != NZ_SUCCESS) goto err;
     rc = nz_graph_add_block(graph, "vol2", "constant(real,0.5)"); if(rc != NZ_SUCCESS) goto err;
-    rc = nz_graph_add_block(graph, "vol3", "constant(real,0.5)"); if(rc != NZ_SUCCESS) goto err;
+    rc = nz_graph_add_block(graph, "vol3", "constant(real,0.8)"); if(rc != NZ_SUCCESS) goto err;
     rc = nz_graph_add_block(graph, "vol4", "constant(real,0.5)"); if(rc != NZ_SUCCESS) goto err;
     rc = nz_graph_add_block(graph, "mix", "mixer(4)"); if(rc != NZ_SUCCESS) goto err;
+    rc = nz_graph_add_block(graph, "compressor", "compressor(0.01)"); if(rc != NZ_SUCCESS) goto err;
     rc = nz_graph_add_block(graph, "soundcard", "wavfileout(new_unison.wav)"); if(rc != NZ_SUCCESS) goto err;
     
 
@@ -85,7 +86,8 @@ nz_rc run()
     rc = nz_graph_connect(graph, "vol2", "out", "mix", "gain 2"); if(rc != NZ_SUCCESS) goto err;
     rc = nz_graph_connect(graph, "vol3", "out", "mix", "gain 3"); if(rc != NZ_SUCCESS) goto err;
     rc = nz_graph_connect(graph, "vol4", "out", "mix", "gain 4"); if(rc != NZ_SUCCESS) goto err;
-    rc = nz_graph_connect(graph, "mix", "out", "soundcard", "in"); if(rc != NZ_SUCCESS) goto err;
+    rc = nz_graph_connect(graph, "mix", "out", "compressor", "in"); if(rc != NZ_SUCCESS) goto err;
+    rc = nz_graph_connect(graph, "compressor", "out", "soundcard", "in"); if(rc != NZ_SUCCESS) goto err;
     rc = nz_graph_block_handle(graph, "soundcard", &block_handle); if(rc != NZ_SUCCESS) goto err;
     //rc = pa_start(block_handle); if(rc != NZ_SUCCESS) goto err;
     int blocks_out = wavfileout_record(block_handle, 10);
