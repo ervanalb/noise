@@ -23,77 +23,88 @@ nz_rc run()
     // Create a graph
     if((rc = nz_graph_create(context, &graph)) != NZ_SUCCESS) goto fail_graph;
 
-    rc = nz_graph_add_block(graph, "time", "accumulator"); if(rc != NZ_SUCCESS) goto err;
-    rc = nz_graph_add_block(graph, "delta_time", "constant(real,0.0116)"); if(rc != NZ_SUCCESS) goto err;
-    //rc = nz_graph_add_block(graph, "delta_time", "constant(real,0.0135)"); if(rc != NZ_SUCCESS) goto err;
-    rc = nz_graph_add_block(graph, "time_tee", "tee(4,real)"); if(rc != NZ_SUCCESS) goto err;
-    rc = nz_graph_add_block(graph, "n_beats_in_melody", "constant(real,32.0)"); if(rc != NZ_SUCCESS) goto err;
-    rc = nz_graph_add_block(graph, "beat_in_melody", "mod"); if(rc != NZ_SUCCESS) goto err;
-    rc = nz_graph_add_block(graph, "beat_in_melody_tee", "tee(2,real)"); if(rc != NZ_SUCCESS) goto err;
-    rc = nz_graph_add_block(graph, "n_beats_in_bar", "constant(real,4.0)"); if(rc != NZ_SUCCESS) goto err;
-    rc = nz_graph_add_block(graph, "beat_in_bar", "mod"); if(rc != NZ_SUCCESS) goto err;
-    rc = nz_graph_add_block(graph, "beat_in_bar_tee", "tee(2,real)"); if(rc != NZ_SUCCESS) goto err;
+    const char * err_line = NULL;
 
-    rc = nz_graph_add_block(graph, "unison_smf", "midireader(unison.midi)"); if(rc != NZ_SUCCESS) goto err;
-    rc = nz_graph_add_block(graph, "melody", "midimelody"); if(rc != NZ_SUCCESS) goto err;
-    rc = nz_graph_add_block(graph, "lpf_alpha", "constant(real,0.1)"); if(rc != NZ_SUCCESS) goto err;
-    rc = nz_graph_add_block(graph, "lpf", "lpf"); if(rc != NZ_SUCCESS) goto err;
-    rc = nz_graph_add_block(graph, "sound1", "wave(saw)"); if(rc != NZ_SUCCESS) goto err;
-    rc = nz_graph_add_block(graph, "envelope", "envelope"); if(rc != NZ_SUCCESS) goto err;
+#define LINESTRING3(x) #x
+#define LINESTRING2(x) LINESTRING3(x)
+#define LINESTRING LINESTRING2(__LINE__)
 
-    rc = nz_graph_add_block(graph, "drums_smf", "midireader(drums.midi)"); if(rc != NZ_SUCCESS) goto err;
-    rc = nz_graph_add_block(graph, "drums", "mididrums"); if(rc != NZ_SUCCESS) goto err;
-    rc = nz_graph_add_block(graph, "kick_drum", "drum(kick)"); if(rc != NZ_SUCCESS) goto err;
-    rc = nz_graph_add_block(graph, "snare_drum", "drum(snare)"); if(rc != NZ_SUCCESS) goto err;
+#define ADD_BLOCK(name, block) rc = nz_graph_add_block(graph, name, block); if (rc != NZ_SUCCESS) { err_line = LINESTRING ", block: "#name " " #block; goto err; }
+#define CONNECT(from, from_port, to, to_port) rc = nz_graph_connect(graph, from, from_port, to, to_port); if (rc != NZ_SUCCESS) { err_line = LINESTRING ", connect: " #from " " #from_port " " #to " " #to_port; goto err; }
 
-    rc = nz_graph_add_block(graph, "vol1", "constant(real,0.9)"); if(rc != NZ_SUCCESS) goto err;
-    rc = nz_graph_add_block(graph, "vol2", "constant(real,0.5)"); if(rc != NZ_SUCCESS) goto err;
-    rc = nz_graph_add_block(graph, "vol3", "constant(real,0.8)"); if(rc != NZ_SUCCESS) goto err;
-    rc = nz_graph_add_block(graph, "vol4", "constant(real,0.5)"); if(rc != NZ_SUCCESS) goto err;
-    rc = nz_graph_add_block(graph, "mix", "mixer(4)"); if(rc != NZ_SUCCESS) goto err;
-    rc = nz_graph_add_block(graph, "compressor", "compressor(0.01)"); if(rc != NZ_SUCCESS) goto err;
-    rc = nz_graph_add_block(graph, "soundcard", "wavfileout(new_unison.wav)"); if(rc != NZ_SUCCESS) goto err;
+    ADD_BLOCK("time", "accumulator");
+    ADD_BLOCK("delta_time", "constant(real,0.0116)");
+    //ADD_BLOCK("delta_time", "constant(real,0.0135)");
+    ADD_BLOCK("time_tee", "tee(4,real)");
+    ADD_BLOCK("n_beats_in_melody", "constant(real,32.0)");
+    ADD_BLOCK("beat_in_melody", "mod");
+    ADD_BLOCK("beat_in_melody_tee", "tee(2,real)");
+    ADD_BLOCK("n_beats_in_bar", "constant(real,4.0)");
+    ADD_BLOCK("beat_in_bar", "mod");
+    ADD_BLOCK("beat_in_bar_tee", "tee(2,real)");
+
+    ADD_BLOCK("unison_smf", "midireader(unison.midi)");
+    ADD_BLOCK("melody", "midimelody");
+    ADD_BLOCK("lpf_alpha", "constant(real,0.1)");
+    ADD_BLOCK("lpf", "lpf");
+    ADD_BLOCK("sound1", "wave(saw)");
+    ADD_BLOCK("envelope", "envelope");
+
+    ADD_BLOCK("drums_smf", "midireader(drums.midi)");
+    ADD_BLOCK("drums", "mididrums");
+    ADD_BLOCK("kick_drum", "drum(kick)");
+    ADD_BLOCK("snare_drum", "drum(snare)");
+
+    ADD_BLOCK("vol1", "constant(real,0.9)");
+    ADD_BLOCK("vol2", "constant(real,0.5)");
+    ADD_BLOCK("vol3", "constant(real,0.8)");
+    ADD_BLOCK("vol4", "constant(real,0.5)");
+    ADD_BLOCK("mix", "mixer(4)");
+    ADD_BLOCK("compressor", "compressor(0.01)");
+    ADD_BLOCK("soundcard", "wavfileout(new_unison.wav)");
     
 
-    rc = nz_graph_connect(graph, "delta_time", "out", "time", "in"); if(rc != NZ_SUCCESS) goto err;
-    rc = nz_graph_connect(graph, "time", "out", "time_tee", "in"); if(rc != NZ_SUCCESS) goto err;
-    //rc = nz_graph_connect(graph, "time_tee", "main", "time_wye", "aux 1"); if(rc != NZ_SUCCESS) goto err;
-    rc = nz_graph_connect(graph, "time_tee", "main", "beat_in_bar", "a"); if(rc != NZ_SUCCESS) goto err;
-    rc = nz_graph_connect(graph, "n_beats_in_bar", "out", "beat_in_bar", "b"); if(rc != NZ_SUCCESS) goto err;
-    rc = nz_graph_connect(graph, "beat_in_bar", "out", "beat_in_bar_tee", "in"); if(rc != NZ_SUCCESS) goto err;
-    rc = nz_graph_connect(graph, "beat_in_bar_tee", "main", "drums_smf", "in"); if(rc != NZ_SUCCESS) goto err;
+    CONNECT("delta_time", "out", "time", "in");
+    CONNECT("time", "out", "time_tee", "in");
+    //CONNECT("time_tee", "main", "time_wye", "aux 1");
+    CONNECT("time_tee", "main", "beat_in_bar", "a");
+    CONNECT("n_beats_in_bar", "out", "beat_in_bar", "b");
+    CONNECT("beat_in_bar", "out", "beat_in_bar_tee", "in");
+    CONNECT("beat_in_bar_tee", "main", "drums_smf", "in");
 
-    rc = nz_graph_connect(graph, "time_tee", "aux 1", "beat_in_melody", "a"); if(rc != NZ_SUCCESS) goto err;
-    rc = nz_graph_connect(graph, "n_beats_in_melody", "out", "beat_in_melody", "b"); if(rc != NZ_SUCCESS) goto err;
-    rc = nz_graph_connect(graph, "beat_in_melody", "out", "beat_in_melody_tee", "in"); if(rc != NZ_SUCCESS) goto err;
-    rc = nz_graph_connect(graph, "beat_in_melody_tee", "main", "unison_smf", "in"); if(rc != NZ_SUCCESS) goto err;
+    CONNECT("time_tee", "aux 1", "beat_in_melody", "a");
+    CONNECT("n_beats_in_melody", "out", "beat_in_melody", "b");
+    CONNECT("beat_in_melody", "out", "beat_in_melody_tee", "in");
+    CONNECT("beat_in_melody_tee", "main", "unison_smf", "in");
 
-    rc = nz_graph_connect(graph, "unison_smf", "out", "melody", "in"); if(rc != NZ_SUCCESS) goto err;
-    rc = nz_graph_connect(graph, "melody", "pitch out", "lpf", "in"); if(rc != NZ_SUCCESS) goto err;
-    rc = nz_graph_connect(graph, "lpf_alpha", "out", "lpf", "alpha"); if(rc != NZ_SUCCESS) goto err;
-    rc = nz_graph_connect(graph, "lpf", "out", "sound1", "freq"); if(rc != NZ_SUCCESS) goto err;
-    rc = nz_graph_connect(graph, "melody", "velocity out", "envelope", "velocity in"); if(rc != NZ_SUCCESS) goto err;
-    rc = nz_graph_connect(graph, "sound1", "out", "envelope", "chunk in"); if(rc != NZ_SUCCESS) goto err;
-    rc = nz_graph_connect(graph, "envelope", "out", "mix", "in 1"); if(rc != NZ_SUCCESS) goto err;
+    CONNECT("unison_smf", "out", "melody", "in");
+    CONNECT("melody", "pitch out", "lpf", "in");
+    CONNECT("lpf_alpha", "out", "lpf", "alpha");
+    CONNECT("lpf", "out", "sound1", "freq");
+    CONNECT("melody", "velocity out", "envelope", "velocity in");
+    CONNECT("sound1", "out", "envelope", "chunk in");
+    CONNECT("envelope", "out", "mix", "in 1");
 
-    rc = nz_graph_connect(graph, "drums_smf", "out", "drums", "in"); if(rc != NZ_SUCCESS) goto err;
-    rc = nz_graph_connect(graph, "drums", "out 0", "kick_drum", "velocity"); if(rc != NZ_SUCCESS) goto err;
-    rc = nz_graph_connect(graph, "kick_drum", "out", "mix", "in 3"); if(rc != NZ_SUCCESS) goto err;
-    rc = nz_graph_connect(graph, "drums", "out 1", "snare_drum", "velocity"); if(rc != NZ_SUCCESS) goto err;
-    rc = nz_graph_connect(graph, "snare_drum", "out", "mix", "in 4"); if(rc != NZ_SUCCESS) goto err;
+    CONNECT("drums_smf", "out", "drums", "in");
+    CONNECT("drums", "out 0", "kick_drum", "velocity");
+    CONNECT("kick_drum", "out", "mix", "in 3");
+    CONNECT("drums", "out 1", "snare_drum", "velocity");
+    CONNECT("snare_drum", "out", "mix", "in 4");
 
-    rc = nz_graph_connect(graph, "vol1", "out", "mix", "gain 1"); if(rc != NZ_SUCCESS) goto err;
-    rc = nz_graph_connect(graph, "vol2", "out", "mix", "gain 2"); if(rc != NZ_SUCCESS) goto err;
-    rc = nz_graph_connect(graph, "vol3", "out", "mix", "gain 3"); if(rc != NZ_SUCCESS) goto err;
-    rc = nz_graph_connect(graph, "vol4", "out", "mix", "gain 4"); if(rc != NZ_SUCCESS) goto err;
-    rc = nz_graph_connect(graph, "mix", "out", "compressor", "in"); if(rc != NZ_SUCCESS) goto err;
-    rc = nz_graph_connect(graph, "compressor", "out", "soundcard", "in"); if(rc != NZ_SUCCESS) goto err;
+    CONNECT("vol1", "out", "mix", "gain 1");
+    CONNECT("vol2", "out", "mix", "gain 1");
+    CONNECT("vol3", "out", "mix", "gain 3");
+    CONNECT("vol4", "out", "mix", "gain 4");
+    CONNECT("mix", "out", "compressor", "in");
+    CONNECT("compressor", "out", "soundcard", "in");
+
     rc = nz_graph_block_handle(graph, "soundcard", &block_handle); if(rc != NZ_SUCCESS) goto err;
     //rc = pa_start(block_handle); if(rc != NZ_SUCCESS) goto err;
     int blocks_out = wavfileout_record(block_handle, 10);
     printf("Wrote %d blocks\n", blocks_out);
 
 err:
+    printf("Line: %s\n", err_line);
 fail_graph:
     nz_graph_destroy(graph);
 fail_lib:
