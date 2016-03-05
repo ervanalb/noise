@@ -92,7 +92,7 @@ nz_rc run()
     CONNECT("snare_drum", "out", "mix", "in 4");
 
     CONNECT("vol1", "out", "mix", "gain 1");
-    CONNECT("vol2", "out", "mix", "gain 1");
+    CONNECT("vol2", "out", "mix", "gain 2");
     CONNECT("vol3", "out", "mix", "gain 3");
     CONNECT("vol4", "out", "mix", "gain 4");
     CONNECT("mix", "out", "compressor", "in");
@@ -104,7 +104,7 @@ nz_rc run()
     printf("Wrote %d blocks\n", blocks_out);
 
 err:
-    printf("Line: %s\n", err_line);
+    if (rc != NZ_SUCCESS) printf("Error on line: %s\n", err_line);
 fail_graph:
     nz_graph_destroy(graph);
 fail_lib:
