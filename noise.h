@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <stdio.h>
+#include <stdbool.h>
 
 // All symbols included in this file should be prefixed with `nz_`
 // This is intended to be the library API

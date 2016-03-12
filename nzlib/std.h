@@ -15,6 +15,7 @@ extern const struct nz_typeclass nz_array_typeclass;
 extern const struct nz_blockclass nz_constant_blockclass;
 extern const struct nz_blockclass nz_debug_blockclass;
 extern const struct nz_blockclass nz_accumulator_blockclass;
+extern const struct nz_blockclass nz_ruler_blockclass;
 extern const struct nz_blockclass nz_tee_blockclass;
 extern const struct nz_blockclass nz_wye_blockclass;
 extern const struct nz_blockclass nz_sum_blockclass;

@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
+#include <strings.h>
 
 #include "libnoise.h"
 
@@ -202,7 +202,7 @@ static nz_rc next_tok(const char * string, const char ** pos,
     return NZ_SUCCESS;
 }
 
-enum arg_spec_type {GENERIC, STRING, INT, REAL};
+enum arg_spec_type {GENERIC, STRING, INT, REAL, BOOL};
 struct arg_spec {
     char * name;
     enum arg_spec_type type;
@@ -295,6 +295,8 @@ static nz_rc arg_parse_fmt(const char * fmt, struct arg_spec ** arg_spec_array_p
             (*arg_spec_array_p)[*arg_spec_array_length_p - 1].type = INT;
         } else if(tok_length == 4 && memcmp(tok_start, "real", 4) == 0) {
             (*arg_spec_array_p)[*arg_spec_array_length_p - 1].type = REAL;
+        } else if(tok_length == 4 && memcmp(tok_start, "bool", 4) == 0) {
+            (*arg_spec_array_p)[*arg_spec_array_length_p - 1].type = BOOL;
         } else {
             free(arg_spec_str);
             for(size_t i = 0; i < *arg_spec_array_length_p - 1; i++) free((*arg_spec_array_p)[i].name);
@@ -372,6 +374,22 @@ static nz_rc parse_one_arg(enum arg_spec_type type, const char * value_start, si
                 free(value);
                 free(*arg_pp);
                 NZ_RETURN_ERR_MSG(NZ_ARG_VALUE, v);
+            }
+            free(value);
+            break;
+        case BOOL:
+            *arg_pp = calloc(1, sizeof(bool));
+            if (*arg_pp == NULL) {
+                free(value);
+                NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
+            }
+            if (strcasecmp(value, "true") == 0) {
+                *(bool *)*arg_pp = true;
+            } else if (strcasecmp(value, "false") == 0) {
+                *(bool *)*arg_pp = false;
+            } else {
+                free(*arg_pp);
+                NZ_RETURN_ERR_MSG(NZ_ARG_VALUE, value);
             }
             free(value);
             break;
