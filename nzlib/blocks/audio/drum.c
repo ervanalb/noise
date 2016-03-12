@@ -5,11 +5,23 @@
 #include "std.h"
 
 static char clips_inited = 0;
-static size_t snare_clip_size;
-static const nz_real * snare_clip = NULL;
 
-static size_t kick_clip_size;
-static const nz_real * kick_clip = NULL;
+struct clip {
+    const char * name;
+    size_t size;
+    const nz_real * clip;
+};
+
+static struct clip snare_clip;
+static struct clip kick_clip;
+static struct clip white_clip;
+
+static const struct clip * const clips[] = {
+    &snare_clip,
+    &kick_clip,
+    &white_clip,
+    NULL
+};
 
 struct state {
     size_t t;
@@ -24,49 +36,137 @@ static nz_real rand_real() {
 static int init_clips() {
     if (clips_inited) return 0;
 
-    // Snare
+    // Kick
     {
-        snare_clip_size = ((nz_frame_rate * 0.5 / nz_chunk_size) * nz_chunk_size);
-        nz_real * clip = calloc(snare_clip_size, sizeof(*snare_clip));
+        size_t size = ((nz_frame_rate * 0.5 / nz_chunk_size) * nz_chunk_size);
+        nz_real * clip = calloc(size, sizeof(nz_real));
         if(clip == NULL) goto fail;
 
-        const nz_real tau = exp(-8. / snare_clip_size);
+        const nz_real dt = 1 / (nz_real) nz_frame_rate;
+        const nz_real tau = exp(-8. / size);
+        const nz_real f_0_tau = exp(-0.02 / size);
+        nz_real f_0 = 150; // Hz
+
+        nz_real white_tau = exp(-8. / size);
+        const nz_real white_f_corner = 240; // Hz
+        const nz_real white_amp = 40;
+
+        nz_real white_alpha = 1.0 / (2. * M_PI * dt + 1.);
 
         nz_real t = 0;
         nz_real envelope = 1;
-        for (size_t i = 0; i < snare_clip_size; i++) {
-            clip[i] = rand_real() * envelope;
+        nz_real white_env = 1;
+        nz_real white = 0;
+        for (size_t i = 0; i < size; i++) {
+            white = white_alpha * white + (1.0 - white_alpha) * rand_real();
+            if (white > 1.0 / white_amp) white = 1.0 / white_amp;
+            if (white < -1.0 / white_amp) white = -1.0 / white_amp;
 
-            envelope *= tau;
-            t += 1 / (nz_real) nz_frame_rate;
+            clip[i] = sin(t * (2. * M_PI * f_0));
+            clip[i] += sin(t * (2. * M_PI * f_0 * 0.75)) * 0.2;
+            clip[i] += sin(t * (2. * M_PI * f_0 * 0.8)) * 0.1;
+            clip[i] += sin(t * (2. * M_PI * f_0 * 0.5)) * 0.5;
+            clip[i] *= 0.9;
+            clip[i] += white * white_env * white_amp;
+            clip[i] += rand_real() * 0.01;
+            clip[i] *= envelope;
+
+            f_0 *= f_0_tau;
+            if (i > size * 0.1)
+                envelope *= tau;
+            if (i > size * 0.3)
+                white_env *= white_tau;
+            t += dt;
         }
 
-        snare_clip = clip;
+        kick_clip.name = "kick";
+        kick_clip.size = size;
+        kick_clip.clip = clip;
     }
 
-    // Kick
+    // Snare
     { 
-        kick_clip_size = ((nz_frame_rate * 0.5 / nz_chunk_size) * nz_chunk_size);
-        nz_real * clip = calloc(kick_clip_size, sizeof(*kick_clip));
+        size_t size = ((nz_frame_rate * 0.5 / nz_chunk_size) * nz_chunk_size);
+        nz_real * clip = calloc(size, sizeof(nz_real));
         if(clip == NULL) goto fail;
 
-        const nz_real tau = exp(-8. / kick_clip_size);
-        const nz_real f_0 = 60; // Hz
+        const nz_real dt = 1 / (nz_real) nz_frame_rate;
+        const nz_real tau = exp(-8. / size);
+        const nz_real f_0_tau = exp(-0.5 / size);
+        nz_real f_0 = 120; // Hz
+
+        nz_real white_tau = exp(-8. / size);
+        const nz_real white_f_corner = 450; // Hz
+        const nz_real white_amp = 150;
+
+        nz_real white_alpha = 1.0 / (2. * M_PI * dt + 1.);
 
         nz_real t = 0;
         nz_real envelope = 1;
-        for (size_t i = 0; i < kick_clip_size; i++) {
+        nz_real white_env = 1;
+        nz_real white = 0;
+        for (size_t i = 0; i < size; i++) {
+            white = white_alpha * white + (1.0 - white_alpha) * rand_real();
+            if (white > 1.0 / white_amp) white = 1.0 / white_amp;
+            if (white < -1.0 / white_amp) white = -1.0 / white_amp;
+
             clip[i] = sin(t * (2. * M_PI * f_0));
             clip[i] += sin(t * (2. * M_PI * f_0 * 1.25)) * 0.9;
-            clip[i] += sin(t * (2. * M_PI * f_0 * 1.33)) * 0.8;
-            clip[i] += sin(t * (2. * M_PI * f_0 * 2.0)) * 0.7;
-            clip[i] *= envelope * .6;
+            clip[i] *= 0.3;
+            clip[i] += white * white_env * white_amp;
+            clip[i] += rand_real() * 0.02;
+            clip[i] *= envelope;
 
-            envelope *= tau;
-            t += 1 / (nz_real) nz_frame_rate;
+            f_0 *= f_0_tau;
+            if (i > size * 0.7)
+                envelope *= tau;
+            if (i > size * 0.3)
+                white_env *= white_tau;
+            t += dt;
         }
 
-        kick_clip = clip;
+        snare_clip.name = "snare";
+        snare_clip.size = size;
+        snare_clip.clip = clip;
+    }
+
+    // White
+    // its actually a bit pinkish
+    // wtf are percussion names
+    {
+        size_t size = ((nz_frame_rate * 0.5 / nz_chunk_size) * nz_chunk_size);
+        nz_real * clip = calloc(size, sizeof(nz_real));
+        if(clip == NULL) goto fail;
+
+        const nz_real dt = 1 / (nz_real) nz_frame_rate;
+        const nz_real tau = exp(-8. / size);
+
+        nz_real white_tau = exp(-8. / size);
+        const nz_real white_f_corner = 2000; // Hz
+        const nz_real white_amp = 300; // Cool distortion
+
+        nz_real white_alpha = 1.0 / (2. * M_PI * dt + 1.);
+
+        nz_real t = 0;
+        nz_real envelope = 1;
+        nz_real white = 0;
+        for (size_t i = 0; i < size; i++) {
+            white = white_alpha * white + (1.0 - white_alpha) * rand_real();
+            if (white > 1.0 / white_amp) white = 1.0 / white_amp;
+            if (white < -1.0 / white_amp) white = -1.0 / white_amp;
+
+            clip[i] = white * white_amp;
+            clip[i] *= envelope;
+
+            if (i > size * 0.3)
+                envelope *= tau;
+            t += dt;
+        }
+
+        white_clip.name = "white";
+        white_clip.size = size;
+        white_clip.clip = clip;
+
     }
 
     clips_inited = 1;
@@ -133,16 +233,16 @@ nz_rc drum_block_create(const struct nz_context * context_p, const char * string
 
     if (init_clips() != 0) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
 
-    if(strcmp("kick", name_str) == 0) {
-        free(name_str);
-        return drum_block_create_args(kick_clip, kick_clip_size, state_pp, info_p);
-    } else if(strcmp("snare", name_str) == 0) {
-        free(name_str);
-        return drum_block_create_args(snare_clip, snare_clip_size, state_pp, info_p);
-    } else {
-        // Instead of dup & free, just pass it to the error handler and let it free it
-        NZ_RETURN_ERR_MSG(NZ_ARG_VALUE, name_str);
+    for (size_t i = 0; clips[i] != NULL; i++) {
+        const struct clip * clip = clips[i];
+        if(strcmp(clip->name, name_str) == 0) {
+            free(name_str);
+            return drum_block_create_args(clip->clip, clip->size, state_pp, info_p);
+        }
     }
+
+    // Instead of dup & free, just pass it to the error handler and let it free it
+    NZ_RETURN_ERR_MSG(NZ_ARG_VALUE, name_str);
 }
 
 NZ_DECLARE_BLOCKCLASS(drum)

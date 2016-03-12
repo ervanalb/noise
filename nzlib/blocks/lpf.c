@@ -6,6 +6,7 @@
 struct state {
     nz_real value;
     bool was_reset;
+    bool is_nonnull;
 };
 
 static nz_obj * lpf_pull_fn(struct nz_block self, size_t index, nz_obj * obj_p) {
@@ -18,16 +19,19 @@ static nz_obj * lpf_pull_fn(struct nz_block self, size_t index, nz_obj * obj_p) 
 
     if (input_ptr == NULL) {
         state->was_reset = true;
-        return NULL;
-    }
-
-    if (alpha_ptr == NULL || state->was_reset) {
-        state->value = input;
+        
+        if (!state->is_nonnull)
+            return NULL;
     } else {
-        state->value = alpha * input + (1. - alpha) * state->value;
-    }
+        if (alpha_ptr == NULL || state->was_reset) {
+            state->value = input;
+        } else {
+            state->value = alpha * input + (1. - alpha) * state->value;
+        }
 
-    state->was_reset = false;
+        state->was_reset = false;
+        state->is_nonnull = true;
+    }
 
     *(nz_real *) obj_p = state->value;
     return obj_p;

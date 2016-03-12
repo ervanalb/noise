@@ -114,8 +114,8 @@ nz_rc envelope_block_create(const struct nz_context * context_p, const char * st
     rc = nz_block_info_set_output(info_p, 0, strdup("out"), &nz_chunk_typeclass, NULL, envelope_pull_fn);
     if (rc != NZ_SUCCESS) goto fail;
 
-    state->attack = 0.01;
-    state->release = 0.02;
+    state->attack = 0.05;
+    state->release = 0.15;
     state->value = 0.0;
     state->phase = PHASE_OFF;
 

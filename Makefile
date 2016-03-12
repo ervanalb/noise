@@ -15,7 +15,8 @@ APP_SRC = \
 		test_block.c \
 		test_graph.c \
 		test_argparse.c \
-		test_midi_new.c
+		test_cream.c \
+		test_unison.c
 
 APP_TARGETS = $(APP_SRC:%.c=noise_%)
 APP_OBJECTS = $(APP_SRC:%.c=app/%.o)

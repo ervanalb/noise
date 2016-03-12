@@ -3,9 +3,6 @@
 
 #include "std.h"
 
-#define STRINGIFY(x) STRINGIFY2(x)
-#define STRINGIFY2(x) #x
-
 struct state {
     struct { 
         unsigned int needs_pull : 1;
