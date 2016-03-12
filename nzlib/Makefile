@@ -3,12 +3,13 @@ C_SRC = \
 		std.c \
 		types/std.c \
 		types/midi.c \
+		blocks/accumulator.c \
 		blocks/constant.c \
 		blocks/debug.c \
-		blocks/accumulator.c \
 		blocks/fittings.c \
-		blocks/maths.c \
 		blocks/lpf.c \
+		blocks/maths.c \
+		blocks/ruler.c \
 		blocks/io/portaudio.c \
 		blocks/io/midi_reader.c \
 		blocks/io/midi_smf.c \

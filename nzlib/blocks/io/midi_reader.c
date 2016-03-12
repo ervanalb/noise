@@ -27,11 +27,10 @@ nz_obj * midireader_next(struct state * state, enum midi_continuation cont, nz_o
     struct smf_event * smf_ev;
     do {
         if (state->last_idx >= state->track->track_nevents) return NULL;
-        smf_ev = &state->track->track_events[state->last_idx];
-        state->last_idx++;
+        smf_ev = &state->track->track_events[state->last_idx++];
 
-        // Skip 'meta/sysex' events
-    } while ((smf_ev->event_data[0] & 0xF0) == 0xF0);
+        // Skip 'meta/sysex' events & null events
+    } while (smf_ev->event_data != NULL && (smf_ev->event_data[0] & 0xF0) == 0xF0);
 
     // Emit event
     *output = (struct nz_midiev) {
@@ -89,7 +88,7 @@ nz_obj * midireader_pull_fn(struct nz_block self, size_t index, nz_obj * obj_p) 
         if (delta_t < event_delta_t) return NULL;
         state->last_t += event_delta_t;
 
-        if ((smf_ev->event_data[0] & 0xF0) == 0xF0) {
+        if (smf_ev->event_data != NULL && (smf_ev->event_data[0] & 0xF0) == 0xF0) {
             // Skip sysex events
             state->last_idx++;
         } else {
