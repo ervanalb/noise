@@ -42,4 +42,6 @@ struct smf_chunk * smf_read_chunk(FILE * smf_file);
 struct smf_header * smf_parse_header_chunk(const struct smf_chunk * chunk);
 struct smf_track * smf_parse_track_chunk(const struct smf_chunk * chunk);
 
+int txtmidi_parse(const char * filename, struct smf_header * header, struct smf_track ** track);
+
 #endif

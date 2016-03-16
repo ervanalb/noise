@@ -18,6 +18,8 @@ const struct nz_blockclass const * nz_blockclass_p_array[] = {
     &nz_ruler_blockclass,
     &nz_tee_blockclass,
     &nz_wye_blockclass,
+    &nz_any_blockclass,
+    &nz_gate_blockclass,
     &nz_sum_blockclass,
     &nz_diff_blockclass,
     &nz_mul_blockclass,

@@ -99,31 +99,23 @@ nz_obj * midireader_pull_fn(struct nz_block self, size_t index, nz_obj * obj_p) 
     return NULL;
 }
 
-static nz_rc midireader_block_create_args(nz_block_state ** state_pp, struct nz_block_info * info_p, const struct nz_context * context_p, char * filename) {
-    struct state * state = calloc(1, sizeof(struct state));
-    if(state == NULL) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
+static nz_rc midireader_load_txt(struct state * state, const char * filename) {
+    state->smf_file = NULL;
+    state->header = calloc(1, sizeof *state->header);
+    if (state->header == NULL) return NZ_NOT_ENOUGH_MEMORY;
 
-    nz_rc rc;
+    if (txtmidi_parse(filename, state->header, &state->track) != 0)
+        return NZ_INTERNAL_ERROR;
+    return NZ_SUCCESS;
+}
 
-    rc = nz_block_info_set_n_io(info_p, 1, 1);
-    if (rc != NZ_SUCCESS) goto fail;
-
-    rc = nz_block_info_set_input(info_p, 0, strdup("in"), &nz_real_typeclass, NULL);
-    if (rc != NZ_SUCCESS) goto fail;
-
-    rc = nz_block_info_set_output(info_p, 0, strdup("out"), &nz_midiev_typeclass, NULL, midireader_pull_fn); 
-    if (rc != NZ_SUCCESS) goto fail;
-
-    // Open & read header of file
-    state->last_t = 0;
-    state->last_idx = 0;
-    state->continuation = CONT_NONE;
-
+static nz_rc midireader_load_smf(struct state * state, const char * filename) {
     state->smf_file = fopen(filename, "r");
     if (state->smf_file == NULL) {
         NZ_RETURN_ERR_MSG(NZ_INTERNAL_ERROR, strdup(strerror(errno)));
     }
 
+    int rc = NZ_SUCCESS;
     while (state->header == NULL || state->track == NULL) {
         struct smf_chunk * chunk = smf_read_chunk(state->smf_file);
         if (chunk == NULL) {
@@ -158,6 +150,35 @@ static nz_rc midireader_block_create_args(nz_block_state ** state_pp, struct nz_
             goto fail;
         }
     }
+fail:
+    return rc;
+}
+
+static nz_rc midireader_block_create_args(nz_block_state ** state_pp, struct nz_block_info * info_p, const struct nz_context * context_p, char * filename) {
+    struct state * state = calloc(1, sizeof(struct state));
+    if(state == NULL) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
+
+    nz_rc rc;
+
+    rc = nz_block_info_set_n_io(info_p, 1, 1);
+    if (rc != NZ_SUCCESS) goto fail;
+
+    rc = nz_block_info_set_input(info_p, 0, strdup("in"), &nz_real_typeclass, NULL);
+    if (rc != NZ_SUCCESS) goto fail;
+
+    rc = nz_block_info_set_output(info_p, 0, strdup("out"), &nz_midiev_typeclass, NULL, midireader_pull_fn); 
+    if (rc != NZ_SUCCESS) goto fail;
+
+    // Open & read header of file
+    state->last_t = 0;
+    state->last_idx = 0;
+    state->continuation = CONT_NONE;
+
+    if (memcmp(&filename[strlen(filename) - 4], ".txt", 4) == 0)
+        rc = midireader_load_txt(state, filename);
+    else
+        rc = midireader_load_smf(state, filename);
+    if (rc != NZ_SUCCESS) goto fail;
 
     *(struct state **)(state_pp) = state;
     return NZ_SUCCESS;
@@ -183,7 +204,8 @@ void midireader_block_destroy(nz_block_state * state_p) {
     struct state * state = state_p;
 
     //assert(fclose(state->smf_file) == 0); TODO
-    fclose(state->smf_file);
+    if (state->smf_file != NULL)
+        fclose(state->smf_file);
     free(state->header);
     free(state->track);
 

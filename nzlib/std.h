@@ -18,6 +18,8 @@ extern const struct nz_blockclass nz_accumulator_blockclass;
 extern const struct nz_blockclass nz_ruler_blockclass;
 extern const struct nz_blockclass nz_tee_blockclass;
 extern const struct nz_blockclass nz_wye_blockclass;
+extern const struct nz_blockclass nz_any_blockclass;
+extern const struct nz_blockclass nz_gate_blockclass;
 extern const struct nz_blockclass nz_sum_blockclass;
 extern const struct nz_blockclass nz_diff_blockclass;
 extern const struct nz_blockclass nz_mul_blockclass;

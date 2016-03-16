@@ -4,10 +4,14 @@
 #include "std.h"
 
 struct state {
+    bool has_time;
+    nz_real time;
     struct { 
         unsigned int needs_pull : 1;
         unsigned int is_null : 1;
+        unsigned int has_start_time : 1;
         unsigned int value : 8;
+        nz_real start_time;
     } velocities [128];
 };
 
@@ -15,11 +19,14 @@ static nz_rc pull_upstream(struct nz_block self) {
     struct state * state = (struct state *) self.block_state_p;
     struct nz_midiev ev;
 
+    state->time = 0;
+    state->has_time = NZ_PULL(self, 0, &state->time) != NULL;
+
     for (int i = 0; i < 128; i++) {
         state->velocities[i].needs_pull = 0;
     }
 
-    while (NZ_PULL(self, 0, &ev) != NULL) {
+    while (NZ_PULL(self, 1, &ev) != NULL) {
         /*
         char * midiev_str = NULL;
         if (nz_midiev_typeclass.type_str_obj(NULL, &ev, &midiev_str) == NZ_SUCCESS) {
@@ -33,12 +40,14 @@ static nz_rc pull_upstream(struct nz_block self) {
                 if (ev.midiev_data1 >= 128) break;
                 state->velocities[ev.midiev_data1].value = ev.midiev_data2;
                 state->velocities[ev.midiev_data1].is_null = 0;
-                //printf("Drum note on  %d %d\n", ev->midiev_data1, ev->midiev_data2);
+                state->velocities[ev.midiev_data1].has_start_time = state->has_time;
+                state->velocities[ev.midiev_data1].start_time = state->time;
+                //printf("Drum note on  %d %d\n", ev.midiev_data1, ev.midiev_data2);
                 break;
             case 0x80: ; // Note off
                 if (ev.midiev_data1 >= 128) break;
                 state->velocities[ev.midiev_data1].is_null = 1;
-                //printf("Drum note off %d\n", ev->midiev_data1);
+                //printf("Drum note off %d\n", ev.midiev_data1);
                 break;
             //TODO: Aftertouch
             default:
@@ -52,23 +61,26 @@ static nz_rc pull_upstream(struct nz_block self) {
 
 static nz_obj * mididrums_pull_fn(struct nz_block self, size_t index, nz_obj * obj_p) {
     struct state * state = (struct state *) self.block_state_p;
+    size_t vel_index = index / 2;
 
-    //printf("needs pull %ld %d\n" ,index, state->velocities[index].needs_pull);
-    if (state->velocities[index].needs_pull) {
-        //printf("pulling...\n");
+    if (state->velocities[vel_index].needs_pull) {
         nz_rc rc = pull_upstream(self);
         if (rc != NZ_SUCCESS) return NULL;
     }
+    state->velocities[vel_index].needs_pull = 1;
 
-    state->velocities[index].needs_pull = 1;
-
-    if (state->velocities[index].is_null) {
-        //printf("drum isnull %ld\n", index);
+    if (state->velocities[vel_index].is_null) {
         return NULL;
     }
-    //printf("drum on %ld\n", index);
 
-    *(nz_real *) obj_p = (nz_real) state->velocities[index].value / 127.0;
+    if (index % 2 == 0) { // Velocity
+        *(nz_real *) obj_p = (nz_real) state->velocities[index].value / 127.0;
+    } else { // Time
+        // How do we want to handle if there's no start time but a time now? For now return NULL; revisit later
+        if (!state->has_time || !state->velocities[vel_index].has_start_time)
+            return NULL;
+        *(nz_real *) obj_p = state->time - state->velocities[vel_index].start_time;
+    }
 
     return obj_p;
 }
@@ -79,19 +91,27 @@ static nz_rc mididrums_block_create_args(nz_block_state ** state_pp, struct nz_b
 
     nz_rc rc;
 
-    rc = nz_block_info_set_n_io(info_p, 1, 128);
+    rc = nz_block_info_set_n_io(info_p, 2, 2 * 128);
     if (rc != NZ_SUCCESS) goto fail;
 
-    rc = nz_block_info_set_input(info_p, 0, strdup("in"), &nz_midiev_typeclass, NULL);
+    rc = nz_block_info_set_input(info_p, 0, strdup("time"), &nz_real_typeclass, NULL);
+    if (rc != NZ_SUCCESS) goto fail;
+
+    rc = nz_block_info_set_input(info_p, 1, strdup("midi"), &nz_midiev_typeclass, NULL);
     if (rc != NZ_SUCCESS) goto fail;
 
     for (int i = 0; i < 128; i++) {
-        rc = nz_block_info_set_output(info_p, i, rsprintf("out %d", i), &nz_real_typeclass, NULL, mididrums_pull_fn);
+        rc = nz_block_info_set_output(info_p, 2 * i + 0, rsprintf("vel %d", i), &nz_real_typeclass, NULL, mididrums_pull_fn);
+        rc = nz_block_info_set_output(info_p, 2 * i + 1, rsprintf("time %d", i), &nz_real_typeclass, NULL, mididrums_pull_fn);
         if (rc != NZ_SUCCESS) goto fail;
         
         state->velocities[i].needs_pull = 1;
         state->velocities[i].is_null = 1;
+        state->velocities[i].has_start_time = 0;
+        state->velocities[i].start_time = 0;
     }
+
+    state->has_time = false;
 
     *(struct state **)(state_pp) = state;
     return NZ_SUCCESS;

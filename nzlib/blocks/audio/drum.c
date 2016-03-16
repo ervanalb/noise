@@ -27,6 +27,7 @@ struct state {
     size_t t;
     size_t clip_size;
     const nz_real * clip_start;
+    nz_real last_time;
 };
 
 static nz_real rand_real() {
@@ -183,10 +184,17 @@ static nz_obj * drum_pull_fn(struct nz_block self, size_t index, nz_obj * obj_p)
     nz_real * out_chunk_p = (nz_real *)obj_p;
     nz_real vel = 0;
 
-    if (NZ_PULL(self, 0, &vel) == NULL) {
+    nz_real time;
+    bool has_time = NZ_PULL(self, 1, &time) != NULL;
+
+    if (NZ_PULL(self, 0, &vel) == NULL || !has_time) {
         state->t = 0;
         return NULL;
     }
+    if (time < state->last_time) {
+        state->t = 0;
+    }
+    state->last_time = time;
     //printf("pull %p %ld\n", state->clip_start, state->t);
 
     if (state->t + nz_chunk_size > state->clip_size) {
@@ -205,8 +213,9 @@ static nz_rc drum_block_create_args(const nz_real * clip, size_t clip_size, nz_b
     if (init_clips() != 0) NZ_RETURN_ERR(NZ_NOT_ENOUGH_MEMORY);
 
     nz_rc rc;
-    if((rc = nz_block_info_set_n_io(info_p, 1, 1)) != NZ_SUCCESS ||
+    if((rc = nz_block_info_set_n_io(info_p, 2, 1)) != NZ_SUCCESS ||
        (rc = nz_block_info_set_input(info_p, 0, strdup("velocity"), &nz_real_typeclass, NULL)) != NZ_SUCCESS ||
+       (rc = nz_block_info_set_input(info_p, 1, strdup("time"), &nz_real_typeclass, NULL)) != NZ_SUCCESS ||
        (rc = nz_block_info_set_output(info_p, 0, strdup("out"), &nz_chunk_typeclass, NULL, drum_pull_fn)) != NZ_SUCCESS) {
         nz_block_info_term(info_p);
         free(state_p);

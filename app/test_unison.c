@@ -47,6 +47,9 @@ nz_rc run()
     ADD_BLOCK("beat_in_bar_tee", "tee(2,real)");
     */
 
+    ADD_BLOCK("gate", "gate(real)");
+    ADD_BLOCK("any", "any(4,real)");
+
     ADD_BLOCK("unison_smf", "midireader(unison.midi)");
     ADD_BLOCK("melody", "midimelody");
     ADD_BLOCK("lpf_alpha", "constant(real,0.4)");
@@ -54,13 +57,13 @@ nz_rc run()
     ADD_BLOCK("sound1", "wave(saw)");
     ADD_BLOCK("envelope", "envelope");
 
-    ADD_BLOCK("drums_smf", "midireader(unison_drums.midi)");
+    ADD_BLOCK("drums_smf", "midireader(unison_drums.txt)");
     ADD_BLOCK("drums", "mididrums");
     ADD_BLOCK("kick_drum", "drum(kick)");
     ADD_BLOCK("snare_drum", "drum(snare)");
     ADD_BLOCK("white_drum", "drum(white)");
 
-    ADD_BLOCK("vol_melody", "constant(real,0.05)");
+    ADD_BLOCK("vol_melody", "constant(real,0.10)");
     ADD_BLOCK("vol_kick", "constant(real,1.0)");
     ADD_BLOCK("vol_snare", "constant(real,0.3)");
     ADD_BLOCK("vol_white", "constant(real,0.1)");
@@ -85,17 +88,21 @@ nz_rc run()
     CONNECT("vol_melody", "out", "mix", "gain 1");
 
     CONNECT("ruler", "out 4", "drums_smf", "in");
-    CONNECT("drums_smf", "out", "drums", "in");
+    CONNECT("drums_smf", "out", "drums", "midi");
+    CONNECT("time_tee", "aux 2", "drums", "time");
 
-    CONNECT("drums", "out 0", "kick_drum", "velocity");
+    CONNECT("drums", "vel 0", "kick_drum", "velocity");
+    CONNECT("drums", "time 0", "kick_drum", "time");
     CONNECT("kick_drum", "out", "mix", "in 2");
     CONNECT("vol_kick", "out", "mix", "gain 2");
 
-    CONNECT("drums", "out 1", "snare_drum", "velocity");
+    CONNECT("drums", "vel 1", "snare_drum", "velocity");
+    CONNECT("drums", "time 1", "snare_drum", "time");
     CONNECT("snare_drum", "out", "mix", "in 3");
     CONNECT("vol_snare", "out", "mix", "gain 3");
 
-    CONNECT("drums", "out 2", "white_drum", "velocity");
+    CONNECT("drums", "vel 2", "white_drum", "velocity");
+    CONNECT("drums", "time 2", "white_drum", "time");
     CONNECT("white_drum", "out", "mix", "in 4");
     CONNECT("vol_white", "out", "mix", "gain 4");
 
@@ -105,7 +112,7 @@ nz_rc run()
 
     rc = nz_graph_block_handle(graph, "soundcard", &block_handle); if(rc != NZ_SUCCESS) goto err;
     //rc = pa_start(block_handle); if(rc != NZ_SUCCESS) goto err;
-    int blocks_out = wavfileout_record(block_handle, 20);
+    int blocks_out = wavfileout_record(block_handle, 10);
     printf("Wrote %d blocks\n", blocks_out);
 
 err:

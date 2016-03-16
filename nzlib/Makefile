@@ -13,6 +13,7 @@ C_SRC = \
 		blocks/io/portaudio.c \
 		blocks/io/midi_reader.c \
 		blocks/io/midi_smf.c \
+		blocks/io/midi_txt.c \
 		blocks/io/midi_melody.c \
 		blocks/io/midi_drums.c \
 		blocks/io/wavfile.c \
