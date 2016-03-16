@@ -136,8 +136,8 @@ following a successful run of `type_create_obj`. It should not be called with a 
 `type_str_obj` converts the value of the object into a string. This string should
 be human-readable, but also machine readable. Passing this string into `type_init_obj`
 should result in an equivalent object. The string should not contain any typeclass
-or type information. On success, this function 1malloc`s a `char[]` which must be later
-`free1d. On failure, `free()` is not necessary and `*string` contains an undefined value.
+or type information. On success, this function `malloc`s a `char[]` which must be later
+`free`d. On failure, `free()` is not necessary and `*string` contains an undefined value.I
 
 Strings returned from `type_str_obj` should be properly encapsulated or escaped.
 The same should apply to strings passed in to `type_init_obj`.
