@@ -146,6 +146,8 @@ nz_rc nz_graph_disconnect(struct nz_graph * graph_p, const char * id_upstream, c
 nz_rc nz_graph_block_info(struct nz_graph * graph_p, const char * id, struct nz_block_info ** info_pp);
 nz_rc nz_graph_block_handle(struct nz_graph * graph_p, const char * id, struct nz_block ** block_pp);
 
+nz_rc nz_graph_export_dot(struct nz_graph * graph_p, const char * filename);
+
 // ------------------------------------
 
 extern const size_t nz_chunk_size;

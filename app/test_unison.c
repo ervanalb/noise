@@ -136,6 +136,10 @@ nz_rc run()
     int blocks_out = wavfileout_record(block_handle, 20);
     printf("Wrote %d blocks\n", blocks_out);
 
+    const char * dot_filename = "unison.dot";
+    rc = nz_graph_export_dot(graph, dot_filename);
+    printf("Wrote graph to '%s'\n", dot_filename);
+
 err:
     if (rc != NZ_SUCCESS) printf("Error on line: %s\n", err_line);
 fail_graph:
