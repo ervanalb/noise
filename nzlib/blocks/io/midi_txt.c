@@ -47,7 +47,7 @@ int txtmidi_parse(const char * filename, struct smf_header * header, struct smf_
     }
 
     header->header_ntracks = 1;
-    header->header_division = division * 8;
+    header->header_division = division;
 
 #define MAX_EVENTS 1024
     eventspace = calloc(MAX_EVENTS + 2, sizeof(struct smf_event) + 8);
@@ -78,7 +78,7 @@ int txtmidi_parse(const char * filename, struct smf_header * header, struct smf_
 
 #define ADD_EVENT(status) ({                            \
     *events++ = (struct smf_event) {                    \
-        .event_deltatime = time * evlen * 8 - ((status) == 0x80 ? 2 : 0),                \
+        .event_deltatime = time * evlen,                \
         .event_length = 3,                              \
         .event_data = evdata                            \
     };                                                  \

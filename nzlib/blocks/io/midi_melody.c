@@ -42,8 +42,8 @@ static nz_rc pull_upstream(struct nz_block self) {
                 break;
             case 0x80: ; // Note off
                 if (state->note == ev.midiev_data1) {
-                    // Sustain notes
-                    //state.note = -1; 
+                    // Sustain notes???
+                    state->note = -1; 
                     state->velocity = -1;
                 }
                 break;

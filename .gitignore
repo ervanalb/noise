@@ -7,3 +7,5 @@
 *.d
 noise_test*
 *.wav
+perf.data
+tags

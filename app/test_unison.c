@@ -35,7 +35,7 @@ nz_rc run()
     ADD_BLOCK("time", "accumulator");
     ADD_BLOCK("delta_time", "constant(real,0.0058)");
     //ADD_BLOCK("delta_time", "constant(real,0.0135)");
-    ADD_BLOCK("time_tee", "tee(4,real)");
+    ADD_BLOCK("time_tee", "tee(5,real)");
     ADD_BLOCK("time_wye", "wye(2,real)");
     ADD_BLOCK("ruler", "ruler(8)");
     /*
@@ -47,15 +47,23 @@ nz_rc run()
     ADD_BLOCK("beat_in_bar_tee", "tee(2,real)");
     */
 
+    /*
     ADD_BLOCK("gate", "gate(real)");
     ADD_BLOCK("any", "any(4,real)");
+    */
 
     ADD_BLOCK("unison_smf", "midireader(unison.midi)");
     ADD_BLOCK("melody", "midimelody");
-    ADD_BLOCK("lpf_alpha", "constant(real,0.4)");
+    ADD_BLOCK("lpf_alpha", "constant(real,0.10)");
     ADD_BLOCK("lpf", "lpf");
-    ADD_BLOCK("sound1", "wave(saw)");
+    ADD_BLOCK("sound1", "wave(sine)");
+    ADD_BLOCK("sound2", "wave(saw)");
     ADD_BLOCK("envelope", "envelope");
+
+    ADD_BLOCK("pitch_tee", "tee(2,real)");
+    ADD_BLOCK("instr_smf", "midireader(unison_instruments.txt)");
+    ADD_BLOCK("instr_select", "mididrums");
+    ADD_BLOCK("instr_mix", "mixer(2)");
 
     ADD_BLOCK("drums_smf", "midireader(unison_drums.txt)");
     ADD_BLOCK("drums", "mididrums");
@@ -70,7 +78,6 @@ nz_rc run()
     ADD_BLOCK("mix", "mixer(5)");
     ADD_BLOCK("compressor", "compressor(0.01)");
     ADD_BLOCK("soundcard", "wavfileout(new_unison.wav)");
-    
 
     CONNECT("delta_time", "out", "time", "in");
     CONNECT("time", "out", "time_tee", "in");
@@ -81,9 +88,23 @@ nz_rc run()
     CONNECT("unison_smf", "out", "melody", "in");
     CONNECT("melody", "pitch out", "lpf", "in");
     CONNECT("lpf_alpha", "out", "lpf", "alpha");
-    CONNECT("lpf", "out", "sound1", "freq");
+    CONNECT("lpf", "out", "pitch_tee", "in");
+
+    CONNECT("pitch_tee", "main", "sound1", "freq");
+    CONNECT("pitch_tee", "aux 1", "sound2", "freq");
+    CONNECT("sound1", "out", "instr_mix", "in 1");
+    CONNECT("sound2", "out", "instr_mix", "in 2");
+    CONNECT("time_tee", "aux 3", "instr_smf", "in");
+    CONNECT("instr_smf", "out", "instr_select", "midi");
+    CONNECT("time_tee", "aux 4", "instr_select", "time");
+    CONNECT("instr_select", "vel 0", "instr_mix", "gain 1");
+    CONNECT("instr_select", "vel 1", "instr_mix", "gain 2");
+    // These would normally feed into the unison_smf, but we'd need to make tons of copies...
+    //CONNECT("instr_select", "time 1", "", ""); 
+    //CONNECT("instr_select", "time 1", "", ""); 
+
     CONNECT("melody", "velocity out", "envelope", "velocity in");
-    CONNECT("sound1", "out", "envelope", "chunk in");
+    CONNECT("instr_mix", "out", "envelope", "chunk in");
     CONNECT("envelope", "out", "mix", "in 1");
     CONNECT("vol_melody", "out", "mix", "gain 1");
 
@@ -112,7 +133,7 @@ nz_rc run()
 
     rc = nz_graph_block_handle(graph, "soundcard", &block_handle); if(rc != NZ_SUCCESS) goto err;
     //rc = pa_start(block_handle); if(rc != NZ_SUCCESS) goto err;
-    int blocks_out = wavfileout_record(block_handle, 10);
+    int blocks_out = wavfileout_record(block_handle, 20);
     printf("Wrote %d blocks\n", blocks_out);
 
 err:

@@ -74,7 +74,7 @@ static nz_obj * mididrums_pull_fn(struct nz_block self, size_t index, nz_obj * o
     }
 
     if (index % 2 == 0) { // Velocity
-        *(nz_real *) obj_p = (nz_real) state->velocities[index].value / 127.0;
+        *(nz_real *) obj_p = (nz_real) state->velocities[vel_index].value / 127.0;
     } else { // Time
         // How do we want to handle if there's no start time but a time now? For now return NULL; revisit later
         if (!state->has_time || !state->velocities[vel_index].has_start_time)
