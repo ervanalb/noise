@@ -8,7 +8,7 @@ class Context:
     def __init__(self):
         self.chunk_size = 1024
         self.frame_rate = 44100
-        self.bpm = None
+        self.bpm = 120
 
     def chunks(self, t):
         if t.endswith("c"):
@@ -103,6 +103,7 @@ class CutStream(Stream):
 
 class RepeaterStream(Stream):
     def __init__(self, stream, times=None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.stream = stream
         self.times = times
         self.i = 0
@@ -166,6 +167,9 @@ def waveform(fn):
             return result
     return Waveform
 
+sine = waveform(lambda x: np.sin(2 * math.pi * x))
+saw = waveform(lambda x: np.remainder(x, 1))
+
 class cat(Stream):
     def __init__(self, *args, **kwargs):
         super().__init__(**kwargs)
@@ -186,7 +190,19 @@ class cat(Stream):
                 if self.i >= len(self.args):
                     raise
 
-sine = waveform(lambda x: np.sin(2 * math.pi * x))
-saw = waveform(lambda x: np.remainder(x, 1))
+class silence(Stream):
+    def __init__(self, t=None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.chunks = None if t is None else self.ctx.chunks(t)
+        self.i = 0
+
+    def reset(self):
+        self.i = 0
+
+    def __next__(self):
+        if self.i >= self.chunks:
+            raise StopIteration()
+        self.i += 1
+        return np.zeros(self.ctx.chunk_size, dtype=np.float)
 
 default_context = Context()
