@@ -1,8 +1,8 @@
 CC=gcc
 CFLAGS=-I. -Ilibdill -g -O2 -std=gnu99 -Wall -Wextra -Werror
-LDFLAGS=-ldill -lm -lsndfile
+LDFLAGS=-ldill -lm -lsndfile -lportaudio
 
-OBJECTS=noise.o main.o
+OBJECTS=noise.o output.o main.o
 
 %.o : %.c
 	$(CC) $(CFLAGS) -c $< -o $@

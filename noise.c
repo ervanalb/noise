@@ -5,6 +5,47 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+// Channels
+#define CH_TIMEOUT 10
+int nz_chmake() {
+    return chmake(NZ_CHUNK_SIZE * sizeof(nz_real));
+}
+
+int nz_chsend(const int * ch, const nz_real * chunk, int flags) {
+    while (1) {
+        if (*ch == -1) {
+            msleep(now() + CH_TIMEOUT);
+            continue;
+        }
+        int rc = chsend(*ch, chunk, NZ_CHUNK_SIZE * sizeof *chunk, now() + CH_TIMEOUT);
+        if (rc == -1 && errno == ETIMEDOUT) {
+            if ((flags & NZ_CH_NORETRY) && *ch == -1) return -1;
+            else continue;
+        }
+        return rc;
+    }
+}
+
+int nz_chrecv(const int * ch, nz_real * chunk, int flags) {
+    while (1) {
+        if (*ch == -1) {
+            msleep(now() + CH_TIMEOUT);
+            continue;
+        }
+        int rc = chrecv(*ch, chunk, NZ_CHUNK_SIZE * sizeof *chunk, now() + CH_TIMEOUT);
+        if (rc == -1 && errno == ETIMEDOUT) {
+            if ((flags & NZ_CH_NORETRY) && *ch == -1) return -1;
+            else continue;
+        }
+        return rc;
+    }
+}
+
+int nz_chdone(int ch) {
+    return chdone(ch);
+}
+
+
 // UI
 static const char * keycodes = "qwertyuiopasdfghjklzxcvbnm";
 
@@ -14,7 +55,9 @@ struct nz_param {
     enum nz_param_type {
         NZ_PARAM_ENUM,
         NZ_PARAM_REAL,
+        NZ_PARAM_CHANNEL,
     } type;
+    const char * parent;
     const char * name;
     char keycode;
 
@@ -26,14 +69,19 @@ struct nz_param {
     nz_real * real_param;
     nz_real real_min;
     nz_real real_max;
+
+    // Channel
+    int * channel_param;
+    enum nz_direction channel_direction;
 };
 struct dill_list nz_param_list;
 
-struct nz_param * nz_param_enum(const char * name, const struct nz_enum * enums, int * param) {
+struct nz_param * nz_param_enum(const char * parent, const char * name, const struct nz_enum * enums, int * param) {
     struct nz_param * p = calloc(1, sizeof *p);
     if (p == NULL) return NULL;
 
     p->type = NZ_PARAM_ENUM;
+    p->parent = parent;
     p->name = name;
     p->enum_param = param;
     p->enum_list = enums;
@@ -65,15 +113,32 @@ static int nz_param_enum_set(const struct nz_param * p, const char * value) {
 }
 */
 
-struct nz_param * nz_param_real(const char * name, nz_real min, nz_real max, nz_real * param) {
+struct nz_param * nz_param_real(const char * parent, const char * name, nz_real min, nz_real max, nz_real * param) {
     struct nz_param * p = calloc(1, sizeof *p);
     if (p == NULL) return NULL;
 
     p->type = NZ_PARAM_REAL;
+    p->parent = parent;
     p->name = name;
     p->real_param = param;
     p->real_min = min;
     p->real_max = max;
+
+    dill_list_item_init(&p->item);
+    dill_list_insert(&nz_param_list, &p->item, NULL);
+
+    return p;
+}
+
+struct nz_param * nz_param_channel(const char * parent, const char * name, enum nz_direction dir, int * param) {
+    struct nz_param * p = calloc(1, sizeof *p);
+    if (p == NULL) return NULL;
+
+    p->type = NZ_PARAM_CHANNEL;
+    p->parent = parent;
+    p->name = name;
+    p->channel_param = param;
+    p->channel_direction = dir;
 
     dill_list_item_init(&p->item);
     dill_list_insert(&nz_param_list, &p->item, NULL);
@@ -112,14 +177,16 @@ coroutine void nz_param_ui() {
             ASSERT(*kc != '\0');
             p->keycode = *kc++;
 
+            fprintf(stdout, "[%c] %s::%s: ", p->keycode, p->parent, p->name);
             switch (p->type) {
             case NZ_PARAM_REAL:
-                fprintf(stdout, "[%c] %s: %0.3f [%0.3f %0.3f]\n",
-                        p->keycode, p->name, *p->real_param, p->real_min, p->real_max);
+                fprintf(stdout, "%0.3f [%0.3f %0.3f]\n", *p->real_param, p->real_min, p->real_max);
                 break;
             case NZ_PARAM_ENUM:
-                fprintf(stdout, "[%c] %s: %s\n",
-                        p->keycode, p->name, nz_param_enum_name(p));
+                fprintf(stdout, "%s\n", nz_param_enum_name(p));
+                break;
+            case NZ_PARAM_CHANNEL:
+                fprintf(stdout, "%d\n", *p->channel_param);
                 break;
             default:
                 FAIL("Invalid type %d", p->type);
@@ -135,9 +202,8 @@ coroutine void nz_param_ui() {
         if (ch1 == NULL || !*ch1)
             continue;
 
-        const struct nz_param * p = NULL;
-        for (struct dill_list_item * it = dill_list_begin(&nz_param_list); it != NULL; it = dill_list_next(it)){
-            p = (struct nz_param *) it;
+        const struct nz_param * p = (void *) dill_list_begin(&nz_param_list);
+        for (; p != NULL; p = (void *) dill_list_next(&p->item)){
             if (p->keycode == ch1[0])
                 break;
         }
@@ -148,8 +214,8 @@ coroutine void nz_param_ui() {
 
         switch (p->type) {
         case NZ_PARAM_REAL:
-            fprintf(stdout, "Set %s: %0.3f [%0.3f %0.3f] > ",
-                    p->name, *p->real_param, p->real_min, p->real_max);
+            fprintf(stdout, "Set %s::%s: %0.3f [%0.3f %0.3f] > ",
+                    p->parent, p->name, *p->real_param, p->real_min, p->real_max);
             fflush(stdout);
             const char * real_val = _getline();
             if (real_val != NULL && *real_val && !isspace(*real_val)) {
@@ -164,8 +230,8 @@ coroutine void nz_param_ui() {
             for (const struct nz_enum * e = p->enum_list; e->name != NULL; e++) {
                 fprintf(stdout, "[%d] %s\n", idx++, e->name);
             }
-            fprintf(stdout, "Set %s: %s > ",
-                    p->name, nz_param_enum_name(p));
+            fprintf(stdout, "Set %s::%s: %s > ",
+                    p->parent, p->name, nz_param_enum_name(p));
             fflush(stdout);
 
             const char * enum_val = _getline();
@@ -176,6 +242,16 @@ coroutine void nz_param_ui() {
                 } else {
                     *p->enum_param = p->enum_list[res-1].value;
                 }
+            }
+            break;
+        case NZ_PARAM_CHANNEL:
+            fprintf(stdout, "Set %s::%s: %d > ",
+                    p->parent, p->name, *p->channel_param);
+            fflush(stdout);
+            const char * val = _getline();
+            if (val != NULL && *val && !isspace(*val)) {
+                int ch = atoi(val);
+                *p->channel_param = ch;
             }
             break;
         default:
