@@ -7,8 +7,10 @@
 #define SF_WRITE_REAL2(X, Y) X ## Y
 #define SF_WRITE_REAL SF_WRITE_REAL1(sf_write_, NZ_REAL_TYPE)
 
-coroutine void nz_output_wav(const char * name, const char * filename, int ch_input) {
-    nz_param_channel(name, "Input Channel", NZ_INPUT, &ch_input);
+coroutine void nz_output_wav(const char * name, const char * filename, int input_pipe) {
+    struct nz_ch * input = nz_chmake(NZ_READ);
+    nz_chjoin(input, input_pipe);
+    nz_param_channel(name, "Input Channel", input);
 
     SF_INFO fdata = {
         .samplerate = NZ_SAMPLE_RATE,
@@ -23,10 +25,9 @@ coroutine void nz_output_wav(const char * name, const char * filename, int ch_in
     }
 
     while (1) {
-        nz_chunk buffer;
         uint64_t n = now();
-        int rc = nz_chrecv(&ch_input, buffer, 0);
-        if (rc < 0) break;
+        const nz_real * buffer = nz_chrecv(input, 0);
+        if (buffer == NULL) break;
 
         SF_WRITE_REAL(file, buffer, NZ_CHUNK_SIZE);
         // FIXME: How do we keep things real-time?
@@ -37,7 +38,7 @@ coroutine void nz_output_wav(const char * name, const char * filename, int ch_in
     sf_close(file);
 }
 
-coroutine void nz_output_portaudio(const char * name, int ch_input) {
+coroutine void nz_output_portaudio(const char * name, int input_pipe) {
     PaError err = Pa_Initialize();
     if(err != paNoError) FAIL("Pa_Initialize: %s", Pa_GetErrorText(err));
 
@@ -50,13 +51,15 @@ coroutine void nz_output_portaudio(const char * name, int ch_input) {
 
     nz_real volume = 0.2;
     nz_param_real(name, "Volume", 0.0, 1.0, &volume);
-    nz_param_channel(name, "Input Channel", NZ_INPUT, &ch_input);
+
+    struct nz_ch * input = nz_chmake(NZ_READ);
+    nz_chjoin(input, input_pipe);
+    nz_param_channel(name, "Input Channel", input);
 
     while (1) {
         float buf[NZ_CHUNK_SIZE];
-        nz_chunk chunk;
-        int rc = nz_chrecv(&ch_input, chunk, 0);
-        if (rc < 0) break;
+        const nz_real * chunk = nz_chrecv(input, 0);
+        if (chunk == NULL) break;
 
         for (size_t i = 0; i < NZ_CHUNK_SIZE; i++)
             buf[i] = chunk[i] * volume;
