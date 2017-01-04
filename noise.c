@@ -6,129 +6,85 @@
 #include <stdlib.h>
 
 // Channels
-// Pipes
-struct pipe {
+
+struct nz_ch {
     struct hvfs hvfs;
     int self;
 
-    struct nz_ch * read_ch;
-    struct nz_ch * write_ch;
-    int comm;
-};
-
-struct nz_ch {
     int ctl; // libdill chan
-    int comm; // libdill chan
-    int pipe;
+    struct nz_ch * pair; // Corresponding reader/writer
     enum nz_dir dir;
+
     // Only used by writer channels
+    int comm; // libdill chan
     int state;
     nz_chunk chunks[2];
 };
 
-static const int pipe_type_placeholder = 0;
-static const void *pipe_type = &pipe_type_placeholder;
+static const int nz_ch_type_placeholder = 0;
+static const void *nz_ch_type = &nz_ch_type_placeholder;
 
-static void * pipe_query(struct hvfs * vfs, const void * type) {
-    if (type == pipe_type)
-        return (struct pipe *) vfs;
+static void * nz_ch_query(struct hvfs * vfs, const void * type) {
+    if (type == nz_ch_type)
+        return (struct nz_ch *) vfs;
     errno = ENOTSUP;
     return NULL;
 }
 
-static void pipe_disconn(struct pipe * pipe, struct nz_ch * ch) {
-    if (ch == NULL) return;
-    switch (ch->dir) {
-    case NZ_READ:
-        ASSERT(pipe->read_ch == ch);
-        pipe->read_ch = NULL;
-        break;
-    case NZ_WRITE:
-        ASSERT(pipe->write_ch == ch);
-        pipe->write_ch = NULL;
-        break;
-    default:
-        ERROR("Unknown channel direction %d", ch->dir);
-        break;
-    }
+static void nz_ch_close(struct hvfs * vfs) {
+    struct nz_ch * ch = (struct nz_ch *) vfs;
+    nz_chjoin(ch->self, -1);
+    ASSERT(ch->pair == NULL);
 
-    ch->pipe = -1;
-    ch->comm = -1;
-    int rc = chsend(ch->ctl, 0, 0, 0);
-    if (rc < 0 && errno != ETIMEDOUT) PFAIL("chsend rc = %d", rc);
+    if (ch->dir == NZ_WRITE)
+        chdone(ch->comm);
+    else
+        ASSERT(ch->comm < 0);
+
+    chdone(ch->ctl);
+    free(ch);
 }
 
-static void pipe_conn(struct pipe * pipe, struct nz_ch * ch) {
-    switch (ch->dir) {
-    case NZ_READ:
-        pipe_disconn(pipe, pipe->read_ch);
-        pipe->read_ch = ch;
-        break;
-    case NZ_WRITE:
-        pipe_disconn(pipe, pipe->write_ch);
-        pipe->write_ch = ch;
-        break;
-    default:
-        ERROR("Unknown channel direction %d", ch->dir);
-        break;
-    }
-    ASSERT(ch->pipe < 0);
-    ASSERT(ch->comm < 0);
-    ch->pipe = pipe->self;
-    ch->comm= pipe->comm;
-    int rc = chsend(ch->ctl, 0, 0, 0);
-    if (rc < 0 && errno != ETIMEDOUT) PFAIL("chsend rc = %d", rc);
-}
-
-static void pipe_close(struct hvfs * vfs) {
-    struct pipe * pipe = (struct pipe *) vfs;
-    pipe_disconn(pipe, pipe->read_ch);
-    pipe_disconn(pipe, pipe->write_ch);
-    free(pipe);
-}
-
-int nz_pipe(void) {
-    struct pipe * pipe = calloc(1, sizeof *pipe);
-    ASSERT(pipe != NULL);
-    pipe->hvfs.query = &pipe_query;
-    pipe->hvfs.close = &pipe_close;
-    pipe->read_ch = NULL;
-    pipe->write_ch = NULL;
-    pipe->comm = chmake(sizeof(nz_real *));
-    ASSERT(pipe->comm >= 0);
-    pipe->self = hmake(&pipe->hvfs);
-    ASSERT(pipe->self >= 0);
-    return pipe->self;
-}
-
-// Channels
-
-struct nz_ch * nz_chmake(enum nz_dir dir) {
+int nz_chmake(enum nz_dir dir) {
     struct nz_ch * ch = calloc(1, sizeof *ch);
     ASSERT(ch != NULL);
+    ch->hvfs.query = &nz_ch_query;
+    ch->hvfs.close = &nz_ch_close;
     ch->ctl = chmake(0);
-    ASSERT(ch->ctl >= 0);
-    ch->comm = -1;
-    ch->pipe = -1;
+    ch->pair = NULL;
     ch->dir = dir;
-    ch->state = 0;
-    return ch;
+
+    if (dir == NZ_WRITE) {
+        ch->comm = chmake(sizeof(nz_real *));
+        ch->state = 0;
+    } else {
+        ch->comm = -1;
+    }
+
+    ch->self = hmake(&ch->hvfs);
+    ASSERT(ch->self >= 0);
+    return ch->self;
 }
 
-nz_real * nz_challoc(struct nz_ch * ch) {
+nz_real * nz_challoc(int ch_handle) {
+    struct nz_ch * ch = hquery(ch_handle, nz_ch_type);
+    if (ch == NULL) return NULL;
     ASSERT(ch->dir == NZ_WRITE);
     return ch->chunks[ch->state];
 }
 
-int nz_chsend(struct nz_ch * ch, const nz_real * chunk, int flags) {
+int nz_chsend(int ch_handle, const nz_real * chunk, int flags) {
+    struct nz_ch * ch = hquery(ch_handle, nz_ch_type);
+    if (ch == NULL) return -1;
     if (chunk == ch->chunks[ch->state])
         ch->state = 1 - ch->state;
     while (1) {
+        if (ch->pair == NULL && (flags & NZ_CANSKIP)) return -1;
         struct chclause clauses[2] = {
             { CHRECV, ch->ctl, NULL, 0 },
             { CHSEND, ch->comm, &chunk, sizeof chunk },
         };
-        int n_clauses = (ch->comm >= 0) ? 2 : 1;
+        int n_clauses = (ch->pair != NULL) ? 2 : 1;
         int64_t deadline = (flags & NZ_NONBLOCK) ? 0 : -1;
         int rc = choose(clauses, n_clauses, deadline);
         if (rc == 1) return 0;
@@ -138,15 +94,21 @@ int nz_chsend(struct nz_ch * ch, const nz_real * chunk, int flags) {
     }
 }
 
-const nz_real * nz_chrecv(struct nz_ch * ch, int flags) {
+const nz_real * nz_chrecv(int ch_handle, int flags) {
+    struct nz_ch * ch = hquery(ch_handle, nz_ch_type);
+    if (ch == NULL) return NULL;
     while (1) {
         if (ch->comm < 0 && (flags & NZ_CANSKIP)) return NULL;
         const nz_real * chunk = NULL;
         struct chclause clauses[2] = {
             { CHRECV, ch->ctl, NULL, 0 },
-            { CHRECV, ch->comm, &chunk, sizeof chunk },
+            { 0, 0, 0, 0 },
         };
-        int n_clauses = (ch->comm >= 0) ? 2 : 1;
+        int n_clauses = 1;
+        if (ch->pair != NULL) {
+            clauses[1] = (struct chclause) { CHRECV, ch->pair->comm, &chunk, sizeof chunk };
+            n_clauses = 2;
+        }
         int64_t deadline = (flags & NZ_NONBLOCK) ? 0 : -1;
         int rc = choose(clauses, n_clauses, deadline);
         if (rc == 1) return chunk;
@@ -156,26 +118,80 @@ const nz_real * nz_chrecv(struct nz_ch * ch, int flags) {
     }
 }
 
-void nz_chdone(struct nz_ch * ch) {
-    if (ch->pipe >= 0) {
-        struct pipe * pipe = (void *) hquery(ch->pipe, pipe_type);
-        ASSERT(pipe != NULL);
-        pipe_disconn(pipe, ch);
+int nz_chjoin(int left_handle, int right_handle) {
+    struct nz_ch * left_ch = NULL;
+    if (left_handle >= 0) {
+        left_ch = hquery(left_handle, nz_ch_type);
+        if (left_ch == NULL) return -1;
     }
-    free(ch);
+    struct nz_ch * right_ch = NULL;
+    if (right_handle >= 0) {
+        right_ch = hquery(right_handle, nz_ch_type);
+        if (right_ch == NULL) return -1;
+    }
+    if (left_ch == NULL) {
+        // Swap so that left is valid
+        struct nz_ch * s = left_ch;
+        left_ch = right_ch;
+        right_ch = s;
+    }
+    if (left_ch == NULL) {
+        // Both were invalid
+        errno = EINVAL;
+        return -1;
+    }
+    if (right_ch == NULL) {
+        // Disconnect left
+        if (left_ch->pair == NULL)
+            return 0; // already disconnected
+    } else {
+        // Connect left & right
+        if (left_ch->pair == right_ch &&
+            right_ch->pair == left_ch)
+            return 0; // already connected
+        // Check there is a reader & writer side
+        struct nz_ch * read_ch = NULL;
+        struct nz_ch * write_ch = NULL;
+        if (left_ch->dir == NZ_WRITE && right_ch->dir == NZ_READ) {
+            write_ch = left_ch;
+            read_ch = right_ch;
+        } else if (left_ch->dir == NZ_READ && right_ch->dir == NZ_WRITE) {
+            write_ch = right_ch;
+            read_ch = left_ch;
+        } else {
+            errno = EINVAL;
+            return -1;
+        }
+        // Disconnect any existing pair
+        if (left_ch->pair != NULL) {
+            int rc = nz_chjoin(left_handle, -1);
+            if (rc < 0) return rc;
+        }
+        if (right_ch->pair != NULL) {
+            int rc = nz_chjoin(right_handle, -1);
+            if (rc < 0) return rc;
+        }
+        write_ch->pair = read_ch;
+        read_ch->pair = write_ch;
+    }
+    // Notify
+    if (left_ch != NULL) {
+        int rc = chsend(left_ch->ctl, 0, 0, 0);
+        if (rc < 0 && errno != ETIMEDOUT) return -1;
+    }
+    if (right_ch != NULL) {
+        int rc = chsend(right_ch->ctl, 0, 0, 0);
+        if (rc < 0 && errno != ETIMEDOUT) return -1;
+    }
+    INFO("Joined channels %d and %d", left_handle, right_handle);
+    return 0;
 }
 
-int nz_chjoin(struct nz_ch * ch, int pipe) {
-    if (ch->pipe >= 0) {
-        struct pipe * old_pipe = (void *) hquery(ch->pipe, pipe_type);
-        ASSERT(old_pipe != NULL);
-        pipe_disconn(old_pipe, ch);
-    }
-
-    struct pipe * new_pipe = (void *) hquery(pipe, pipe_type);
-    if (new_pipe == NULL) return -1;
-    pipe_conn(new_pipe, ch);
-    return 0;
+int nz_chstate(int ch_handle) {
+    struct nz_ch * ch = hquery(ch_handle, nz_ch_type);
+    if (ch == NULL) return -1;
+    if (ch->pair == NULL) return (errno = ENOTCONN), -1;
+    return ch->pair->self;
 }
 
 // UI
@@ -203,7 +219,7 @@ struct nz_param {
     nz_real real_max;
 
     // Channel
-    struct nz_ch * channel_param;
+    int channel_param;
 };
 struct dill_list nz_param_list;
 
@@ -261,7 +277,7 @@ struct nz_param * nz_param_real(const char * parent, const char * name, nz_real 
     return p;
 }
 
-struct nz_param * nz_param_channel(const char * parent, const char * name, struct nz_ch * param) {
+struct nz_param * nz_param_channel(const char * parent, const char * name, int param) {
     struct nz_param * p = calloc(1, sizeof *p);
     if (p == NULL) return NULL;
 
@@ -316,7 +332,7 @@ coroutine void nz_param_ui() {
                 fprintf(stdout, "%s\n", nz_param_enum_name(p));
                 break;
             case NZ_PARAM_CHANNEL:
-                fprintf(stdout, "%d\n", p->channel_param->pipe);
+                fprintf(stdout, "%d\n", p->channel_param);
                 break;
             default:
                 FAIL("Invalid type %d", p->type);
@@ -376,7 +392,7 @@ coroutine void nz_param_ui() {
             break;
         case NZ_PARAM_CHANNEL:
             fprintf(stdout, "Set %s::%s: %d > ",
-                    p->parent, p->name, p->channel_param->pipe);
+                    p->parent, p->name, p->channel_param);
             fflush(stdout);
             const char * val = _getline();
             if (val != NULL && *val && !isspace(*val)) {

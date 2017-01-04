@@ -25,7 +25,7 @@ coroutine void test_noise() {
     }
 }
 
-coroutine void nz_synth(const char * name, int output_pipe) {
+coroutine void nz_synth(const char * name) {
     nz_real phase = 0;
     nz_real freq = 440.;
     nz_param_real(name, "Frequency", 32, 16000, &freq);
@@ -41,8 +41,7 @@ coroutine void nz_synth(const char * name, int output_pipe) {
     };
     nz_param_enum(name, "Wave Type", wave_enums, (int *) &wave_type);
 
-    struct nz_ch * output = nz_chmake(NZ_WRITE);
-    nz_chjoin(output, output_pipe);
+    int output = nz_chmake(NZ_WRITE);
     nz_param_channel(name, "Output Channel", output);
 
     while (1) {
@@ -71,9 +70,9 @@ coroutine void nz_synth(const char * name, int output_pipe) {
     }
 }
 
-coroutine void nz_mixer(const char * name, int * in_pipes, size_t n_pipes, int out_pipe) {
+coroutine void nz_mixer(const char * name, size_t n_pipes) {
     struct {
-        struct nz_ch * in_ch;
+        int in_ch;
         nz_real volume;
 
         char in_name[32];
@@ -81,7 +80,6 @@ coroutine void nz_mixer(const char * name, int * in_pipes, size_t n_pipes, int o
     } channels[n_pipes];
     for (size_t i = 0; i < n_pipes; i++) {
         channels[i].in_ch = nz_chmake(NZ_READ);
-        nz_chjoin(channels[i].in_ch, in_pipes[i]);
 
         channels[i].volume = 1.0;
         snprintf(channels[i].in_name, sizeof channels[i].in_name, "Mixer Input #%zu Channel", i);
@@ -91,8 +89,7 @@ coroutine void nz_mixer(const char * name, int * in_pipes, size_t n_pipes, int o
         nz_param_real(name, channels[i].vol_name, 0.0, 1.0, &channels[i].volume);
     }
 
-    struct nz_ch * output = nz_chmake(NZ_WRITE);
-    nz_chjoin(output, out_pipe);
+    int output = nz_chmake(NZ_WRITE);
     nz_param_channel(name, "Output Channel", output);
 
     while (1) {
@@ -112,18 +109,11 @@ coroutine void nz_mixer(const char * name, int * in_pipes, size_t n_pipes, int o
 }
 
 void start_noise(void) {
-    int out_ch = nz_pipe();
-    ASSERT(out_ch >= 0);
-
-    int mixer_chs[2];
-    mixer_chs[0] = nz_pipe();
-    mixer_chs[1] = nz_pipe();
-
-    go(nz_output_wav("WAV Output", "test.wav", -1));
-    go(nz_output_portaudio("Live Output", out_ch));
-    go(nz_mixer("Mixer", mixer_chs, 2, out_ch));
-    go(nz_synth("Synth", mixer_chs[0]));
-    go(nz_synth("Synth2", mixer_chs[1]));
+    go(nz_output_wav("WAV Output", "test.wav"));
+    go(nz_output_portaudio("Live Output"));
+    go(nz_mixer("Mixer", 2));
+    go(nz_synth("Synth"));
+    go(nz_synth("Synth2"));
 }
 
 int main(void) {

@@ -18,17 +18,15 @@ enum nz_dir {
     NZ_READ,
 };
 #define NZ_NONBLOCK (1 << 0)
-#define NZ_CANSKIP (1 << 1)
+#define NZ_CANSKIP  (1 << 1)
 
-struct nz_ch;
-
-int nz_pipe(void);
-struct nz_ch * nz_chmake(enum nz_dir dir);
-nz_real * nz_challoc(struct nz_ch * ch);
-int nz_chsend(struct nz_ch * ch, const nz_real * chunk, int flags);
-const nz_real * nz_chrecv(struct nz_ch * ch, int flags);
-void nz_chdone(struct nz_ch * ch);
-int nz_chjoin(struct nz_ch * ch, int pipe);
+int nz_chmake(enum nz_dir dir);
+nz_real * nz_challoc(int ch);
+int nz_chsend(int ch, const nz_real * chunk, int flags);
+const nz_real * nz_chrecv(int ch, int flags);
+int nz_chjoin(int left, int right);
+int nz_chstate(int ch);
+//int nz_choose(...);
 
 // UI
 struct nz_param;
@@ -45,7 +43,7 @@ struct nz_param *
 nz_param_real(const char * parent, const char * name, nz_real min, nz_real max, nz_real * param);
 
 struct nz_param *
-nz_param_channel(const char * parent, const char * name, struct nz_ch * param);
+nz_param_channel(const char * parent, const char * name, int param);
 
 void
 nz_param_destroy(struct nz_param * cookie);

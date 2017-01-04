@@ -7,9 +7,8 @@
 #define SF_WRITE_REAL2(X, Y) X ## Y
 #define SF_WRITE_REAL SF_WRITE_REAL1(sf_write_, NZ_REAL_TYPE)
 
-coroutine void nz_output_wav(const char * name, const char * filename, int input_pipe) {
-    struct nz_ch * input = nz_chmake(NZ_READ);
-    nz_chjoin(input, input_pipe);
+coroutine void nz_output_wav(const char * name, const char * filename) {
+    int input = nz_chmake(NZ_READ);
     nz_param_channel(name, "Input Channel", input);
 
     SF_INFO fdata = {
@@ -38,7 +37,7 @@ coroutine void nz_output_wav(const char * name, const char * filename, int input
     sf_close(file);
 }
 
-coroutine void nz_output_portaudio(const char * name, int input_pipe) {
+coroutine void nz_output_portaudio(const char * name) {
     PaError err = Pa_Initialize();
     if(err != paNoError) FAIL("Pa_Initialize: %s", Pa_GetErrorText(err));
 
@@ -52,8 +51,7 @@ coroutine void nz_output_portaudio(const char * name, int input_pipe) {
     nz_real volume = 0.2;
     nz_param_real(name, "Volume", 0.0, 1.0, &volume);
 
-    struct nz_ch * input = nz_chmake(NZ_READ);
-    nz_chjoin(input, input_pipe);
+    int input = nz_chmake(NZ_READ);
     nz_param_channel(name, "Input Channel", input);
 
     while (1) {
