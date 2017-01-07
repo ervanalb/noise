@@ -25,51 +25,6 @@ coroutine void test_noise() {
     }
 }
 
-coroutine void nz_synth(const char * name) {
-    nz_real phase = 0;
-    nz_real freq = 440.;
-    nz_param_real(name, "Frequency", 32, 16000, &freq);
-
-    enum {
-        SAW, SQUARE, SINE
-    } wave_type;
-    const struct nz_enum wave_enums[] = {
-        { SAW, "Saw"},
-        { SQUARE, "Square"},
-        { SINE, "Sine"},
-        { 0, 0 }
-    };
-    nz_param_enum(name, "Wave Type", wave_enums, (int *) &wave_type);
-
-    int output = nz_chmake(NZ_WRITE);
-    nz_param_channel(name, "Output Channel", output);
-
-    while (1) {
-        nz_real * buffer = nz_challoc(output);
-        nz_real dphase = freq / NZ_SAMPLE_RATE;
-        for (size_t i = 0; i < NZ_CHUNK_SIZE; i++) {
-            switch (wave_type) {
-            case SAW:
-                buffer[i] = phase * 2 - 1.;
-                break;
-            case SQUARE:
-                buffer[i] = (phase > 0.5) ? 1 : -1;
-                break;
-            case SINE:
-                buffer[i] = sinf(phase * 2 * M_PI);
-                break;
-            default:
-                buffer[i] = 0;
-                break;
-            }
-            phase = fmod(phase + dphase, 1.0);
-        }
-
-        int rc = nz_chsend(output, buffer, 0);
-        if (rc != 0) break;
-    }
-}
-
 coroutine void nz_mixer(const char * name, size_t n_pipes) {
     struct {
         int in_ch;
@@ -79,18 +34,16 @@ coroutine void nz_mixer(const char * name, size_t n_pipes) {
         char vol_name[32];
     } channels[n_pipes];
     for (size_t i = 0; i < n_pipes; i++) {
-        channels[i].in_ch = nz_chmake(NZ_READ);
 
         channels[i].volume = 1.0;
         snprintf(channels[i].in_name, sizeof channels[i].in_name, "Mixer Input #%zu Channel", i);
         snprintf(channels[i].vol_name, sizeof channels[i].vol_name, "Mixer Input #%zu Volume", i);
 
-        nz_param_channel(name, channels[i].in_name, channels[i].in_ch);
+        channels[i].in_ch = nz_param_channel(name, channels[i].in_name, NZ_READ);
         nz_param_real(name, channels[i].vol_name, 0.0, 1.0, &channels[i].volume);
     }
 
-    int output = nz_chmake(NZ_WRITE);
-    nz_param_channel(name, "Output Channel", output);
+    int output = nz_param_channel(name, "Output Channel", NZ_WRITE);
 
     while (1) {
         nz_real * chunk = nz_challoc(output);
@@ -112,8 +65,10 @@ void start_noise(void) {
     go(nz_output_wav("WAV Output", "test.wav"));
     go(nz_output_portaudio("Live Output"));
     go(nz_mixer("Mixer", 2));
-    go(nz_synth("Synth"));
-    go(nz_synth("Synth2"));
+    //go(nz_synth("Synth"));
+    //go(nz_synth("Synth2"));
+    nz_block_loadlib("/home/zbanks/noise-dsock/blocks/synth.nzo");
+    nz_block_start("synth", "Synthesizer", NULL);
 }
 
 int main(void) {

@@ -8,7 +8,8 @@
 #define SF_WRITE_REAL SF_WRITE_REAL1(sf_write_, NZ_REAL_TYPE)
 
 coroutine void nz_output_wav(const char * name, const char * filename) {
-    int input = nz_param_channel(name, "Input Channel", NZ_READ);
+    int input = nz_chmake(NZ_READ);
+    nz_param_channel(name, "Input Channel", input);
 
     SF_INFO fdata = {
         .samplerate = NZ_SAMPLE_RATE,
@@ -50,7 +51,8 @@ coroutine void nz_output_portaudio(const char * name) {
     nz_real volume = 0.2;
     nz_param_real(name, "Volume", 0.0, 1.0, &volume);
 
-    int input = nz_param_channel(name, "Input Channel", NZ_READ);
+    int input = nz_chmake(NZ_READ);
+    nz_param_channel(name, "Input Channel", input);
 
     while (1) {
         float buf[NZ_CHUNK_SIZE];
@@ -59,7 +61,6 @@ coroutine void nz_output_portaudio(const char * name) {
 
         for (size_t i = 0; i < NZ_CHUNK_SIZE; i++)
             buf[i] = chunk[i] * volume;
-
 
         err = Pa_WriteStream(stream, buf, NZ_CHUNK_SIZE);
         //if(err != paNoError) FAIL("Pa_WriteStream: %s", Pa_GetErrorText(err));

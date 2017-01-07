@@ -1,20 +1,27 @@
 CC=gcc
 CFLAGS=-I. -Ilibdill -g -O2 -std=gnu99 -Wall -Wextra -Werror
-LDFLAGS=-ldill -lm -lsndfile -lportaudio
+LDFLAGS=-ldill -lm -lsndfile -lportaudio -ldl
 
+NZSRCS=$(wildcard blocks/*.c)
+NZOBJECTS=$(NZSRCS:.c=.nzo)
 OBJECTS=noise.o output.o main.o
 
 %.o : %.c
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) -rdynamic -c $< -o $@
 
 noise : $(OBJECTS)
-	$(CC) $^ $(CFLAGS) $(LDFLAGS) -o $@
+	$(CC) $^ $(CFLAGS) -rdynamic $(LDFLAGS) -o $@
 
-.PHONY: clean
-.DEFAULT: all
+%.nzo : %.c
+	$(CC) $(CFLAGS) -shared -fPIC $< -o $@
+
+nzobjects : $(NZOBJECTS)
 
 clean:
-	rm -r $(OBJECTS) noise
+	rm -r $(OBJECTS) $(NZOBJECTS) noise
 
-all: noise
+all: noise nzobjects
 
+.PHONY: clean
+.PHONY: nzobjects
+.DEFAULT_GOAL := all
